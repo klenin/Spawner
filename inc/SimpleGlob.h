@@ -158,6 +158,7 @@ enum SG_Error {
 // Unix glob functionality. On Unix we just use glob.
 #ifdef _WIN32
 # include <mbstring.h>
+# include <windows.h>
 # define sg_strchr          ::_mbschr
 # define sg_strrchr         ::_mbsrchr
 # define sg_strlen          ::_mbslen
