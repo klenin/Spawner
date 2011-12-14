@@ -37,6 +37,7 @@ enum
   -i:[file]          SP_INPUT_FILE        Получить входной поток из файла.
 */
 // <-- move this to some sort of header
+// check if long attributes can be applied 
 CSimpleOpt::SOption Options[] = 
 {
 	{SP_MEMORY_LIMIT, 	"-ml",	SO_REQ_CMB},
