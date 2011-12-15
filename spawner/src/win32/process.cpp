@@ -8,18 +8,13 @@ CProcess::CProcess(/*arguments*/)
 	//working dir, etc
 }
 
-void CProcess::SetRestrictions(/*restrictions*/)
-{
-	//setting restrictions from restriction list
-}
-
 void CProcess::SetArguments()
 {
 	//is this required?..
 	//after-constructor argument changing
 }
 
-int CProcess::Run()
+int CProcess::Run(char *argv[])
 {
 	//runs a process with a given arguments and restrictions
 	//probably returns children program return code
