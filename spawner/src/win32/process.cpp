@@ -27,7 +27,6 @@ int CProcess::Run(char *argv[])
 void CProcess::RunAsync()
 {
     STARTUPINFO        si;
-    PROCESS_INFORMATION pi;
 
     ZeroMemory(&si, sizeof(si));
 
@@ -37,19 +36,19 @@ void CProcess::RunAsync()
     si.hStdOutput = stdoutput.WritePipe();
     si.hStdError = stderror.WritePipe();
 
-    if ( !CreateProcess( "C:\\GnuWin32\\bin\\ls.exe",
+    if ( !CreateProcess( "j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"C:\\GnuWin32\\bin\\ls.exe",
         NULL,
         NULL, NULL,
         TRUE,
         (CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW),
         NULL, NULL,
-        &si, &pi) )
+        &si, &process_info) )
     {
         throw("!!!");
     }
-    ResumeThread(pi.hThread);
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
+    DWORD w = ResumeThread(process_info.hThread);
+    CloseHandle(process_info.hProcess);
+    CloseHandle(process_info.hThread);
     HANDLE thread1 = CreateThread(NULL, 0, read_body, this, 0, NULL);
     WaitForSingleObject(thread1, INFINITE);
 }

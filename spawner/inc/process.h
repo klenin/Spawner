@@ -22,10 +22,8 @@ public:
     void RunAsync();
     CPipe stdinput, stdoutput, stderror;
 	~CProcess();
-    PROCESS_INFORMATION ProcessInformation(){return pi;}
-    void SetProcessInformation(PROCESS_INFORMATION p){pi = p;}
 protected:
-    PROCESS_INFORMATION pi;
+    process_info_t process_info;
 	void apply_restrictions()
 	{
         proxy.Init();
