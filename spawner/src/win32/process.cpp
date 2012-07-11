@@ -33,12 +33,13 @@ void CProcess::RunAsync()
     ZeroMemory(&si, sizeof(si));
 
     si.cb = sizeof(si);
-    si.dwFlags = STARTF_USESTDHANDLES;
+    si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
     si.hStdInput = stdinput.ReadPipe();
     si.hStdOutput = stdoutput.WritePipe();
     si.hStdError = stderror.WritePipe();
+    si.wShowWindow = SW_HIDE;
     si.lpDesktop = "";
-    SetErrorMode(SEM_FAILCRITICALERRORS);
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
     //si.wShowWindow =  (CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB);
     SECURITY_ATTRIBUTES sa;
     ZeroMemory(&sa, sizeof(sa));
