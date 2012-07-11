@@ -1,6 +1,6 @@
 #include "restrictions.h"
 
-void CMemoryRestriction::ApplyRestriction( CProcessProxy &proxy )
+/*void CMemoryRestriction::ApplyRestriction( CProcessProxy &proxy )
 {
     proxy.joeli.BasicLimitInformation.LimitFlags = 
         JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION;
@@ -8,3 +8,4 @@ void CMemoryRestriction::ApplyRestriction( CProcessProxy &proxy )
     proxy.joeli.ProcessMemoryLimit  = restriction;	
 }
 
+*/

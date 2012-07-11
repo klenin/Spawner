@@ -38,9 +38,9 @@ public:
         ;
 
     }
-    HANDLE ReadPipe(){SetHandleInformation(writePipe, HANDLE_FLAG_INHERIT, 0); return readPipe;}
-    HANDLE WritePipe(){SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0); return writePipe;}
-    HANDLE DuplicateReadPipe()
+    pipe_t ReadPipe(){SetHandleInformation(writePipe, HANDLE_FLAG_INHERIT, 0); return readPipe;}
+    pipe_t WritePipe(){SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0); return writePipe;}
+    pipe_t DuplicateReadPipe()
     {
         if (!DuplicateHandle(GetCurrentProcess(), readPipe,
             GetCurrentProcess(), &readPipeDup, 0, FALSE,
@@ -66,7 +66,7 @@ public:
     bool Write(void *data, size_t size);
     size_t Read(void *data, size_t size);
 private:
-    HANDLE readPipe, writePipe, readPipeDup;
+    pipe_t readPipe, writePipe, readPipeDup;
 };
 
 #endif//_PIPES_H_

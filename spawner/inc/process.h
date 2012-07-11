@@ -2,6 +2,7 @@
 #define _PROCESS_H_
 
 #include <list>
+#include <map>
 #include "restrictions.h"
 #include "processproxy.h"
 #include "platform.h"
@@ -11,32 +12,28 @@ class CProcess
 {
 public:
 	CProcess();
-	void SetRestrictions(CRestriction *restriction)
-	{
-		if (!restriction)
-			return;
-		restrictions.push_back(restriction);
-	}
+    void SetRestrictionForKind(RESTRICTION_KIND kind, restriction_t value)
+    {
+        restrictions[kind] = value;
+    }
+    restriction_t GetRestrictionValue(RESTRICTION_KIND kind)
+    {
+        return restrictions[kind];
+    }
 	void SetArguments(); // ?!
 	int Run(char *argv[]);
     void RunAsync();
     CPipe stdinput, stdoutput, stderror;
 	~CProcess();
+    HANDLE hIOCP;
+    HANDLE hJob;
 protected:
+    restriction_t restrictions[RESTRICTION_MAX];
     process_info_t process_info;
-	void apply_restrictions()
-	{
-        proxy.Init();
-		for (std::list<CRestriction*>::iterator i = restrictions.begin();
-			i != restrictions.end(); ++i)
-		{
-			(*i)->ApplyRestriction(proxy);
-		}
-	}
     thread_t thread;
     static thread_return_t process_body(thread_param_t param);
     static thread_return_t read_body(thread_param_t param);
-	std::list<CRestriction*> restrictions;
+    static thread_return_t check_limits(thread_param_t param);
 	CProcessProxy proxy;
 };
 
