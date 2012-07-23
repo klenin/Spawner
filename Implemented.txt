@@ -1,0 +1,5 @@
+Implemented
+
+To implement
+ * Add "hide gui" or "hide windows" flag
+ *
