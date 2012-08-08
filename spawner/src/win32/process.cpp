@@ -1,9 +1,11 @@
 #include <process.h>
 #include <iostream>
 
+HANDLE stdout_read_mutex = NULL;
+
 //TODO: implement setters and getters
 
-CProcess::CProcess(/*arguments*/):stdinput(), stdoutput(), stderror()
+CProcess::CProcess(/*arguments*/):stdinput(STD_INPUT), stdoutput(STD_OUTPUT), stderror(STD_ERROR)
 {
 	//getting arguments from list
 	//working dir, etc
@@ -43,7 +45,7 @@ void CProcess::RunAsync()
     //si.wShowWindow =  (CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB);
     SECURITY_ATTRIBUTES sa;
     ZeroMemory(&sa, sizeof(sa));
-    if ( !CreateProcess( "j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"C:\\GnuWin32\\bin\\ls.exe",
+    if ( !CreateProcess("C:\\GnuWin32\\bin\\ls.exe", //"j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"C:\\GnuWin32\\bin\\ls.exe", //NULL,// "j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"
         NULL,
         NULL, NULL,
         TRUE,
@@ -53,9 +55,7 @@ void CProcess::RunAsync()
     {
         throw("!!!");
     }
-    //embed in function
-    //BOOL rs = FALSE, rs1;
-    //rs1 = IsProcessInJob(process_info.hProcess, NULL, &rs);
+
     hJob = CreateJobObject(NULL, NULL);
     DWORD le = GetLastError();
 
@@ -90,6 +90,7 @@ void CProcess::RunAsync()
     joacp.CompletionPort = hIOCP; 
     SetInformationJobObject(hJob, JobObjectAssociateCompletionPortInformation, &joacp, sizeof(joacp));
     le = GetLastError();
+    stdout_read_mutex = CreateMutex(NULL, FALSE, NULL);
     DWORD w = ResumeThread(process_info.hThread);
 
     thread_t stdout_read = CreateThread(NULL, 0, read_body, this, 0, NULL);
@@ -137,8 +138,13 @@ void CProcess::RunAsync()
         };    
 
     } while (!message);
+    WaitForSingleObject(process_info.hProcess, 10000);
+    //WaitForSingleObject(stdout_read, 100000);
+    WaitForSingleObject(stdout_read_mutex, 10000);
     CloseHandle(process_info.hProcess);
     CloseHandle(process_info.hThread);
+    CloseHandle(stdout_read);
+    CloseHandle(check);
 
 //
       //WaitForProcessTerminate(&terminateReason);  
@@ -156,6 +162,7 @@ thread_return_t CProcess::process_body(thread_param_t param)
 
 thread_return_t CProcess::read_body(thread_param_t param)
 {
+    //ReleaseMutex(stdout_read_mutex);
     CProcess *self = (CProcess *)param;
     for (;;)
     {
@@ -163,11 +170,13 @@ thread_return_t CProcess::read_body(thread_param_t param)
         size_t bytes_count = self->stdoutput.Read(data, 4096);
         if (bytes_count == 0)
             break;
+        WaitForSingleObject(stdout_read_mutex, INFINITE);
         if (bytes_count != 0)
         {
             std::cout << bytes_count << std::endl;
             std::cout.write(data, bytes_count);
         }
+        ReleaseMutex(stdout_read_mutex);
     }
     return 0;
 }

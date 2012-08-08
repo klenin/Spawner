@@ -18,13 +18,7 @@ typedef HANDLE thread_t;
 typedef PROCESS_INFORMATION process_info_t;
 typedef HANDLE pipe_t;
 
-typedef enum
-{
-    STD_INPUT   = STD_INPUT_HANDLE,
-    STD_OUTPUT  = STD_OUTPUT_HANDLE,
-    STD_ERROR   = STD_ERROR_HANDLE,
-}std_handle_t;
-
+void CloseHandleSafe(HANDLE &handle);
 #else
 
 #endif//_WIN32
