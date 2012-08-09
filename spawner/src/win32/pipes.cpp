@@ -5,7 +5,7 @@ CPipe::CPipe() :readPipe(INVALID_HANDLE_VALUE), writePipe(INVALID_HANDLE_VALUE)/
     Init();
 }
 
-CPipe::CPipe(std_pipe_t handleType) : readPipe(INVALID_HANDLE_VALUE), writePipe(INVALID_HANDLE_VALUE), pipe_type(handleType)
+CPipe::CPipe(std_pipe_t handleType) : readPipe(INVALID_HANDLE_VALUE), writePipe(INVALID_HANDLE_VALUE), pipe_type(handleType), reading_thread(INVALID_HANDLE_VALUE), reading_mutex(INVALID_HANDLE_VALUE)
 {
     Init();
     if (pipe_type & STD_PIPE_OI)
@@ -63,4 +63,75 @@ size_t CPipe::Read(void *data, size_t size)
         //error
     }
     return dwRead;
+}
+
+
+void CPipe::bufferize()
+{
+    if (reading_thread != INVALID_HANDLE_VALUE)
+    {
+        //error
+        return;
+    }        
+    if (reading_mutex == INVALID_HANDLE_VALUE)
+    {
+        reading_mutex = CreateMutex(NULL, FALSE, NULL);
+    }
+    reading_thread = CreateThread(NULL, 0, reading_body, this, 0, NULL);
+}
+
+void CPipe::wait()
+{
+    if (reading_mutex == INVALID_HANDLE_VALUE || reading_thread == INVALID_HANDLE_VALUE)
+        return;
+    WaitForSingleObject(reading_mutex, INFINITE);
+}
+
+void CPipe::finish()
+{
+    WaitForSingleObject(reading_mutex, INFINITE);
+    ReleaseMutex(reading_mutex);
+    CloseHandleSafe(reading_thread);
+    CloseHandleSafe(reading_mutex);
+}
+
+istringstream & CPipe::stream()
+{
+    wait();
+    ReleaseMutex(reading_mutex);
+    return reading_buffer;
+}
+
+size_t CPipe::buffer_size()
+{
+    return buff_size;
+}
+
+thread_return_t CPipe::reading_body(thread_param_t param)
+{
+    CPipe *self = (CPipe*)param;
+    for (;;)
+    {
+        char data[BUFFER_SIZE];
+        size_t bytes_count = self->Read(data, BUFFER_SIZE);
+        if (bytes_count == 0)
+            break;
+        WaitForSingleObject(self->reading_mutex, INFINITE);
+        if (bytes_count != 0)
+        {
+            data[bytes_count] = 0;
+            self->buff_size += bytes_count;
+            self->reading_buffer.str(self->reading_buffer.rdbuf()->str() + data);
+
+            if (self->pipe_type == STD_OUTPUT)
+                cout << "stdout :\n";
+            if (self->pipe_type == STD_ERROR)
+                cout << "stderr :\n";
+            //if echo
+            std::cout << bytes_count << std::endl;
+            std::cout.write(data, bytes_count);
+        }
+        ReleaseMutex(self->reading_mutex);
+    }
+    return 0;
 }

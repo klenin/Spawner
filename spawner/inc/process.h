@@ -32,7 +32,6 @@ protected:
     process_info_t process_info;
     thread_t thread;
     static thread_return_t process_body(thread_param_t param);
-    static thread_return_t read_body(thread_param_t param);
     static thread_return_t check_limits(thread_param_t param);
 	CProcessProxy proxy;
 };

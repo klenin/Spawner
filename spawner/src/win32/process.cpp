@@ -34,6 +34,8 @@ void CProcess::RunAsync()
 
     ZeroMemory(&si, sizeof(si));
 
+    // -> 
+
     si.cb = sizeof(si);
     si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
     si.hStdInput = stdinput.ReadPipe();
@@ -45,8 +47,8 @@ void CProcess::RunAsync()
     //si.wShowWindow =  (CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB);
     SECURITY_ATTRIBUTES sa;
     ZeroMemory(&sa, sizeof(sa));
-    if ( !CreateProcess("C:\\GnuWin32\\bin\\ls.exe", //"j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"C:\\GnuWin32\\bin\\ls.exe", //NULL,// "j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"
-        NULL,
+    if ( !CreateProcess(NULL,//"C:\\GnuWin32\\bin\\ls.exe", //"j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"C:\\GnuWin32\\bin\\ls.exe", //NULL,// "j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"
+        "g++ J:\\Projects\\deku2d-engine\\Engine\\src\\2de_GraphicsLow.cpp", //NULL,
         NULL, NULL,
         TRUE,
         (CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB),
@@ -90,10 +92,10 @@ void CProcess::RunAsync()
     joacp.CompletionPort = hIOCP; 
     SetInformationJobObject(hJob, JobObjectAssociateCompletionPortInformation, &joacp, sizeof(joacp));
     le = GetLastError();
-    stdout_read_mutex = CreateMutex(NULL, FALSE, NULL);
     DWORD w = ResumeThread(process_info.hThread);
 
-    thread_t stdout_read = CreateThread(NULL, 0, read_body, this, 0, NULL);
+    stdoutput.bufferize();
+    stderror.bufferize();
     le = GetLastError();
     thread_t check = CreateThread(NULL, 0, check_limits, this, 0, NULL);
     le = GetLastError();
@@ -139,16 +141,11 @@ void CProcess::RunAsync()
 
     } while (!message);
     WaitForSingleObject(process_info.hProcess, 10000);
-    //WaitForSingleObject(stdout_read, 100000);
-    WaitForSingleObject(stdout_read_mutex, 10000);
+    stdoutput.finish();
+    stderror.finish();
     CloseHandle(process_info.hProcess);
     CloseHandle(process_info.hThread);
-    CloseHandle(stdout_read);
     CloseHandle(check);
-
-//
-      //WaitForProcessTerminate(&terminateReason);  
-    //WaitForSingleObject(stdout_read, INFINITE);
 }
 CProcess::~CProcess()
 {
@@ -157,27 +154,6 @@ CProcess::~CProcess()
 thread_return_t CProcess::process_body(thread_param_t param)
 {
 
-    return 0;
-}
-
-thread_return_t CProcess::read_body(thread_param_t param)
-{
-    //ReleaseMutex(stdout_read_mutex);
-    CProcess *self = (CProcess *)param;
-    for (;;)
-    {
-        char data[4096];
-        size_t bytes_count = self->stdoutput.Read(data, 4096);
-        if (bytes_count == 0)
-            break;
-        WaitForSingleObject(stdout_read_mutex, INFINITE);
-        if (bytes_count != 0)
-        {
-            std::cout << bytes_count << std::endl;
-            std::cout.write(data, bytes_count);
-        }
-        ReleaseMutex(stdout_read_mutex);
-    }
     return 0;
 }
 
