@@ -8,6 +8,8 @@
 #include "platform.h"
 #include "pipes.h"
 
+using namespace std;
+
 class CProcess
 {
 public:
@@ -21,19 +23,28 @@ public:
         return restrictions[kind];
     }
 	void SetArguments(); // ?!
-	int Run(char *argv[]);
+	int Run();
     void RunAsync();
     CPipe stdinput, stdoutput, stderror;
 	~CProcess();
-    HANDLE hIOCP;
-    HANDLE hJob;
+    bool Completed();
+
 protected:
+    map<RESTRICTION_KIND, restriction_t> restrics;
     restriction_t restrictions[RESTRICTION_MAX];
     process_info_t process_info;
-    thread_t thread;
+    thread_t thread, check, completition;
+    handle_t hIOCP;
+    handle_t hJob;   
     static thread_return_t process_body(thread_param_t param);
     static thread_return_t check_limits(thread_param_t param);
 	CProcessProxy proxy;
+
+    //to fix
+    void createProcess();
+    void setRestrictions();
+    void wait();
+    void finish();
 };
 
 

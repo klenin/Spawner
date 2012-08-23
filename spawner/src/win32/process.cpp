@@ -19,133 +19,34 @@ void CProcess::SetArguments()
 	//after-constructor argument changing
 }
 
-int CProcess::Run(char *argv[])
+int CProcess::Run()
 {
-	//runs a process with a given arguments and restrictions
-	//probably returns children program return code
-	//spawns new thread
-	//and applies restrictions to it
+    createProcess();
+    setRestrictions();
+    DWORD w = ResumeThread(process_info.hThread);
+
+    stdoutput.bufferize();
+    stderror.bufferize();
+
+    check = CreateThread(NULL, 0, check_limits, this, 0, NULL);
+    wait();
+    finish();
 	return 0;
 }
 
 void CProcess::RunAsync()
 {
-    STARTUPINFO        si;
-
-    ZeroMemory(&si, sizeof(si));
-
-    // -> 
-
-    si.cb = sizeof(si);
-    si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
-    si.hStdInput = stdinput.ReadPipe();
-    si.hStdOutput = stdoutput.WritePipe();
-    si.hStdError = stderror.WritePipe();
-    si.wShowWindow = SW_HIDE;
-    si.lpDesktop = "";
-    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
-    //si.wShowWindow =  (CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB);
-    SECURITY_ATTRIBUTES sa;
-    ZeroMemory(&sa, sizeof(sa));
-    if ( !CreateProcess(NULL,//"C:\\GnuWin32\\bin\\ls.exe", //"j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"C:\\GnuWin32\\bin\\ls.exe", //NULL,// "j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"
-        "g++ J:\\Projects\\deku2d-engine\\Engine\\src\\2de_GraphicsLow.cpp", //NULL,
-        NULL, NULL,
-        TRUE,
-        (CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB),
-        NULL, NULL,
-        &si, &process_info) )
-    {
-        throw("!!!");
-    }
-
-    hJob = CreateJobObject(NULL, NULL);
-    DWORD le = GetLastError();
-
-    JOBOBJECT_EXTENDED_LIMIT_INFORMATION joeli;
-    memset(&joeli, 0, sizeof(joeli));
-    joeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION;
-    
-    if (GetRestrictionValue(RESTRICTION_MEMORY_LIMIT) != RESTRICTION_NO_LIMIT)
-    {   
-        joeli.JobMemoryLimit = GetRestrictionValue(RESTRICTION_MEMORY_LIMIT);
-        joeli.ProcessMemoryLimit = GetRestrictionValue(RESTRICTION_MEMORY_LIMIT);
-        joeli.BasicLimitInformation.LimitFlags |=
-        JOB_OBJECT_LIMIT_PROCESS_MEMORY | JOB_OBJECT_LIMIT_JOB_MEMORY;
-    }
-
-    SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, &joeli, sizeof(joeli));
-    le = GetLastError();
-    if (GetRestrictionValue(RESTRICTION_SECURITY_LIMIT) != RESTRICTION_NO_LIMIT)
-    {
-        JOBOBJECT_BASIC_UI_RESTRICTIONS buir;
-        buir.UIRestrictionsClass = JOB_OBJECT_UILIMIT_ALL;
-        SetInformationJobObject(hJob, JobObjectBasicUIRestrictions, &buir, sizeof(buir));
-    }
-
-    AssignProcessToJobObject(hJob, process_info.hProcess);
-    le = GetLastError();
-
-    hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 1, 1);
-    le = GetLastError();
-    JOBOBJECT_ASSOCIATE_COMPLETION_PORT joacp; 
-    joacp.CompletionKey = (PVOID)COMPLETION_KEY; 
-    joacp.CompletionPort = hIOCP; 
-    SetInformationJobObject(hJob, JobObjectAssociateCompletionPortInformation, &joacp, sizeof(joacp));
-    le = GetLastError();
+    createProcess();
+    setRestrictions();
     DWORD w = ResumeThread(process_info.hThread);
 
     stdoutput.bufferize();
     stderror.bufferize();
-    le = GetLastError();
-    thread_t check = CreateThread(NULL, 0, check_limits, this, 0, NULL);
-    le = GetLastError();
-    DWORD waitTime = INFINITE;
-    if (GetRestrictionValue(RESTRICTION_USER_TIME_LIMIT) != RESTRICTION_NO_LIMIT)
-        waitTime = GetRestrictionValue(RESTRICTION_USER_TIME_LIMIT);
-    WaitForSingleObject(process_info.hProcess, waitTime);
-    DWORD dwNumBytes, dwKey;
-    LPOVERLAPPED completedOverlapped;  
-    static CHAR buf[1024];
-    //set msg
-    int message = 0;
-    do
-    {     
-        GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
 
-        switch (dwNumBytes)
-        {
-        case JOB_OBJECT_MSG_NEW_PROCESS:
-            break;
-        case JOB_OBJECT_MSG_END_OF_PROCESS_TIME:
-            message++;
-            TerminateJobObject(hJob, 0);
-            break;
-        case JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT:  
-            message++;
-            TerminateJobObject(hJob, 0);
-            break;
-        case JOB_OBJECT_MSG_EXIT_PROCESS:
-            message++;
-            //*message = TM_EXIT_PROCESS;
-            break;
-        case JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS:
-            message++;
-            //*message = TM_ABNORMAL_EXIT_PROCESS;
-            break;
-        case JOB_OBJECT_MSG_PROCESS_MEMORY_LIMIT:
-            message++;
-            //*message = TM_MEMORY_LIMIT_EXCEEDED;
-            TerminateJobObject(hJob, 0);
-            break;
-        };    
-
-    } while (!message);
-    WaitForSingleObject(process_info.hProcess, 10000);
-    stdoutput.finish();
-    stderror.finish();
-    CloseHandle(process_info.hProcess);
-    CloseHandle(process_info.hThread);
-    CloseHandle(check);
+    check = CreateThread(NULL, 0, check_limits, this, 0, NULL);
+    // create thread, waiting for completition
+//    wait();
+//    finish();
 }
 CProcess::~CProcess()
 {
@@ -198,3 +99,128 @@ thread_return_t CProcess::check_limits(thread_param_t param)
   }
   return 0;
 }
+
+void CProcess::createProcess()
+{
+    STARTUPINFO        si;
+
+    ZeroMemory(&si, sizeof(si));
+
+    // -> 
+
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+    si.hStdInput = stdinput.ReadPipe();
+    si.hStdOutput = stdoutput.WritePipe();
+    si.hStdError = stderror.WritePipe();
+    si.wShowWindow = SW_HIDE;
+    si.lpDesktop = "";
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+    //si.wShowWindow =  (CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB);
+    SECURITY_ATTRIBUTES sa;
+    ZeroMemory(&sa, sizeof(sa));
+    if ( !CreateProcess(NULL,//"C:\\GnuWin32\\bin\\ls.exe", //"j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"C:\\GnuWin32\\bin\\ls.exe", //NULL,// "j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"
+        "j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"g++ J:\\Projects\\deku2d-engine\\Engine\\src\\2de_GraphicsLow.cpp", //NULL,
+        NULL, NULL,
+        TRUE,
+        (CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB),
+        NULL, NULL,
+        &si, &process_info) )
+    {
+        throw("!!!");
+    }
+}
+
+void CProcess::setRestrictions()
+{
+    hJob = CreateJobObject(NULL, NULL);
+    DWORD le = GetLastError();
+
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION joeli;
+    memset(&joeli, 0, sizeof(joeli));
+    joeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION;
+
+    if (GetRestrictionValue(RESTRICTION_MEMORY_LIMIT) != RESTRICTION_NO_LIMIT)
+    {   
+        joeli.JobMemoryLimit = GetRestrictionValue(RESTRICTION_MEMORY_LIMIT);
+        joeli.ProcessMemoryLimit = GetRestrictionValue(RESTRICTION_MEMORY_LIMIT);
+        joeli.BasicLimitInformation.LimitFlags |=
+            JOB_OBJECT_LIMIT_PROCESS_MEMORY | JOB_OBJECT_LIMIT_JOB_MEMORY;
+    }
+
+    SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, &joeli, sizeof(joeli));
+    le = GetLastError();
+    if (GetRestrictionValue(RESTRICTION_SECURITY_LIMIT) != RESTRICTION_NO_LIMIT)
+    {
+        JOBOBJECT_BASIC_UI_RESTRICTIONS buir;
+        buir.UIRestrictionsClass = JOB_OBJECT_UILIMIT_ALL;
+        SetInformationJobObject(hJob, JobObjectBasicUIRestrictions, &buir, sizeof(buir));
+    }
+
+    AssignProcessToJobObject(hJob, process_info.hProcess);
+    le = GetLastError();
+
+    hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 1, 1);
+    le = GetLastError();
+    JOBOBJECT_ASSOCIATE_COMPLETION_PORT joacp; 
+    joacp.CompletionKey = (PVOID)COMPLETION_KEY; 
+    joacp.CompletionPort = hIOCP; 
+    SetInformationJobObject(hJob, JobObjectAssociateCompletionPortInformation, &joacp, sizeof(joacp));
+    le = GetLastError();
+}
+
+void CProcess::wait()
+{
+    DWORD waitTime = INFINITE;
+    if (GetRestrictionValue(RESTRICTION_USER_TIME_LIMIT) != RESTRICTION_NO_LIMIT)
+        waitTime = GetRestrictionValue(RESTRICTION_USER_TIME_LIMIT);
+    WaitForSingleObject(process_info.hProcess, waitTime);
+    DWORD dwNumBytes, dwKey;
+    LPOVERLAPPED completedOverlapped;  
+    static CHAR buf[1024];
+    //set msg
+    int message = 0;
+    do
+    {     
+        GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
+
+        switch (dwNumBytes)
+        {
+        case JOB_OBJECT_MSG_NEW_PROCESS:
+            break;
+        case JOB_OBJECT_MSG_END_OF_PROCESS_TIME:
+            message++;
+            TerminateJobObject(hJob, 0);
+            break;
+        case JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT:  
+            message++;
+            TerminateJobObject(hJob, 0);
+            break;
+        case JOB_OBJECT_MSG_EXIT_PROCESS:
+            message++;
+            //*message = TM_EXIT_PROCESS;
+            break;
+        case JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS:
+            message++;
+            //*message = TM_ABNORMAL_EXIT_PROCESS;
+            break;
+        case JOB_OBJECT_MSG_PROCESS_MEMORY_LIMIT:
+            message++;
+            //*message = TM_MEMORY_LIMIT_EXCEEDED;
+            TerminateJobObject(hJob, 0);
+            break;
+        };    
+
+    } while (!message);
+    WaitForSingleObject(process_info.hProcess, 10000);
+}
+
+void CProcess::finish()
+{
+    stdoutput.finish();
+    stderror.finish();
+    CloseHandle(process_info.hProcess);
+    CloseHandle(process_info.hThread);
+    CloseHandle(check);
+}
+
