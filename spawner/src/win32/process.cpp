@@ -19,10 +19,13 @@ void CProcess::SetArguments()
 	//after-constructor argument changing
 }
 
-int CProcess::Run()
+int CProcess::Run(string file)
 {
+    application = file;
+    setRestrictions();    
     createProcess();
-    setRestrictions();
+    setupJobObject();
+
     DWORD w = ResumeThread(process_info.hThread);
 
     stdoutput.bufferize();
@@ -36,8 +39,9 @@ int CProcess::Run()
 
 void CProcess::RunAsync()
 {
-    createProcess();
     setRestrictions();
+    createProcess();
+    setupJobObject();
     DWORD w = ResumeThread(process_info.hThread);
 
     stdoutput.bufferize();
@@ -102,28 +106,24 @@ thread_return_t CProcess::check_limits(thread_param_t param)
 
 void CProcess::createProcess()
 {
-    STARTUPINFO        si;
-
     ZeroMemory(&si, sizeof(si));
-
-    // -> 
 
     si.cb = sizeof(si);
     si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
     si.hStdInput = stdinput.ReadPipe();
     si.hStdOutput = stdoutput.WritePipe();
     si.hStdError = stderror.WritePipe();
-    si.wShowWindow = SW_HIDE;
+
     si.lpDesktop = "";
+    // TODO may be create new restriction for error handling
     SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
-    //si.wShowWindow =  (CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB);
     SECURITY_ATTRIBUTES sa;
     ZeroMemory(&sa, sizeof(sa));
-    if ( !CreateProcess(NULL,//"C:\\GnuWin32\\bin\\ls.exe", //"j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"C:\\GnuWin32\\bin\\ls.exe", //NULL,// "j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"
-        "j:\\Projects\\study\\fortune\\Debug\\voronoy.exe",//"g++ J:\\Projects\\deku2d-engine\\Engine\\src\\2de_GraphicsLow.cpp", //NULL,
+    if ( !CreateProcess(application.c_str(),
+        "test.exe 1 2 3 4 5",// replace with argument list construction
         NULL, NULL,
         TRUE,
-        (CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB),
+        PROCESS_CREATION_FLAGS,
         NULL, NULL,
         &si, &process_info) )
     {
@@ -133,6 +133,7 @@ void CProcess::createProcess()
 
 void CProcess::setRestrictions()
 {
+    /* implement restriction value check */
     hJob = CreateJobObject(NULL, NULL);
     DWORD le = GetLastError();
 
@@ -149,7 +150,7 @@ void CProcess::setRestrictions()
     }
 
     SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, &joeli, sizeof(joeli));
-    le = GetLastError();
+
     if (GetRestrictionValue(RESTRICTION_SECURITY_LIMIT) != RESTRICTION_NO_LIMIT)
     {
         JOBOBJECT_BASIC_UI_RESTRICTIONS buir;
@@ -157,16 +158,23 @@ void CProcess::setRestrictions()
         SetInformationJobObject(hJob, JobObjectBasicUIRestrictions, &buir, sizeof(buir));
     }
 
+    if (GetRestrictionValue(RESTRICTION_GUI_LIMIT) != RESTRICTION_NO_LIMIT)
+    {
+        si.dwFlags |= STARTF_USESHOWWINDOW;
+        si.wShowWindow = SW_HIDE;
+    }
+}
+
+void CProcess::setupJobObject()
+{
     AssignProcessToJobObject(hJob, process_info.hProcess);
-    le = GetLastError();
 
     hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 1, 1);
-    le = GetLastError();
+
     JOBOBJECT_ASSOCIATE_COMPLETION_PORT joacp; 
     joacp.CompletionKey = (PVOID)COMPLETION_KEY; 
     joacp.CompletionPort = hIOCP; 
     SetInformationJobObject(hJob, JobObjectAssociateCompletionPortInformation, &joacp, sizeof(joacp));
-    le = GetLastError();
 }
 
 void CProcess::wait()
@@ -212,7 +220,7 @@ void CProcess::wait()
         };    
 
     } while (!message);
-    WaitForSingleObject(process_info.hProcess, 10000);
+    WaitForSingleObject(process_info.hProcess, 10000);// TODO
 }
 
 void CProcess::finish()

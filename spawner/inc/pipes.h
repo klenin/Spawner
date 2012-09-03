@@ -37,6 +37,7 @@ public:
     void bufferize();
     void wait();
     void finish();
+    /* think about safer way of reading from pipe */
     istringstream &stream();
     size_t buffer_size();
 private:

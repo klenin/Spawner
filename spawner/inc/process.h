@@ -3,6 +3,7 @@
 
 #include <list>
 #include <map>
+#include <string>
 #include "restrictions.h"
 #include "processproxy.h"
 #include "platform.h"
@@ -10,6 +11,17 @@
 
 using namespace std;
 
+// To implement
+/* 
+    CProcess - one time object
+  process initialized with constructor
+  and then executed with one of the "Run" functions
+  simple Run & RunAsync
+*/
+/* 
+    SetCurrentDirectory
+*/
+// may be create CProcess and CAsyncProcess
 class CProcess
 {
 public:
@@ -23,7 +35,7 @@ public:
         return restrictions[kind];
     }
 	void SetArguments(); // ?!
-	int Run();
+	int Run(string file);
     void RunAsync();
     CPipe stdinput, stdoutput, stderror;
 	~CProcess();
@@ -35,7 +47,10 @@ protected:
     process_info_t process_info;
     thread_t thread, check, completition;
     handle_t hIOCP;
-    handle_t hJob;   
+    handle_t hJob;
+    startupinfo_t si;
+
+    string application;
     static thread_return_t process_body(thread_param_t param);
     static thread_return_t check_limits(thread_param_t param);
 	CProcessProxy proxy;
@@ -43,6 +58,7 @@ protected:
     //to fix
     void createProcess();
     void setRestrictions();
+    void setupJobObject();
     void wait();
     void finish();
 };
