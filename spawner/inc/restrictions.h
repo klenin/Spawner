@@ -3,20 +3,24 @@
 
 typedef enum
 {
-	RESTRICTION_USER_TIME_LIMIT         = 0x0,
-	RESTRICTION_MEMORY_LIMIT            = 0x1,
-	RESTRICTION_PROCESSOR_TIME_LIMIT    = 0x2,
-	RESTRICTION_SECURITY_LIMIT          = 0x3,
-    RESTRICTION_WRITE_LIMIT             = 0x4,
-    RESTRICTION_GUI_LIMIT               = 0x5,
-    RESTRICTION_MAX                     = 0x6
+    restriction_user_time_limit         = 0x0,
+    restriction_memory_limit            = 0x1,
+    restriction_processor_time_limit    = 0x2,
+    restriction_security_limit          = 0x3,
+    restriction_write_limit             = 0x4,
+    restriction_gui_limit               = 0x5,//not restriction, but an option
+    restriction_max                     = 0x6
+} restriction_kind_t;
 
-} RESTRICTION_KIND;
+typedef enum
+{
+
+} option_t;
 
 typedef unsigned int restriction_t;
 
 
-const restriction_t RESTRICTION_NO_LIMIT = 0xffffffff;
+const restriction_t restriction_no_limit = 0xffffffff;
 const restriction_t RESTRICTION_LIMITED  = 0x00000001;
 
 

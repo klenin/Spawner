@@ -1,6 +1,12 @@
 #ifndef _PLATFORM_H_
 #define _PLATFORM_H_
 
+/************************************************************************/
+/* GLOBAL TODO                                                          */
+/* * Replace all string with std::string                                */
+/* * Make report.cpp kinda cross-platform                               */
+/************************************************************************/
+
 #ifdef _WIN32
 
 #include <Windows.h>
@@ -22,6 +28,12 @@ typedef STARTUPINFO startupinfo_t;
 const DWORD PROCESS_CREATION_FLAGS = (CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB);
 
 void CloseHandleSafe(HANDLE &handle);
+
+
+const unsigned long exit_code_ok = 0;
+const unsigned long exit_code_still_active = STILL_ACTIVE;
+const unsigned long exit_code_exception_int_divide_by_zero = EXCEPTION_INT_DIVIDE_BY_ZERO;
+
 #else
 
 #endif//_WIN32
