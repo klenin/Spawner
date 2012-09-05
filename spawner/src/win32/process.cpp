@@ -13,6 +13,17 @@ CAsyncProcess::CAsyncProcess(string file):application(file), proc_status(process
         restrictions[i] = restriction_no_limit;
 }
 
+void CAsyncProcess::SetRestrictionForKind(restriction_kind_t kind, restriction_t value)
+{
+    restrictions[kind] = value;
+}
+
+restriction_t CAsyncProcess::GetRestrictionValue(restriction_kind_t kind)
+{
+    return restrictions[kind];
+}
+
+
 void CAsyncProcess::SetArguments()
 {
 	//is this required?..
@@ -31,7 +42,7 @@ int CAsyncProcess::Run()
     std_error.bufferize();
 
     check = CreateThread(NULL, 0, check_limits, this, 0, NULL);
-
+    completition = CreateThread(NULL, 0, process_completition, this, 0, NULL);
     //create in another thread waiting function
 
 	return 0;
@@ -57,9 +68,10 @@ CAsyncProcess::~CAsyncProcess()
 {
 	//kills process if it is running
 }
-thread_return_t CAsyncProcess::process_body(thread_param_t param)
+thread_return_t CAsyncProcess::process_completition(thread_param_t param)
 {
-
+    CAsyncProcess *self = (CAsyncProcess *)param;
+    self->wait();
     return 0;
 }
 
@@ -101,8 +113,8 @@ thread_return_t CAsyncProcess::check_limits(thread_param_t param)
             break;
         }
         Sleep(1);
-  }
-  return 0;
+    }
+    return 0;
 }
 
 void CAsyncProcess::createProcess()
@@ -182,8 +194,10 @@ void CAsyncProcess::wait()
 {
     DWORD waitTime = INFINITE;
     if (GetRestrictionValue(restriction_user_time_limit) != restriction_no_limit)
+    {
         waitTime = GetRestrictionValue(restriction_user_time_limit);
-    WaitForSingleObject(process_info.hProcess, waitTime); // TODO test this
+        WaitForSingleObject(process_info.hProcess, waitTime); // TODO test this
+    }
     DWORD dwNumBytes, dwKey;
     LPOVERLAPPED completedOverlapped;  
     static CHAR buf[1024];

@@ -6,14 +6,16 @@
 
 typedef enum
 {
-    process_still_active        = 0x0,
-    process_finished_normal     = 0x1,
-    process_finished_abnormally   = 0x3,
-    process_finished_terminated = 0x5,
-    process_not_started         = 0xfe,
+    process_still_active        = 0x2, //b 0000 0010
+    process_suspended           = 0x6, //b 0000 0110
+    process_finished_normal     = 0x1, //b 0000 0001
+    process_finished_abnormally = 0x5, //b 0000 0101
+    process_finished_terminated = 0x9, //b 0000 1001
+    process_not_started         = 0xfc,//b 1111 1100
 } process_status_t;
 
-const unsigned int process_finished = 0x1;
+const unsigned int process_finished     = 0x1;//b 01
+const unsigned int process_is_active    = 0x2;//b 10
 
 #ifdef _WIN32
 
