@@ -35,26 +35,31 @@ enum
   -sr:[file]         SP_REPORT_FILE       Сохранить отчет в файл. --> rf better, i think
   -so:[file]         SP_OUTPUT_FILE       Сохранить выходной поток в файл.
   -i:[file]          SP_INPUT_FILE        Получить входной поток из файла.
+  // write stdout to stdout
+  //       stderr to stdout
+  // disable gui
+  // disable errors(send & not send window)
+  //
 */
 // <-- move this to some sort of header
 // check if long attributes can be applied 
 CSimpleOpt::SOption Options[] = 
 {
-	{SP_MEMORY_LIMIT, 	"-ml",	SO_REQ_CMB},
-	{SP_TIME_LIMIT, 	"-tl",	SO_REQ_CMB},
-	{SP_DEADLINE,		"-d" ,	SO_REQ_CMB},
-	{SP_WRITE_LIMIT,	"-wl",	SO_REQ_CMB},
-	{SP_USER,		"-u" ,	SO_REQ_CMB},
-	{SP_PASSWORD,		"-p" ,	SO_REQ_CMB},
+    {SP_MEMORY_LIMIT,   "-ml",	SO_REQ_CMB},
+    {SP_TIME_LIMIT,     "-tl",	SO_REQ_CMB},
+    {SP_DEADLINE,       "-d" ,	SO_REQ_CMB},
+    {SP_WRITE_LIMIT,    "-wl",	SO_REQ_CMB},
+    {SP_USER,           "-u" ,	SO_REQ_CMB},
+    {SP_PASSWORD,		"-p" ,	SO_REQ_CMB},
 //	{SP_RUNAS,
-	{SP_SECURITY_LEVEL,	"-s" ,	SO_NONE},
-	{SP_HIDE_REPORT,	"-hr",	SO_NONE},
-	{SP_SHOW_OUTPUT,	"-so",	SO_NONE},
-	{SP_SHOW_STDERR,	"-se",	SO_NONE},
-	{SP_REPORT_FILE,	"-sr",	SO_REQ_CMB},
-	{SP_OUTPUT_FILE,	"-so",	SO_REQ_CMB},
-	{SP_INPUT_FILE,		"-i" ,	SO_REQ_CMB},
-	SO_END_OF_OPTIONS
+    {SP_SECURITY_LEVEL, "-s" ,	SO_NONE},
+    {SP_HIDE_REPORT,    "-hr",	SO_NONE},
+    {SP_SHOW_OUTPUT,    "-so",	SO_NONE},
+    {SP_SHOW_STDERR,    "-se",	SO_NONE},
+    {SP_REPORT_FILE,    "-sr",	SO_REQ_CMB},
+    {SP_OUTPUT_FILE,    "-so",	SO_REQ_CMB},
+    {SP_INPUT_FILE,     "-i" ,	SO_REQ_CMB},
+    SO_END_OF_OPTIONS
 };
 
 CArguments::CArguments(int argc, char *argv[])

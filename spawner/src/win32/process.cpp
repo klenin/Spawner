@@ -1,122 +1,6 @@
 #include <process.h>
 #include <iostream>
 
-HANDLE stdout_read_mutex = NULL;
-
-//TODO: implement setters and getters
-
-CAsyncProcess::CAsyncProcess(string file):application(file), proc_status(process_not_started), std_input(STD_INPUT), std_output(STD_OUTPUT), std_error(STD_ERROR)
-{
-	//getting arguments from list
-	//working dir, etc
-    for (int i = 0; i < restriction_max; i++)
-        restrictions[i] = restriction_no_limit;
-}
-
-void CAsyncProcess::SetRestrictionForKind(restriction_kind_t kind, restriction_t value)
-{
-    restrictions[kind] = value;
-}
-
-restriction_t CAsyncProcess::GetRestrictionValue(restriction_kind_t kind)
-{
-    return restrictions[kind];
-}
-
-
-void CAsyncProcess::SetArguments()
-{
-	//is this required?..
-	//after-constructor argument changing
-}
-
-int CAsyncProcess::Run()
-{
-    setRestrictions();    
-    createProcess();
-    setupJobObject();
-
-    DWORD w = ResumeThread(process_info.hThread);
-
-    std_output.bufferize();
-    std_error.bufferize();
-
-    check = CreateThread(NULL, 0, check_limits, this, 0, NULL);
-    completition = CreateThread(NULL, 0, process_completition, this, 0, NULL);
-    //create in another thread waiting function
-
-	return 0;
-}
-
-void CAsyncProcess::RunAsync()
-{
-    // deprecated
-    /*    setRestrictions();
-    createProcess();
-    setupJobObject();
-    DWORD w = ResumeThread(process_info.hThread);
-
-    std_output.bufferize();
-    std_error.bufferize();
-
-    check = CreateThread(NULL, 0, check_limits, this, 0, NULL);
-    // create thread, waiting for completition
-//    wait();
-//    finish();*/
-}
-CAsyncProcess::~CAsyncProcess()
-{
-	//kills process if it is running
-}
-thread_return_t CAsyncProcess::process_completition(thread_param_t param)
-{
-    CAsyncProcess *self = (CAsyncProcess *)param;
-    self->wait();
-    return 0;
-}
-
-thread_return_t CAsyncProcess::check_limits(thread_param_t param)
-{
-    CAsyncProcess *self = (CAsyncProcess *)param;
-    DWORD t;
-    JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
-
-    if (self->GetRestrictionValue(restriction_processor_time_limit) == restriction_no_limit &&
-        self->GetRestrictionValue(restriction_user_time_limit) == restriction_no_limit &&
-        self->GetRestrictionValue(restriction_write_limit) == restriction_no_limit)
-        return 0;
-
-    t = GetTickCount();
-    while (1)
-    {
-        BOOL rs = QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL);
-        if (!rs)
-            break;
-
-        if (self->GetRestrictionValue(restriction_write_limit) != restriction_no_limit && 
-            bai.IoInfo.WriteTransferCount > (1024 * 1024) * self->GetRestrictionValue(restriction_write_limit))
-        {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT, COMPLETION_KEY, NULL);
-            break;
-        }
-
-        if (self->GetRestrictionValue(restriction_processor_time_limit) != restriction_no_limit && 
-            (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart > SECOND_COEFF * self->GetRestrictionValue(restriction_processor_time_limit))
-        {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);
-            break;
-        }
-        if (self->GetRestrictionValue(restriction_user_time_limit) != restriction_no_limit && 
-            (GetTickCount() - t) > self->GetRestrictionValue(restriction_user_time_limit))
-        {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);//freezed
-            break;
-        }
-        Sleep(1);
-    }
-    return 0;
-}
-
 void CAsyncProcess::createProcess()
 {
     ZeroMemory(&si, sizeof(si));
@@ -129,6 +13,7 @@ void CAsyncProcess::createProcess()
 
     si.lpDesktop = "";
     // TODO may be create new restriction for error handling
+    // FIX not restriction, but option
     SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
     SECURITY_ATTRIBUTES sa;
     ZeroMemory(&sa, sizeof(sa));
@@ -154,24 +39,24 @@ void CAsyncProcess::setRestrictions()
     memset(&joeli, 0, sizeof(joeli));
     joeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION;
 
-    if (GetRestrictionValue(restriction_memory_limit) != restriction_no_limit)
+    if (restrictions.get_restriction(restriction_memory_limit) != restriction_no_limit)
     {   
-        joeli.JobMemoryLimit = GetRestrictionValue(restriction_memory_limit);
-        joeli.ProcessMemoryLimit = GetRestrictionValue(restriction_memory_limit);
+        joeli.JobMemoryLimit = restrictions.get_restriction(restriction_memory_limit);
+        joeli.ProcessMemoryLimit = restrictions.get_restriction(restriction_memory_limit);
         joeli.BasicLimitInformation.LimitFlags |=
             JOB_OBJECT_LIMIT_PROCESS_MEMORY | JOB_OBJECT_LIMIT_JOB_MEMORY;
     }
 
     SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, &joeli, sizeof(joeli));
 
-    if (GetRestrictionValue(restriction_security_limit) != restriction_no_limit)
+    if (restrictions.get_restriction(restriction_security_limit) != restriction_no_limit)
     {
         JOBOBJECT_BASIC_UI_RESTRICTIONS buir;
         buir.UIRestrictionsClass = JOB_OBJECT_UILIMIT_ALL;
         SetInformationJobObject(hJob, JobObjectBasicUIRestrictions, &buir, sizeof(buir));
     }
-
-    if (GetRestrictionValue(restriction_gui_limit) != restriction_no_limit)
+    // another option
+    if (restrictions.get_restriction(restriction_gui_limit) != restriction_no_limit)
     {
         si.dwFlags |= STARTF_USESHOWWINDOW;
         si.wShowWindow = SW_HIDE;
@@ -193,10 +78,11 @@ void CAsyncProcess::setupJobObject()
 void CAsyncProcess::wait()
 {
     DWORD waitTime = INFINITE;
-    if (GetRestrictionValue(restriction_user_time_limit) != restriction_no_limit)
+    if (restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit)
     {
-        waitTime = GetRestrictionValue(restriction_user_time_limit);
+        waitTime = restrictions.get_restriction(restriction_user_time_limit);
         WaitForSingleObject(process_info.hProcess, waitTime); // TODO test this
+        //and then terminate job object!!!
     }
     DWORD dwNumBytes, dwKey;
     LPOVERLAPPED completedOverlapped;  
@@ -214,12 +100,14 @@ void CAsyncProcess::wait()
         case JOB_OBJECT_MSG_END_OF_PROCESS_TIME:
             message++;
             TerminateJobObject(hJob, 0);
-            proc_status = process_finished_terminated;
+            terminate_reason = terminate_reason_time_limit;
+            process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT:  
             message++;
             TerminateJobObject(hJob, 0);
-            proc_status = process_finished_terminated;
+            terminate_reason = terminate_reason_write_limit;
+            process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_EXIT_PROCESS:
             message++;
@@ -227,23 +115,25 @@ void CAsyncProcess::wait()
             break;
         case JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS:
             message++;
-            proc_status = process_finished_abnormally;
+            process_status = process_finished_abnormally;
             //*message = TM_ABNORMAL_EXIT_PROCESS;
             break;
         case JOB_OBJECT_MSG_PROCESS_MEMORY_LIMIT:
             message++;
             //*message = TM_MEMORY_LIMIT_EXCEEDED;
             TerminateJobObject(hJob, 0);
-            proc_status = process_finished_terminated;
+            terminate_reason = terminate_reason_memory_limit;
+            process_status = process_finished_terminated;
             break;
         };    
 
     } while (!message);
-    WaitForSingleObject(process_info.hProcess, 10000);// TODO
+    WaitForSingleObject(process_info.hProcess, 10000);// TODO: get rid of this
 }
 
 void CAsyncProcess::finish()
 {
+    get_report();
     std_output.finish();
     std_error.finish();
     CloseHandleSafe(hIOCP);
@@ -252,6 +142,277 @@ void CAsyncProcess::finish()
     CloseHandleSafe(process_info.hThread);
     CloseHandleSafe(check);
 }
+
+CAsyncProcess::CAsyncProcess(string file):application(file), process_status(process_not_started), terminate_reason(terminate_reason_not_terminated),
+    std_input(STD_INPUT), std_output(STD_OUTPUT), std_error(STD_ERROR)
+{
+	//getting arguments from list
+	//working dir, etc
+}
+
+void CAsyncProcess::SetArguments()
+{
+	//is this required?..
+	//after-constructor argument changing
+}
+
+int CAsyncProcess::Run()
+{
+    // deprecated
+    setRestrictions();
+    createProcess();
+    setupJobObject();
+
+    DWORD w = ResumeThread(process_info.hThread);
+
+    std_output.bufferize();
+    std_error.bufferize();
+
+    check = CreateThread(NULL, 0, check_limits, this, 0, NULL);
+    // create thread, waiting for completition
+    wait();
+    int exit_code = get_exit_code();
+    finish();
+
+	return exit_code;
+}
+
+void CAsyncProcess::RunAsync()
+{
+    setRestrictions();    
+    createProcess();
+    setupJobObject();
+
+    DWORD w = ResumeThread(process_info.hThread);
+
+    std_output.bufferize();
+    std_error.bufferize();
+
+    check = CreateThread(NULL, 0, check_limits, this, 0, NULL);
+    completition = CreateThread(NULL, 0, process_completition, this, 0, NULL);
+    //create in another thread waiting function
+}
+CAsyncProcess::~CAsyncProcess()
+{
+	//kills process if it is running
+}
+thread_return_t CAsyncProcess::process_completition(thread_param_t param)
+{
+    CAsyncProcess *self = (CAsyncProcess *)param;
+    self->wait();
+    return 0;
+}
+
+thread_return_t CAsyncProcess::check_limits(thread_param_t param)
+{
+    CAsyncProcess *self = (CAsyncProcess *)param;
+    DWORD t;
+    JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
+
+    if (self->restrictions.get_restriction(restriction_processor_time_limit) == restriction_no_limit &&
+        self->restrictions.get_restriction(restriction_user_time_limit) == restriction_no_limit &&
+        self->restrictions.get_restriction(restriction_write_limit) == restriction_no_limit)
+        return 0;
+
+    t = GetTickCount();
+    while (1)
+    {
+        BOOL rs = QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL);
+        if (!rs)
+            break;
+        //bai.BasicInfo.ThisPeriodTotalKernelTime
+
+        if (self->restrictions.get_restriction(restriction_write_limit) != restriction_no_limit && 
+            bai.IoInfo.WriteTransferCount > (1024 * 1024) * self->restrictions.get_restriction(restriction_write_limit))
+        {
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT, COMPLETION_KEY, NULL);
+            break;
+        }
+
+        if (self->restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit && 
+            (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart > SECOND_COEFF * self->restrictions.get_restriction(restriction_processor_time_limit))
+        {
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);
+            break;
+        }
+        if (self->restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit && 
+            (GetTickCount() - t) > self->restrictions.get_restriction(restriction_user_time_limit))
+        {
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);//freezed
+            break;
+        }
+        Sleep(1);
+    }
+    return 0;
+}
+
+unsigned long CAsyncProcess::get_exit_code()
+{
+    DWORD dwExitCode = 0;
+    if (!GetExitCodeProcess(process_info.hProcess, &dwExitCode))
+        throw "!!!";
+    return dwExitCode;
+}
+
+void CAsyncProcess::suspend()
+{
+    if (get_process_status() != process_still_active)
+        return;
+    dumpThreads(true);
+    process_status = process_suspended;
+    //SuspendThread(process_info.hThread);
+}
+
+void CAsyncProcess::resume()
+{
+    if (get_process_status() != process_suspended)
+        return;
+    while (!threads.empty())
+    {
+        handle_t handle = threads.front();
+        threads.pop_front();
+        ResumeThread(handle);
+        CloseHandle(handle);
+    }
+    process_status = process_still_active;
+    get_process_status();
+}
+
+void CAsyncProcess::dumpThreads(bool suspend)
+{
+    //if process is active and started!!!
+    if (!is_running())
+        return;
+    //while (threads.empty())
+    //{
+    //CloseHandle(threads.begin()
+    //}
+    threads.clear();
+    HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+    if (h != INVALID_HANDLE_VALUE)
+    {
+        THREADENTRY32 te;
+        te.dwSize = sizeof(te);
+        if (Thread32First(h, &te)) 
+        {
+            do {
+                if (te.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) +
+                    sizeof(te.th32OwnerProcessID) && te.th32OwnerProcessID == process_info.dwProcessId) 
+                {
+                    handle_t handle = OpenThread(THREAD_ALL_ACCESS, FALSE, te.th32ThreadID);
+                    if (suspend)
+                        SuspendThread(handle);
+                    //may be close here??
+                    threads.push_back(handle);
+                    /*printf("Process 0x%04x Thread 0x%04x\n",
+                    te.th32OwnerProcessID, te.th32ThreadID);*/
+                }
+                te.dwSize = sizeof(te);
+            } while (Thread32Next(h, &te));
+        }
+        CloseHandle(h);
+    }
+}
+
+process_status_t CAsyncProcess::get_process_status()
+{
+    // renew process status
+    //cout << process_status << endl;
+    // ************************* DIRTY HACK *************************//
+    if (terminate_reason != terminate_reason_not_terminated)
+        process_status = process_finished_terminated;
+    // ************************* END OF HACK ************************//
+    if (process_status & process_finished || process_status == process_suspended)
+        return process_status;
+    unsigned long exitcode = get_exit_code();
+    if (exitcode == exit_code_still_active)
+        process_status = process_still_active;
+    else
+        process_status = process_finished_abnormally;
+    if (exitcode == 0)
+        process_status = process_finished_normal;
+    return process_status;
+}
+
+istringstream & CAsyncProcess::stdoutput()
+{
+    return std_output.stream();
+}
+
+istringstream & CAsyncProcess::stderror()
+{
+    return std_error.stream();
+}
+
+bool CAsyncProcess::is_running()
+{
+    return (bool)(get_process_status() & process_is_active);
+}
+
+exception_t CAsyncProcess::get_exception()
+{
+    if (get_process_status() == process_finished_abnormally)
+        return (exception_t)get_exit_code();
+    else return exception_no_exception;
+}
+
+CReport CAsyncProcess::get_report()
+{
+    JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
+    if (hJob == INVALID_HANDLE_VALUE)
+        return report;
+    if (!QueryInformationJobObject(hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL))
+    {
+        //throw GetWin32Error("QueryInformationJobObject");
+    }
+
+    report.processor_time = bai.BasicInfo.TotalUserTime.QuadPart;
+    report.write_transfer_count = bai.IoInfo.WriteTransferCount;
+    //executionTime = (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart / SECOND_COEFF;
+    //written = (DOUBLE)bai.IoInfo.WriteTransferCount / (1024 * 1024);
+
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION xli;
+    if (!QueryInformationJobObject(hJob, JobObjectExtendedLimitInformation, &xli, sizeof(xli), NULL))
+    {
+        //throw GetWin32Error("QueryInformationJobObject");
+    }
+
+    report.peak_memory_used = xli.PeakJobMemoryUsed;
+
+    report.process_status = get_process_status();
+    report.exception = get_exception();
+    report.terminate_reason = get_terminate_reason();
+    return report;
+}
+
+terminate_reason_t CAsyncProcess::get_terminate_reason()
+{
+    return terminate_reason;
+}
+
+void CAsyncProcess::set_restrictions( const CRestrictions &Restrictions )
+{
+    // TODO m.b. test restrictions here
+    restrictions = Restrictions;
+}
+
+void CAsyncProcess::Finish()
+{
+    finish();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 CSimpleProcess::CSimpleProcess(string file):CAsyncProcess(file)

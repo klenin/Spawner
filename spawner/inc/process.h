@@ -8,6 +8,7 @@
 #include "platform.h"
 #include "pipes.h"
 #include "status.h"
+#include "report.h"
 
 using namespace std;
 
@@ -26,18 +27,28 @@ class CAsyncProcess
 {
 protected:
     CAsyncProcess(){};
-    restriction_t restrictions[restriction_max];
+
+    string application;
+    //arguments
+    //working directory
+
     process_info_t process_info;
+    startupinfo_t si;
+
     thread_t thread, check, completition;
     handle_t hIOCP;
     handle_t hJob;
-    startupinfo_t si;
-    process_status_t proc_status;
-    CPipe std_input, std_output, std_error;
 
     list<handle_t> threads;
 
-    string application;
+    CPipe std_input, std_output, std_error;
+
+    CRestrictions restrictions;
+
+    process_status_t process_status;
+    terminate_reason_t terminate_reason;
+    CReport report;
+
     static thread_return_t process_completition(thread_param_t param);
     static thread_return_t check_limits(thread_param_t param);
 
@@ -49,116 +60,27 @@ protected:
     void finish();
 public:
 	CAsyncProcess(string file);
-    void SetRestrictionForKind(restriction_kind_t kind, restriction_t value);
-    restriction_t GetRestrictionValue(restriction_kind_t kind);
 	void SetArguments(); // ?!
-	virtual int Run();
+	int Run();
     void RunAsync();
+    //TODO implement Wait function
 
 	~CAsyncProcess();
-    //bool Completed();
 
-    istringstream &stdoutput()
-    {
-        return std_output.stream();
-    }
+    istringstream &stdoutput();
+    istringstream &stderror();
 
-    istringstream &stderror()
-    {
-        return std_error.stream();
-    }
-    unsigned long get_exit_code()
-    {
-        DWORD dwExitCode = 0;
-        if (!GetExitCodeProcess(process_info.hProcess, &dwExitCode))
-            throw "!!!";
-        return dwExitCode;
-    }
-    void suspend()
-    {
-        if (get_process_status() != process_still_active)
-            return;
-        dumpThreads(true);
-        proc_status = process_suspended;
-        //SuspendThread(process_info.hThread);
-    }
-    void resume()
-    {
-        if (get_process_status() != process_suspended)
-            return;
-        while (!threads.empty())
-        {
-            handle_t handle = threads.front();
-            threads.pop_front();
-            ResumeThread(handle);
-            CloseHandle(handle);
-        }
-        proc_status = process_still_active;
-        get_process_status();
-    }
-    void dumpThreads(bool suspend = false)
-    {
-        //if process is active and started!!!
-        if (!is_running())
-            return;
-        //while (threads.empty())
-        //{
-            //CloseHandle(threads.begin()
-        //}
-        threads.clear();
-        HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-        if (h != INVALID_HANDLE_VALUE)
-        {
-            THREADENTRY32 te;
-            te.dwSize = sizeof(te);
-            if (Thread32First(h, &te)) 
-            {
-                do {
-                    if (te.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) +
-                        sizeof(te.th32OwnerProcessID) && te.th32OwnerProcessID == process_info.dwProcessId) 
-                    {
-                        handle_t handle = OpenThread(THREAD_ALL_ACCESS, FALSE, te.th32ThreadID);
-                        if (suspend)
-                            SuspendThread(handle);
-                        //may be close here??
-                        threads.push_back(handle);
-                        /*printf("Process 0x%04x Thread 0x%04x\n",
-                                te.th32OwnerProcessID, te.th32ThreadID);*/
-                    }
-                    te.dwSize = sizeof(te);
-                } while (Thread32Next(h, &te));
-            }
-            CloseHandle(h);
-        }
-    }
-    process_status_t get_process_status()
-    {
-        // renew process status
-        if (proc_status & process_finished || proc_status == process_suspended)
-            return proc_status;
-        unsigned long exitcode = get_exit_code();
-        if (exitcode == exit_code_still_active)
-            proc_status = process_still_active;
-        else
-            proc_status = process_finished_abnormally;
-        if (exitcode == 0)
-            proc_status = process_finished_normal;
-        return proc_status;
-    }
-    bool is_running()
-    {
-        return (bool)(get_process_status() & process_is_active);
-    }
-    exception_t get_exception()
-    {
-        if (get_process_status() == process_finished_abnormally)
-            return (exception_t)get_exit_code();
-        else return exception_no_exception;
-    }
-    void WaitAndFinish()
-    {
-        finish();
-    }
+    unsigned long get_exit_code();
+    void set_restrictions(const CRestrictions &Restrictions);
+    void suspend();
+    void resume();
+    void dumpThreads(bool suspend = false);
+    process_status_t get_process_status();
+    bool is_running();
+    exception_t get_exception();
+    terminate_reason_t get_terminate_reason();
+    CReport get_report();
+    void Finish();
 };
 
 class CSimpleProcess: public CAsyncProcess

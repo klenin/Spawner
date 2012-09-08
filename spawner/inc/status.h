@@ -46,6 +46,14 @@ typedef enum
     exception_no_exception              = 0x0,
     //exception_possible_deadlock         = EXCEPTION_POSSIBLE_DEADLOCK,
 } exception_t;
+typedef enum
+{
+    terminate_reason_not_terminated = 0x0,
+    terminate_reason_time_limit,
+    terminate_reason_write_limit,
+    terminate_reason_memory_limit,
+    terminate_reason_user_time_limit,
+} terminate_reason_t;
 
 #endif//_WIN32
 
