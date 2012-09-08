@@ -3,9 +3,11 @@
 #include <pipes.h>
 #include <iostream>
 #include "report.h"
+#include "uconvert.h"
 
 int main(int argc, char *argv[])
 {
+    convert(value_t(unit_memory_bit, degree_kilo), value_t(unit_memory_byte, degree_mega), 1500.0);
 	CArguments arg(argc, argv);
     SYSTEM_INFO si;
     GetSystemInfo(&si);
@@ -23,8 +25,12 @@ int main(int argc, char *argv[])
         cout << endl << get_exception_info(rep.exception, "%n: %t\n");
     process.Finish();
 
+
     string s;
     getline(process.stderror(), s);
     cout << "!!!!" << s;
+    double sec = convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second, degree_default), rep.processor_time/10.0);
+    double memory = convert(value_t(unit_memory_byte, degree_default), value_t(unit_memory_byte, degree_mega), (double)rep.peak_memory_used);
+    double written = convert(value_t(unit_memory_byte, degree_default), value_t(unit_memory_byte, degree_mega), (double)rep.write_transfer_count);
 	return 0;
 }
