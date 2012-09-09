@@ -23,10 +23,10 @@ using namespace std;
     SetCurrentDirectory
 */
 // may be create CProcess and CAsyncProcess
-class CAsyncProcess
+class CProcess
 {
 protected:
-    CAsyncProcess(){};
+    CProcess(){};
 
     string application;
     //arguments
@@ -44,6 +44,7 @@ protected:
     CPipe std_input, std_output, std_error;
 
     CRestrictions restrictions;
+    bool running;
 
     process_status_t process_status;
     terminate_reason_t terminate_reason;
@@ -59,13 +60,13 @@ protected:
     void wait();
     void finish();
 public:
-	CAsyncProcess(string file);
+	CProcess(string file);
 	void SetArguments(); // ?!
 	int Run();
     void RunAsync();
     //TODO implement Wait function
 
-	~CAsyncProcess();
+	~CProcess();
 
     istringstream &stdoutput();
     istringstream &stderror();
@@ -81,14 +82,7 @@ public:
     terminate_reason_t get_terminate_reason();
     CReport get_report();
     void Finish();
+    bool Wait(const unsigned long &ms_time);
 };
-
-class CSimpleProcess: public CAsyncProcess
-{
-public:
-    CSimpleProcess(string file);
-    int Run();
-};
-
 
 #endif//_PROCESS_H_

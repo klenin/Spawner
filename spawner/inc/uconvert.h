@@ -1,6 +1,9 @@
 #ifndef _UNIT_CONVERT_H_
 #define _UNIT_CONVERT_H_
 
+#include <string>
+using namespace std;
+
 typedef enum
 {
     degree_default  = 0x0,
@@ -43,12 +46,14 @@ const unsigned int unit_time    = 0x2;
 
 struct value_t
 {
-    value_t(const unit_t &unit_type, const degrees_enum &degree_type);
+    value_t(const unit_t &unit_type, const degrees_enum &degree_type = degree_default);
     unit_t unit_type;
     degrees_enum degree_type;
 };
 
 unsigned long convert(const value_t &from, const value_t &to, const unsigned long &val);
 double convert(const value_t &from, const value_t &to, const double &val);
+
+unsigned long convert(const value_t &to, const string &val, const unsigned long &default_value = 0);
 
 #endif//_UNIT_CONVERT_H_

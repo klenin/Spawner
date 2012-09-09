@@ -40,6 +40,7 @@ public:
     /* think about safer way of reading from pipe */
     istringstream &stream();
     size_t buffer_size();
+    void wait_for_pipe(const unsigned int &ms_time);
 private:
     handle_t reading_thread;
     handle_t reading_mutex;

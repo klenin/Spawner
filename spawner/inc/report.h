@@ -19,6 +19,7 @@ public:
     unsigned long peak_memory_used;
     unsigned long long write_transfer_count;
 //  size_t read_transfer_count;
+    unsigned int exit_code;
     size_t total_time;
     unsigned long long processor_time;
     unsigned long long kernel_time;

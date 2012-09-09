@@ -1,7 +1,7 @@
 #include <process.h>
 #include <iostream>
 
-void CAsyncProcess::createProcess()
+void CProcess::createProcess()
 {
     ZeroMemory(&si, sizeof(si));
 
@@ -29,7 +29,7 @@ void CAsyncProcess::createProcess()
     }
 }
 
-void CAsyncProcess::setRestrictions()
+void CProcess::setRestrictions()
 {
     /* implement restriction value check */
     hJob = CreateJobObject(NULL, NULL);
@@ -63,7 +63,7 @@ void CAsyncProcess::setRestrictions()
     }
 }
 
-void CAsyncProcess::setupJobObject()
+void CProcess::setupJobObject()
 {
     AssignProcessToJobObject(hJob, process_info.hProcess);
 
@@ -75,7 +75,7 @@ void CAsyncProcess::setupJobObject()
     SetInformationJobObject(hJob, JobObjectAssociateCompletionPortInformation, &joacp, sizeof(joacp));
 }
 
-void CAsyncProcess::wait()
+void CProcess::wait()
 {
     DWORD waitTime = INFINITE;
     if (restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit)
@@ -128,10 +128,13 @@ void CAsyncProcess::wait()
         };    
 
     } while (!message);
+    std_output.wait_for_pipe(100);
+    std_error.wait_for_pipe(100);
     WaitForSingleObject(process_info.hProcess, 10000);// TODO: get rid of this
+    running = false;
 }
 
-void CAsyncProcess::finish()
+void CProcess::finish()
 {
     get_report();
     std_output.finish();
@@ -143,25 +146,26 @@ void CAsyncProcess::finish()
     CloseHandleSafe(check);
 }
 
-CAsyncProcess::CAsyncProcess(string file):application(file), process_status(process_not_started), terminate_reason(terminate_reason_not_terminated),
-    std_input(STD_INPUT), std_output(STD_OUTPUT), std_error(STD_ERROR)
+CProcess::CProcess(string file):application(file), process_status(process_not_started), terminate_reason(terminate_reason_not_terminated),
+    std_input(STD_INPUT), std_output(STD_OUTPUT), std_error(STD_ERROR), running(false)
 {
 	//getting arguments from list
 	//working dir, etc
 }
 
-void CAsyncProcess::SetArguments()
+void CProcess::SetArguments()
 {
 	//is this required?..
 	//after-constructor argument changing
 }
 
-int CAsyncProcess::Run()
+int CProcess::Run()
 {
     // deprecated
     setRestrictions();
     createProcess();
     setupJobObject();
+    running = true;
 
     DWORD w = ResumeThread(process_info.hThread);
 
@@ -177,11 +181,12 @@ int CAsyncProcess::Run()
 	return exit_code;
 }
 
-void CAsyncProcess::RunAsync()
+void CProcess::RunAsync()
 {
     setRestrictions();    
     createProcess();
     setupJobObject();
+    running = true;
 
     DWORD w = ResumeThread(process_info.hThread);
 
@@ -190,22 +195,23 @@ void CAsyncProcess::RunAsync()
 
     check = CreateThread(NULL, 0, check_limits, this, 0, NULL);
     completition = CreateThread(NULL, 0, process_completition, this, 0, NULL);
+    //WaitForSingleObject(completition, 100); // TODO fix this
     //create in another thread waiting function
 }
-CAsyncProcess::~CAsyncProcess()
+CProcess::~CProcess()
 {
 	//kills process if it is running
 }
-thread_return_t CAsyncProcess::process_completition(thread_param_t param)
+thread_return_t CProcess::process_completition(thread_param_t param)
 {
-    CAsyncProcess *self = (CAsyncProcess *)param;
+    CProcess *self = (CProcess *)param;
     self->wait();
     return 0;
 }
 
-thread_return_t CAsyncProcess::check_limits(thread_param_t param)
+thread_return_t CProcess::check_limits(thread_param_t param)
 {
-    CAsyncProcess *self = (CAsyncProcess *)param;
+    CProcess *self = (CProcess *)param;
     DWORD t;
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
 
@@ -246,7 +252,7 @@ thread_return_t CAsyncProcess::check_limits(thread_param_t param)
     return 0;
 }
 
-unsigned long CAsyncProcess::get_exit_code()
+unsigned long CProcess::get_exit_code()
 {
     DWORD dwExitCode = 0;
     if (!GetExitCodeProcess(process_info.hProcess, &dwExitCode))
@@ -254,7 +260,7 @@ unsigned long CAsyncProcess::get_exit_code()
     return dwExitCode;
 }
 
-void CAsyncProcess::suspend()
+void CProcess::suspend()
 {
     if (get_process_status() != process_still_active)
         return;
@@ -263,7 +269,7 @@ void CAsyncProcess::suspend()
     //SuspendThread(process_info.hThread);
 }
 
-void CAsyncProcess::resume()
+void CProcess::resume()
 {
     if (get_process_status() != process_suspended)
         return;
@@ -278,7 +284,7 @@ void CAsyncProcess::resume()
     get_process_status();
 }
 
-void CAsyncProcess::dumpThreads(bool suspend)
+void CProcess::dumpThreads(bool suspend)
 {
     //if process is active and started!!!
     if (!is_running())
@@ -314,7 +320,7 @@ void CAsyncProcess::dumpThreads(bool suspend)
     }
 }
 
-process_status_t CAsyncProcess::get_process_status()
+process_status_t CProcess::get_process_status()
 {
     // renew process status
     //cout << process_status << endl;
@@ -334,29 +340,31 @@ process_status_t CAsyncProcess::get_process_status()
     return process_status;
 }
 
-istringstream & CAsyncProcess::stdoutput()
+istringstream & CProcess::stdoutput()
 {
     return std_output.stream();
 }
 
-istringstream & CAsyncProcess::stderror()
+istringstream & CProcess::stderror()
 {
     return std_error.stream();
 }
 
-bool CAsyncProcess::is_running()
+bool CProcess::is_running()
 {
+    if (running)
+        return process_is_active;
     return (bool)(get_process_status() & process_is_active);
 }
 
-exception_t CAsyncProcess::get_exception()
+exception_t CProcess::get_exception()
 {
     if (get_process_status() == process_finished_abnormally)
         return (exception_t)get_exit_code();
     else return exception_no_exception;
 }
 
-CReport CAsyncProcess::get_report()
+CReport CProcess::get_report()
 {
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
     if (hJob == INVALID_HANDLE_VALUE)
@@ -382,50 +390,27 @@ CReport CAsyncProcess::get_report()
     report.process_status = get_process_status();
     report.exception = get_exception();
     report.terminate_reason = get_terminate_reason();
+    report.exit_code = get_exit_code();
     return report;
 }
 
-terminate_reason_t CAsyncProcess::get_terminate_reason()
+terminate_reason_t CProcess::get_terminate_reason()
 {
     return terminate_reason;
 }
 
-void CAsyncProcess::set_restrictions( const CRestrictions &Restrictions )
+void CProcess::set_restrictions( const CRestrictions &Restrictions )
 {
     // TODO m.b. test restrictions here
     restrictions = Restrictions;
 }
 
-void CAsyncProcess::Finish()
+void CProcess::Finish()
 {
     finish();
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-CSimpleProcess::CSimpleProcess(string file):CAsyncProcess(file)
+bool CProcess::Wait(const unsigned long &ms_time)
 {
-    //getting arguments from list
-    //working dir, etc
-    //modify options for pipes
-}
-
-int CSimpleProcess::Run()
-{
-    CAsyncProcess::Run();
-    wait();
-    finish();
-    return 0;
+    return WaitForSingleObject(completition, ms_time);
 }

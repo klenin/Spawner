@@ -1,6 +1,8 @@
 #include "uconvert.h"
 
 #include <math.h>
+#include <sstream>
+
 
 struct degree_description
 {
@@ -107,4 +109,29 @@ double convert(const value_t &from, const value_t &to, const double &val)
         v = v*coeff;
 
     return v;
+}
+
+unsigned long convert(const value_t &to, const string &val, const unsigned long &default_value)
+{
+    string v = val;
+    value_t from(unit_no_unit);
+    if (to.unit_type == unit_no_unit)
+        return default_value;
+    std::istringstream iss(val);
+    double value = 0;
+    iss >> value;
+    int index = iss.tellg().seekpos();
+    if (index == -1)
+        return default_value;
+    v = v.substr(index, v.length() - index);
+    if (to.unit_type & unit_memory)
+    {
+        from = value_t(unit_memory_byte, degree_mega);
+    }
+    else
+    {
+        from = value_t(unit_time_second);
+    }
+    double result = abs(convert(from, to, value));
+    return (unsigned long)result;
 }

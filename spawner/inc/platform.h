@@ -35,6 +35,8 @@ const unsigned long exit_code_ok = 0;
 const unsigned long exit_code_still_active = STILL_ACTIVE;
 const unsigned long exit_code_exception_int_divide_by_zero = EXCEPTION_INT_DIVIDE_BY_ZERO;
 
+const unsigned long infinite = INFINITE;
+
 #else
 
 #endif//_WIN32

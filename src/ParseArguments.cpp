@@ -3,23 +3,6 @@
 #include <SimpleGlob.h>
 #include <stdio.h>
 
-enum
-{
-	SP_MEMORY_LIMIT,
-	SP_TIME_LIMIT,
-	SP_DEADLINE,
-	SP_WRITE_LIMIT,
-	SP_USER,
-	SP_PASSWORD,
-	SP_RUNAS,
-	SP_SECURITY_LEVEL,
-	SP_HIDE_REPORT,
-	SP_SHOW_OUTPUT,
-	SP_SHOW_STDERR,
-	SP_REPORT_FILE,
-	SP_OUTPUT_FILE,
-	SP_INPUT_FILE,
-};
 
 /*
   -ml:[n]            SP_MEMORY_LIMIT      Максимальный объем виртуальной памяти, выделенный процессу (в Mb).
@@ -44,39 +27,45 @@ enum
 // <-- move this to some sort of header
 // check if long attributes can be applied 
 CSimpleOpt::SOption Options[] = 
-{
-    {SP_MEMORY_LIMIT,   "-ml",	SO_REQ_CMB},
-    {SP_TIME_LIMIT,     "-tl",	SO_REQ_CMB},
-    {SP_DEADLINE,       "-d" ,	SO_REQ_CMB},
-    {SP_WRITE_LIMIT,    "-wl",	SO_REQ_CMB},
-    {SP_USER,           "-u" ,	SO_REQ_CMB},
-    {SP_PASSWORD,		"-p" ,	SO_REQ_CMB},
+{   
+    {SP_HELP,               "--help",	SO_NONE},
+    {SP_MEMORY_LIMIT,       "-app",	    SO_REQ_CMB},
+    {SP_MEMORY_LIMIT,       "-ml",      SO_REQ_CMB},
+    {SP_TIME_LIMIT,         "-tl",      SO_REQ_CMB},
+    {SP_DEADLINE,           "-d" ,      SO_REQ_CMB},
+    {SP_WRITE_LIMIT,        "-wl",      SO_REQ_CMB},
+    {SP_USER,               "-u" ,      SO_REQ_CMB},
+    {SP_PASSWORD,		    "-p" ,      SO_REQ_CMB},
 //	{SP_RUNAS,
-    {SP_SECURITY_LEVEL, "-s" ,	SO_NONE},
-    {SP_HIDE_REPORT,    "-hr",	SO_NONE},
-    {SP_SHOW_OUTPUT,    "-so",	SO_NONE},
-    {SP_SHOW_STDERR,    "-se",	SO_NONE},
-    {SP_REPORT_FILE,    "-sr",	SO_REQ_CMB},
-    {SP_OUTPUT_FILE,    "-so",	SO_REQ_CMB},
-    {SP_INPUT_FILE,     "-i" ,	SO_REQ_CMB},
+    {SP_SECURITY_LEVEL,     "-s" ,      SO_NONE},
+    {SP_HIDE_REPORT,        "-hr",      SO_NONE},
+    {SP_SHOW_OUTPUT,        "-so",      SO_NONE},
+    {SP_SHOW_STDERR,        "-se",      SO_NONE},
+    {SP_REPORT_FILE,        "-sr",      SO_REQ_CMB},
+    {SP_OUTPUT_FILE,        "-so",      SO_REQ_CMB},
+    {SP_INPUT_FILE,         "-i" ,      SO_REQ_CMB},
+    {SP_WORKING_DIRECTORY,  "-wd" ,     SO_REQ_CMB},
     SO_END_OF_OPTIONS
 };
 
 CArguments::CArguments(int argc, char *argv[])
 {
 	CSimpleOpt args(argc, argv, Options);
+    v = true;
     while (args.Next()) {
         if (args.LastError() == SO_SUCCESS) {
-//            if (args.OptionId() == OPT_HELP) {
-//                ShowUsage();
-//                return 0;
-//            }
+            if (args.OptionId() == SP_HELP) {
+                ShowUsage();
+            }
             printf("Option, ID: %d, Text: '%s', Argument: '%s'\n",
                 args.OptionId(), args.OptionText(),
                 args.OptionArg() ? args.OptionArg() : "");
+            arguments[(spawner_arguments)args.OptionId()] = args.OptionArg() ? args.OptionArg() : "";
         }
         else {
-            printf("Invalid argument: %s\n", args.OptionText());
+            printf("Invalid argument: %s\nUse spawner --help for details\n", args.OptionText());
+            v = false;
+            return;
         }
     }
 }
@@ -84,4 +73,24 @@ CArguments::CArguments(int argc, char *argv[])
 CArguments::~CArguments()
 {
 
+}
+
+bool CArguments::valid()
+{
+    return v;
+}
+
+void CArguments::ShowUsage()
+{
+    //writing usage
+}
+
+string CArguments::GetArgument(const spawner_arguments &key)
+{
+    return arguments[key];
+}
+
+bool CArguments::ArgumentExists(const spawner_arguments &key)
+{
+    return arguments.find(key) != arguments.end();
 }

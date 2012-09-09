@@ -135,3 +135,8 @@ thread_return_t CPipe::reading_body(thread_param_t param)
     }
     return 0;
 }
+
+void CPipe::wait_for_pipe( const unsigned int &ms_time )
+{
+    WaitForSingleObject(reading_thread, ms_time);
+}
