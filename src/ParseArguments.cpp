@@ -1,8 +1,8 @@
-#include <ParseArguments.h>
+#include "ParseArguments.h"
 #include <SimpleOpt.h>
 #include <SimpleGlob.h>
 #include <stdio.h>
-
+#include <iostream>
 
 /*
   -ml:[n]            SP_MEMORY_LIMIT      Максимальный объем виртуальной памяти, выделенный процессу (в Mb).
@@ -48,10 +48,21 @@ CSimpleOpt::SOption Options[] =
     SO_END_OF_OPTIONS
 };
 
+// Extracting program to execute and it's arguments
+// Getting spawner options
 CArguments::CArguments(int argc, char *argv[])
 {
-	CSimpleOpt args(argc, argv, Options);
-    v = true;
+    int i = 1;
+    for (i = 1 ; i < argc; i++)
+        if (*argv[i] != '-' && *argv[i] != '/') // please do not run programs which name starts with '-' or '/'
+            break;
+    v = false;
+
+    if (i >= argc)
+        return;
+
+	CSimpleOpt args(i, argv, Options);
+
     while (args.Next()) {
         if (args.LastError() == SO_SUCCESS) {
             if (args.OptionId() == SP_HELP) {
@@ -64,10 +75,15 @@ CArguments::CArguments(int argc, char *argv[])
         }
         else {
             printf("Invalid argument: %s\nUse spawner --help for details\n", args.OptionText());
-            v = false;
             return;
         }
     }
+    v = true;
+
+    // retrieving program, it's name and arguments
+
+    program = argv[i];
+    arguments_index = i+1; // not always
 }
 
 CArguments::~CArguments()
@@ -80,12 +96,24 @@ bool CArguments::valid()
     return v;
 }
 
+int CArguments::get_arguments_index()
+{
+    return arguments_index;
+}
+
+std::string CArguments::get_program()
+{
+    return program;
+}
+
 void CArguments::ShowUsage()
 {
     //writing usage
+    std::cout << "Usage: \tspawner [options] program [program options]" << std::endl;
+    std::cout << "\tspawner --help   to get this message" << std::endl;
 }
 
-string CArguments::GetArgument(const spawner_arguments &key)
+std::string CArguments::GetArgument(const spawner_arguments &key)
 {
     return arguments[key];
 }

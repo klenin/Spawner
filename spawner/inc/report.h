@@ -3,11 +3,15 @@
 
 #include <string>
 #include "status.h"
+#include "options.h"
+#include "restrictions.h"
 using namespace std;
 
 const char *get_exception_name(exception_t exception);
 const char *get_exception_text(exception_t exception);
-string get_exception_info(exception_t exception, string format);
+std::string get_exception_info(exception_t exception, string format);
+std::string get_status_text(process_status_t process_status);
+std::string get_terminate_reason(terminate_reason_t terminate_reason);
 
 class CReport// <-- struct?
 {
@@ -23,6 +27,9 @@ public:
     size_t total_time;
     unsigned long long processor_time;
     unsigned long long kernel_time;
+    CRestrictions restrictions; // to much overhead
+    COptions options;
+    string application_name;
 };
 
 #endif//_REPORT_H_

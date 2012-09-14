@@ -9,6 +9,7 @@
 #include "pipes.h"
 #include "status.h"
 #include "report.h"
+#include "options.h"
 
 using namespace std;
 
@@ -29,6 +30,8 @@ protected:
     CProcess(){};
 
     string application;
+    string worging_directory;
+    list<string> arguments;
     //arguments
     //working directory
 
@@ -44,6 +47,7 @@ protected:
     CPipe std_input, std_output, std_error;
 
     CRestrictions restrictions;
+    COptions options;
     bool running;
 
     process_status_t process_status;
@@ -56,7 +60,6 @@ protected:
     //to fix
     void createProcess();
     void setRestrictions();
-    void setupJobObject();
     void wait();
     void finish();
 public:
@@ -73,6 +76,7 @@ public:
 
     unsigned long get_exit_code();
     void set_restrictions(const CRestrictions &Restrictions);
+    void set_options(const COptions &Options);
     void suspend();
     void resume();
     void dumpThreads(bool suspend = false);

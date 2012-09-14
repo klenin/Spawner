@@ -73,10 +73,10 @@ unsigned int get_degree_index(const degrees_enum &degree)
 
 unsigned long convert(const value_t &from, const value_t &to, const unsigned long &val)
 {
-    return (unsigned long)convert(from, to, (double)val);
+    return (unsigned long)convert(from, to, (long double)val);
 }
 
-double convert(const value_t &from, const value_t &to, const double &val)
+long double convert(const value_t &from, const value_t &to, const long double &val)
 {
     unsigned int from_unit_index = get_unit_index(from.unit_type), 
         to_unit_index = get_unit_index(to.unit_type);
@@ -111,6 +111,38 @@ double convert(const value_t &from, const value_t &to, const double &val)
     return v;
 }
 
+string convert(const value_t &from, const value_t &to, const long double &val, const char *format, const long double &inf_value)
+{
+    if (val == inf_value)
+        return infinite_string;
+    double res = convert(from, to, val);
+    unsigned int to_unit_index = get_unit_index(to.unit_type);
+    unsigned int to_degree_index = get_degree_index(to.degree_type);
+    ostringstream osstream;
+    osstream << res;
+    for (unsigned int i = 0; i < strlen(format); i++)
+    {
+        switch (format[i])
+        {
+        case 'D':
+            osstream << degree_descriptions[to_degree_index].name;
+            break;
+        case 'd':
+            osstream << degree_descriptions[to_degree_index].short_name;
+            break;
+        case 'U':
+            osstream << unit_descriptions[to_unit_index].name;
+            break;
+        case 'u':
+            osstream << unit_descriptions[to_unit_index].short_name;
+            break;
+        default:
+            osstream << format[i]; break;
+
+        }
+    }
+    return osstream.str();
+}
 unsigned long convert(const value_t &to, const string &val, const unsigned long &default_value)
 {
     string v = val;
@@ -118,7 +150,7 @@ unsigned long convert(const value_t &to, const string &val, const unsigned long 
     if (to.unit_type == unit_no_unit)
         return default_value;
     std::istringstream iss(val);
-    double value = 0;
+    long double value = 0;
     iss >> value;
     int index = iss.tellg().seekpos();
     if (index == -1)
@@ -135,3 +167,4 @@ unsigned long convert(const value_t &to, const string &val, const unsigned long 
     double result = abs(convert(from, to, value));
     return (unsigned long)result;
 }
+

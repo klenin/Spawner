@@ -2,8 +2,7 @@
 #define _PARSE_ARGUMENTS_H_
 
 #include <map>
-
-using namespace std;
+#include <string>
 
 typedef enum
 {
@@ -31,14 +30,18 @@ class CArguments
 {
 private:
     bool v;
+    std::string program;
+    int arguments_index;
+    std::map<spawner_arguments, std::string> arguments;
 public:
 	CArguments(int argc, char *argv[]);
 	~CArguments();
     bool valid();
     void ShowUsage();
-    string GetArgument(const spawner_arguments &key);
+    int get_arguments_index();
+    std::string get_program();
+    std::string GetArgument(const spawner_arguments &key);
     bool ArgumentExists(const spawner_arguments &key);
-    map<spawner_arguments, string> arguments;
 };
 
 #endif//_PARSE_ARGUMENTS_H_

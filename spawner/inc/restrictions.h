@@ -8,8 +8,7 @@ typedef enum
     restriction_processor_time_limit    = 0x2,
     restriction_security_limit          = 0x3,
     restriction_write_limit             = 0x4,
-    restriction_gui_limit               = 0x5,//not restriction, but an option
-    restriction_max                     = 0x6
+    restriction_max                     = 0x5
 } restriction_kind_t;
 
 typedef enum

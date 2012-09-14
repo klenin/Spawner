@@ -44,6 +44,8 @@ typedef enum
 const unsigned int unit_memory  = 0x1;
 const unsigned int unit_time    = 0x2;
 
+const char infinite_string[] = "INFINITE";
+
 struct value_t
 {
     value_t(const unit_t &unit_type, const degrees_enum &degree_type = degree_default);
@@ -52,7 +54,8 @@ struct value_t
 };
 
 unsigned long convert(const value_t &from, const value_t &to, const unsigned long &val);
-double convert(const value_t &from, const value_t &to, const double &val);
+long double convert(const value_t &from, const value_t &to, const long double &val);
+string convert(const value_t &from, const value_t &to, const long double &val, const char *format, const long double &inf_value = -1);
 
 unsigned long convert(const value_t &to, const string &val, const unsigned long &default_value = 0);
 

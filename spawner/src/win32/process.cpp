@@ -1,6 +1,7 @@
 #include <process.h>
 #include <iostream>
 
+// Initializing winapi process with pipes and options
 void CProcess::createProcess()
 {
     ZeroMemory(&si, sizeof(si));
@@ -12,22 +13,58 @@ void CProcess::createProcess()
     si.hStdError = std_error.WritePipe();
 
     si.lpDesktop = "";
-    // TODO may be create new restriction for error handling
-    // FIX not restriction, but option
-    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
-    SECURITY_ATTRIBUTES sa;
-    ZeroMemory(&sa, sizeof(sa));
+
+    if (!options.show_gui)
+    {
+        si.dwFlags |= STARTF_USESHOWWINDOW;
+        si.wShowWindow = SW_HIDE;
+    }
+
+    // Extracting program name and generating cmd line
+    char *cmd;
+    const char *wd = (options.working_directory != "")?options.working_directory.c_str():NULL;
+    string command_line;
+    size_t  index_win = application.find_last_of('\\'), 
+            index_nix = application.find_last_of('/');
+
+    if (index_win != string::npos)
+        command_line = application.substr(index_win + 1);
+    else if (index_nix != string::npos)
+        command_line = application.substr(index_nix + 1);
+    else
+        command_line = application;
+
+    command_line = command_line + " " + options.get_arguments();
+    cmd = new char [command_line.size()+1];
+    strcpy(cmd, command_line.c_str());
+    
+    if (options.silent_errors)
+        SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+
     if ( !CreateProcess(application.c_str(),
-        "ls.exe -la",// replace with argument list construction
+        cmd,
         NULL, NULL,
         TRUE,
         PROCESS_CREATION_FLAGS,
-        NULL, NULL,
+        NULL, wd,
         &si, &process_info) )
     {
-        throw("!!!");
+        if ( !CreateProcess(NULL,
+        cmd,
+        NULL, NULL,
+        TRUE,
+        PROCESS_CREATION_FLAGS,
+        NULL, wd,
+        &si, &process_info) )
+        {
+            DWORD le = GetLastError();
+            throw("!!!");
+        }
     }
+    delete[] cmd;
 }
+
+// Initalizing jobobject objects
 
 void CProcess::setRestrictions()
 {
@@ -35,6 +72,7 @@ void CProcess::setRestrictions()
     hJob = CreateJobObject(NULL, NULL);
     DWORD le = GetLastError();
 
+    // Memory and time limit
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION joeli;
     memset(&joeli, 0, sizeof(joeli));
     joeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION;
@@ -49,22 +87,15 @@ void CProcess::setRestrictions()
 
     SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, &joeli, sizeof(joeli));
 
+    // Security limit
     if (restrictions.get_restriction(restriction_security_limit) != restriction_no_limit)
     {
         JOBOBJECT_BASIC_UI_RESTRICTIONS buir;
         buir.UIRestrictionsClass = JOB_OBJECT_UILIMIT_ALL;
         SetInformationJobObject(hJob, JobObjectBasicUIRestrictions, &buir, sizeof(buir));
     }
-    // another option
-    if (restrictions.get_restriction(restriction_gui_limit) != restriction_no_limit)
-    {
-        si.dwFlags |= STARTF_USESHOWWINDOW;
-        si.wShowWindow = SW_HIDE;
-    }
-}
 
-void CProcess::setupJobObject()
-{
+    // Assigning created process to job object
     AssignProcessToJobObject(hJob, process_info.hProcess);
 
     hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 1, 1);
@@ -134,6 +165,7 @@ void CProcess::wait()
     running = false;
 }
 
+// Finalization
 void CProcess::finish()
 {
     get_report();
@@ -162,9 +194,8 @@ void CProcess::SetArguments()
 int CProcess::Run()
 {
     // deprecated
-    setRestrictions();
     createProcess();
-    setupJobObject();
+    setRestrictions();
     running = true;
 
     DWORD w = ResumeThread(process_info.hThread);
@@ -183,9 +214,8 @@ int CProcess::Run()
 
 void CProcess::RunAsync()
 {
-    setRestrictions();    
     createProcess();
-    setupJobObject();
+    setRestrictions();    
     running = true;
 
     DWORD w = ResumeThread(process_info.hThread);
@@ -376,8 +406,6 @@ CReport CProcess::get_report()
 
     report.processor_time = bai.BasicInfo.TotalUserTime.QuadPart;
     report.write_transfer_count = bai.IoInfo.WriteTransferCount;
-    //executionTime = (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart / SECOND_COEFF;
-    //written = (DOUBLE)bai.IoInfo.WriteTransferCount / (1024 * 1024);
 
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION xli;
     if (!QueryInformationJobObject(hJob, JobObjectExtendedLimitInformation, &xli, sizeof(xli), NULL))
@@ -387,10 +415,16 @@ CReport CProcess::get_report()
 
     report.peak_memory_used = xli.PeakJobMemoryUsed;
 
+    report.application_name = application;
+
     report.process_status = get_process_status();
     report.exception = get_exception();
     report.terminate_reason = get_terminate_reason();
     report.exit_code = get_exit_code();
+
+    report.options = options;
+    report.restrictions = restrictions;
+
     return report;
 }
 
@@ -399,10 +433,15 @@ terminate_reason_t CProcess::get_terminate_reason()
     return terminate_reason;
 }
 
-void CProcess::set_restrictions( const CRestrictions &Restrictions )
+void CProcess::set_restrictions(const CRestrictions &Restrictions)
 {
     // TODO m.b. test restrictions here
     restrictions = Restrictions;
+}
+
+void CProcess::set_options(const COptions &Options)
+{
+    options = Options;
 }
 
 void CProcess::Finish()
@@ -412,5 +451,5 @@ void CProcess::Finish()
 
 bool CProcess::Wait(const unsigned long &ms_time)
 {
-    return WaitForSingleObject(completition, ms_time);
+    return WaitForSingleObject(completition, ms_time) != 0;
 }

@@ -56,6 +56,39 @@ const map_cell exception_identifiers[] = {
     {exception_no_exception             , "NO_EXCEPTION", ""},
 };
 
+const unsigned int process_status_descriptions_count = 6;
+const unsigned int terminate_reason_descriptions_count = 5;
+
+typedef struct
+{
+    process_status_t process_status;
+    char *name;
+} process_status_description;
+
+const process_status_description process_status_descriptions[] = {
+    {process_still_active,        "process_still_active"},
+    {process_suspended,           "process_suspended"},
+    {process_finished_normal,     "process_finished_normal"},
+    {process_finished_abnormally, "process_finished_abnormally"},
+    {process_finished_terminated, "process_finished_terminated"},
+    {process_not_started,         "process_not_started"},
+};
+
+typedef struct
+{
+    terminate_reason_t terminate_reason;
+    char *name;
+} terminate_reason_description;
+
+const terminate_reason_description terminate_reason_descriptions[] = {
+    {terminate_reason_not_terminated,  "terminate_reason_not_terminated"},
+    {terminate_reason_time_limit,      "terminate_reason_time_limit"},
+    {terminate_reason_write_limit,     "terminate_reason_write_limit"},
+    {terminate_reason_memory_limit,    "terminate_reason_memory_limit"},
+    {terminate_reason_user_time_limit, "terminate_reason_user_time_limit"},
+
+};
+
 unsigned int get_exception_index(exception_t exception)
 {
     //TODO implement with map
@@ -88,7 +121,7 @@ const char *get_exception_text(exception_t exception)
     return exception_identifiers[index].text;
 }
 
-string get_exception_info(exception_t exception, string format)
+std::string get_exception_info(exception_t exception, std::string format)
 {
     string res = format;
     unsigned int index = get_exception_index(exception);
@@ -100,5 +133,20 @@ string get_exception_info(exception_t exception, string format)
     //std::replace(res.begin(), res.end(), string("%n"), string(get_exception_name(index)));
     //std::replace(res.begin(), res.end(), string("%t"), string(get_exception_text(index)));
     return res;
+}
+
+std::string get_status_text(process_status_t process_status)
+{
+    for (unsigned int i = 0; i < process_status_descriptions_count; i++)
+        if (process_status_descriptions[i].process_status == process_status)
+            return process_status_descriptions[i].name;
+    return process_status_descriptions[0].name;
+}
+std::string get_terminate_reason(terminate_reason_t terminate_reason)
+{
+    for (unsigned int i = 0; i < terminate_reason_descriptions_count; i++)
+        if (terminate_reason_descriptions[i].terminate_reason == terminate_reason)
+            return terminate_reason_descriptions[i].name;
+    return terminate_reason_descriptions[0].name;
 }
 
