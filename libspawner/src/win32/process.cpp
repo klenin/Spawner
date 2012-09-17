@@ -156,9 +156,18 @@ void CProcess::wait()
             terminate_reason = terminate_reason_memory_limit;
             process_status = process_finished_terminated;
             break;
-        };    
+        case JOB_OBJECT_MSG_JOB_MEMORY_LIMIT:
+            message++;
+            //*message = TM_MEMORY_LIMIT_EXCEEDED;
+            TerminateJobObject(hJob, 0);
+            terminate_reason = terminate_reason_memory_limit;
+            process_status = process_finished_terminated;
+            break;
+        };
+        //cout << dwNumBytes;
 
     } while (!message);
+    GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);;
     std_output.wait_for_pipe(100);
     std_error.wait_for_pipe(100);
     WaitForSingleObject(process_info.hProcess, 10000);// TODO: get rid of this

@@ -2,7 +2,7 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
 
 # Project name
-PROJECT (lib-spawner)
+PROJECT (libspawner)
 
 # Project version
 SET (${PROJECT_NAME}_MAJOR_VERSION 0)
