@@ -1,5 +1,5 @@
-#ifndef _PLATFORM_H_
-#define _PLATFORM_H_
+#ifndef _SPAWNER_PLATFORM_H_
+#define _SPAWNER_PLATFORM_H_
 
 /************************************************************************/
 /* GLOBAL TODO                                                          */
@@ -9,8 +9,8 @@
 
 #ifdef _WIN32
 
-#include <Windows.h>
-#include <TlHelp32.h>
+#include <windows.h>
+#include <tlhelp32.h>
 
 typedef HANDLE thread_t;
 
@@ -20,6 +20,7 @@ typedef HANDLE thread_t;
 #define COMPLETION_KEY 1
 
 #define JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT 11
+#define JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT 12
 #define SECOND_COEFF 10000
 
 typedef PROCESS_INFORMATION process_info_t;
@@ -41,4 +42,4 @@ const unsigned long infinite = INFINITE;
 
 #endif//_WIN32
 
-#endif//_PLATFORM_H_
+#endif//_SPAWNER_PLATFORM_H_

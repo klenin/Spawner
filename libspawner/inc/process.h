@@ -1,5 +1,5 @@
-#ifndef _PROCESS_H_
-#define _PROCESS_H_
+#ifndef _SPAWNER_PROCESS_H_
+#define _SPAWNER_PROCESS_H_
 
 #include <list>
 #include <string>
@@ -63,7 +63,7 @@ protected:
     void wait();
     void finish();
 public:
-	CProcess(string file);
+	CProcess(const string &file);
 	void SetArguments(); // ?!
 	int Run();
     void RunAsync();
@@ -89,4 +89,4 @@ public:
     bool Wait(const unsigned long &ms_time);
 };
 
-#endif//_PROCESS_H_
+#endif//_SPAWNER_PROCESS_H_

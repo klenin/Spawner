@@ -1,5 +1,5 @@
-#ifndef _RESTRICTIONS_H_
-#define _RESTRICTIONS_H_
+#ifndef _SPAWNER_RESTRICTIONS_H_
+#define _SPAWNER_RESTRICTIONS_H_
 
 typedef enum
 {
@@ -44,4 +44,4 @@ public:
 
 
 
-#endif//_RESTRICTIONS_H_
+#endif//_SPAWNER_RESTRICTIONS_H_

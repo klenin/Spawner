@@ -1,5 +1,5 @@
-#ifndef _PIPES_H_
-#define _PIPES_H_
+#ifndef _SPAWNER_PIPES_H_
+#define _SPAWNER_PIPES_H_
 
 #include "platform.h"
 #include <sstream>
@@ -51,4 +51,4 @@ private:
     std_pipe_t pipe_type;
 };
 
-#endif//_PIPES_H_
+#endif//_SPAWNER_PIPES_H_

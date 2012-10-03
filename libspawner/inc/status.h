@@ -1,5 +1,5 @@
-#ifndef _STATUS_H_
-#define _STATUS_H_
+#ifndef _SPAWNER_STATUS_H_
+#define _SPAWNER_STATUS_H_
 
 #include "platform.h"
 
@@ -57,4 +57,4 @@ typedef enum
 
 #endif//_WIN32
 
-#endif//_STATUS_H_
+#endif//_SPAWNER_STATUS_H_

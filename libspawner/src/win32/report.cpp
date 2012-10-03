@@ -66,12 +66,12 @@ typedef struct
 } process_status_description;
 
 const process_status_description process_status_descriptions[] = {
-    {process_still_active,        "process_still_active"},
-    {process_suspended,           "process_suspended"},
-    {process_finished_normal,     "process_finished_normal"},
-    {process_finished_abnormally, "process_finished_abnormally"},
-    {process_finished_terminated, "process_finished_terminated"},
-    {process_not_started,         "process_not_started"},
+    {process_still_active,        "PROCESS_STILL_ACTIVE"},
+    {process_suspended,           "PROCESS_SUSPENDED"},
+    {process_finished_normal,     "PROCESS_FINISHED_NORMAL"},
+    {process_finished_abnormally, "PROCESS_FINISHED_ABNORMALLY"},
+    {process_finished_terminated, "PROCESS_FINISHED_TERMINATED"},
+    {process_not_started,         "PROCESS_NOT_STARTED"},
 };
 
 typedef struct
@@ -81,12 +81,11 @@ typedef struct
 } terminate_reason_description;
 
 const terminate_reason_description terminate_reason_descriptions[] = {
-    {terminate_reason_not_terminated,  "terminate_reason_not_terminated"},
-    {terminate_reason_time_limit,      "terminate_reason_time_limit"},
-    {terminate_reason_write_limit,     "terminate_reason_write_limit"},
-    {terminate_reason_memory_limit,    "terminate_reason_memory_limit"},
-    {terminate_reason_user_time_limit, "terminate_reason_user_time_limit"},
-
+    {terminate_reason_not_terminated,  "TERMINATE_REASON_NOT_TERMINATED"},
+    {terminate_reason_time_limit,      "TERMINATE_REASON_TIME_LIMIT"},
+    {terminate_reason_write_limit,     "TERMINATE_REASON_WRITE_LIMIT"},
+    {terminate_reason_memory_limit,    "TERMINATE_REASON_MEMORY_LIMIT"},
+    {terminate_reason_user_time_limit, "TERMINATE_REASON_USER_TIME_LIMIT"},
 };
 
 unsigned int get_exception_index(exception_t exception)

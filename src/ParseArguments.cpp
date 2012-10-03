@@ -68,9 +68,9 @@ CArguments::CArguments(int argc, char *argv[])
             if (args.OptionId() == SP_HELP) {
                 ShowUsage();
             }
-            printf("Option, ID: %d, Text: '%s', Argument: '%s'\n",
+            /*printf("Option, ID: %d, Text: '%s', Argument: '%s'\n",
                 args.OptionId(), args.OptionText(),
-                args.OptionArg() ? args.OptionArg() : "");
+                args.OptionArg() ? args.OptionArg() : "");*/
             arguments[(spawner_arguments)args.OptionId()] = args.OptionArg() ? args.OptionArg() : "";
         }
         else {

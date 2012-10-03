@@ -1,5 +1,5 @@
-#ifndef _PROCESS_PROXY_H_
-#define _PROCESS_PROXY_H_
+#ifndef _SPAWNER_PROCESS_PROXY_H_
+#define _SPAWNER_PROCESS_PROXY_H_
 
 #include "platform.h"
 
@@ -13,4 +13,4 @@ public:
 };
 
 
-#endif//_PROCESS_PROXY_H_
+#endif//_SPAWNER_PROCESS_PROXY_H_

@@ -1,5 +1,5 @@
-#ifndef _REPORT_H_
-#define _REPORT_H_
+#ifndef _SPAWNER_REPORT_H_
+#define _SPAWNER_REPORT_H_
 
 #include <string>
 #include "status.h"
@@ -32,4 +32,4 @@ public:
     string application_name;
 };
 
-#endif//_REPORT_H_
+#endif//_SPAWNER_REPORT_H_

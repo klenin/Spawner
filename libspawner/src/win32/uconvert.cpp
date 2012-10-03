@@ -2,6 +2,8 @@
 
 #include <math.h>
 #include <sstream>
+#include <string.h>
+#include <stdlib.h>
 
 
 struct degree_description
@@ -119,6 +121,8 @@ string convert(const value_t &from, const value_t &to, const long double &val, c
     unsigned int to_unit_index = get_unit_index(to.unit_type);
     unsigned int to_degree_index = get_degree_index(to.degree_type);
     ostringstream osstream;
+    osstream.setf(ios::fixed,ios::floatfield);
+    osstream.precision(15);
     osstream << res;
     for (unsigned int i = 0; i < strlen(format); i++)
     {
@@ -152,10 +156,10 @@ unsigned long convert(const value_t &to, const string &val, const unsigned long 
     std::istringstream iss(val);
     long double value = 0;
     iss >> value;
-    int index = iss.tellg().seekpos();
-    if (index == -1)
+    int current_index = iss.tellg();
+    if (current_index == -1)
         return default_value;
-    v = v.substr(index, v.length() - index);
+    v = v.substr(current_index, v.length() - current_index);
     if (to.unit_type & unit_memory)
     {
         from = value_t(unit_memory_byte, degree_mega);

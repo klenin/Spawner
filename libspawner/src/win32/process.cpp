@@ -1,5 +1,7 @@
 #include <process.h>
 #include <iostream>
+#include <windows.h>
+#include <winbase.h>
 
 // Initializing winapi process with pipes and options
 void CProcess::createProcess()
@@ -7,7 +9,7 @@ void CProcess::createProcess()
     ZeroMemory(&si, sizeof(si));
 
     si.cb = sizeof(si);
-    si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+    si.dwFlags = STARTF_USESTDHANDLES;
     si.hStdInput = std_input.ReadPipe();
     si.hStdOutput = std_output.WritePipe();
     si.hStdError = std_error.WritePipe();
@@ -34,13 +36,15 @@ void CProcess::createProcess()
     else
         command_line = application;
 
-    command_line = command_line + " " + options.get_arguments();
+    command_line = command_line + " " + (options.string_arguments==""?options.get_arguments():options.string_arguments);
     cmd = new char [command_line.size()+1];
     strcpy(cmd, command_line.c_str());
     
     if (options.silent_errors)
         SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
 
+    // check if program exists or smth like this
+    // if not exists try to execute full cmd
     if ( !CreateProcess(application.c_str(),
         cmd,
         NULL, NULL,
@@ -58,6 +62,7 @@ void CProcess::createProcess()
         &si, &process_info) )
         {
             DWORD le = GetLastError();
+            delete[] cmd;
             throw("!!!");
         }
     }
@@ -91,7 +96,11 @@ void CProcess::setRestrictions()
     if (restrictions.get_restriction(restriction_security_limit) != restriction_no_limit)
     {
         JOBOBJECT_BASIC_UI_RESTRICTIONS buir;
+#ifdef JOB_OBJECT_UILIMIT_ALL
         buir.UIRestrictionsClass = JOB_OBJECT_UILIMIT_ALL;
+#else
+        buir.UIRestrictionsClass = 0x000000FF;
+#endif
         SetInformationJobObject(hJob, JobObjectBasicUIRestrictions, &buir, sizeof(buir));
     }
 
@@ -113,6 +122,7 @@ void CProcess::wait()
     {
         waitTime = restrictions.get_restriction(restriction_user_time_limit);
         WaitForSingleObject(process_info.hProcess, waitTime); // TODO test this
+        //PostQueuedCompletionStatus(hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);
         //and then terminate job object!!!
     }
     DWORD dwNumBytes, dwKey;
@@ -163,6 +173,13 @@ void CProcess::wait()
             terminate_reason = terminate_reason_memory_limit;
             process_status = process_finished_terminated;
             break;
+        case JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT:
+            message++;
+            //*message = TM_MEMORY_LIMIT_EXCEEDED;
+            TerminateJobObject(hJob, 0);
+            terminate_reason = terminate_reason_user_time_limit;
+            process_status = process_finished_terminated;
+            break;
         };
         //cout << dwNumBytes;
 
@@ -187,7 +204,7 @@ void CProcess::finish()
     CloseHandleSafe(check);
 }
 
-CProcess::CProcess(string file):application(file), process_status(process_not_started), terminate_reason(terminate_reason_not_terminated),
+CProcess::CProcess(const string &file):application(file), process_status(process_not_started), terminate_reason(terminate_reason_not_terminated),
     std_input(STD_INPUT), std_output(STD_OUTPUT), std_error(STD_ERROR), running(false)
 {
 	//getting arguments from list
@@ -283,7 +300,7 @@ thread_return_t CProcess::check_limits(thread_param_t param)
         if (self->restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit && 
             (GetTickCount() - t) > self->restrictions.get_restriction(restriction_user_time_limit))
         {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);//freezed
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);//freezed
             break;
         }
         Sleep(1);
