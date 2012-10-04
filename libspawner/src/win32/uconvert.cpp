@@ -147,6 +147,7 @@ string convert(const value_t &from, const value_t &to, const long double &val, c
     }
     return osstream.str();
 }
+
 unsigned long convert(const value_t &to, const string &val, const unsigned long &default_value)
 {
     string v = val;
@@ -154,12 +155,15 @@ unsigned long convert(const value_t &to, const string &val, const unsigned long 
     if (to.unit_type == unit_no_unit)
         return default_value;
     std::istringstream iss(val);
-    long double value = 0;
+    long double value = 0.0;
     iss >> value;
     int current_index = iss.tellg();
-    if (current_index == -1)
+    if (current_index == -1 && value == 0.0)
         return default_value;
-    v = v.substr(current_index, v.length() - current_index);
+    if (current_index != -1)
+        v = v.substr(current_index, v.length() - current_index);
+    else
+        v = "";
     if (to.unit_type & unit_memory)
     {
         from = value_t(unit_memory_byte, degree_mega);
