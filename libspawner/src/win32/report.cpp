@@ -53,7 +53,7 @@ const map_cell exception_identifiers[] = {
         ,"A page of memory that marks the end of a data structure, such as a stack or an array, has been accessed."},
     {exception_invalid_handle           , "EXCEPTION_INVALID_HANDLE"
         ,"Invalid handle."}, // fix this
-    {exception_no_exception             , "NO_EXCEPTION", ""},
+    {exception_exception_no             , "EXCEPTION_NO", ""},
 };
 
 const unsigned int process_status_descriptions_count = 6;

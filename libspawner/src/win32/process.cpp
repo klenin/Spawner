@@ -117,13 +117,9 @@ void CProcess::setRestrictions()
 
 void CProcess::wait()
 {
-    DWORD waitTime = INFINITE;
-    if (restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit)
+    if (restrictions.get_restriction(restriction_user_time_limit) == restriction_no_limit)
     {
-        waitTime = restrictions.get_restriction(restriction_user_time_limit);
-        WaitForSingleObject(process_info.hProcess, waitTime); // TODO test this
-        //PostQueuedCompletionStatus(hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);
-        //and then terminate job object!!!
+        WaitForSingleObject(process_info.hProcess, INFINITE);
     }
     DWORD dwNumBytes, dwKey;
     LPOVERLAPPED completedOverlapped;  
@@ -281,7 +277,11 @@ thread_return_t CProcess::check_limits(thread_param_t param)
     {
         BOOL rs = QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL);
         if (!rs)
+        {
+            DWORD le = GetLastError();
+            cout << "!!!!" << le;
             break;
+        }
         //bai.BasicInfo.ThisPeriodTotalKernelTime
 
         if (self->restrictions.get_restriction(restriction_write_limit) != restriction_no_limit && 
@@ -417,7 +417,7 @@ exception_t CProcess::get_exception()
 {
     if (get_process_status() == process_finished_abnormally)
         return (exception_t)get_exit_code();
-    else return exception_no_exception;
+    else return exception_exception_no;
 }
 
 CReport CProcess::get_report()

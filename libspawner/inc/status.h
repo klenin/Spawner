@@ -43,7 +43,7 @@ typedef enum
     exception_invalid_disposition       = EXCEPTION_INVALID_DISPOSITION,
     exception_guard_page                = EXCEPTION_GUARD_PAGE,
     exception_invalid_handle            = EXCEPTION_INVALID_HANDLE,
-    exception_no_exception              = 0x0,
+    exception_exception_no              = 0x0,
     //exception_possible_deadlock         = EXCEPTION_POSSIBLE_DEADLOCK,
 } exception_t;
 typedef enum
