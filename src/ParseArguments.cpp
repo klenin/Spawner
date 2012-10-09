@@ -29,13 +29,14 @@
 CSimpleOpt::SOption Options[] = 
 {   
     {SP_HELP,               "--help",	SO_NONE},
-    {SP_MEMORY_LIMIT,       "-app",	    SO_REQ_CMB},
+//  {SP_MEMORY_LIMIT,       "-app",	    SO_REQ_CMB},
     {SP_MEMORY_LIMIT,       "-ml",      SO_REQ_CMB},
     {SP_TIME_LIMIT,         "-tl",      SO_REQ_CMB},
     {SP_DEADLINE,           "-d" ,      SO_REQ_CMB},
     {SP_WRITE_LIMIT,        "-wl",      SO_REQ_CMB},
     {SP_USER,               "-u" ,      SO_REQ_CMB},
-    {SP_PASSWORD,		    "-p" ,      SO_REQ_CMB},
+    {SP_PASSWORD,	        "-p" ,      SO_REQ_CMB},
+    {SP_LOAD_RATIO,	        "-lr" ,     SO_REQ_CMB},
 //	{SP_RUNAS,
     {SP_SECURITY_LEVEL,     "-s" ,      SO_NONE},
     {SP_HIDE_REPORT,        "-hr",      SO_NONE},

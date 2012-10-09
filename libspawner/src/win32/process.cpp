@@ -148,32 +148,33 @@ void CProcess::wait()
             break;
         case JOB_OBJECT_MSG_EXIT_PROCESS:
             message++;
-            //*message = TM_EXIT_PROCESS;
             break;
         case JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS:
             message++;
             process_status = process_finished_abnormally;
-            //*message = TM_ABNORMAL_EXIT_PROCESS;
             break;
         case JOB_OBJECT_MSG_PROCESS_MEMORY_LIMIT:
             message++;
-            //*message = TM_MEMORY_LIMIT_EXCEEDED;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_memory_limit;
             process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_JOB_MEMORY_LIMIT:
             message++;
-            //*message = TM_MEMORY_LIMIT_EXCEEDED;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_memory_limit;
             process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT:
             message++;
-            //*message = TM_MEMORY_LIMIT_EXCEEDED;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_user_time_limit;
+            process_status = process_finished_terminated;
+            break;
+        case JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT:
+            message++;
+            TerminateJobObject(hJob, 0);
+            terminate_reason = terminate_reason_load_ratio_limit;
             process_status = process_finished_terminated;
             break;
         };
@@ -269,10 +270,12 @@ thread_return_t CProcess::check_limits(thread_param_t param)
 
     if (self->restrictions.get_restriction(restriction_processor_time_limit) == restriction_no_limit &&
         self->restrictions.get_restriction(restriction_user_time_limit) == restriction_no_limit &&
-        self->restrictions.get_restriction(restriction_write_limit) == restriction_no_limit)
+        self->restrictions.get_restriction(restriction_write_limit) == restriction_no_limit &&
+        self->restrictions.get_restriction(restriction_load_ratio) == restriction_no_limit)
         return 0;
 
     t = GetTickCount();
+    double ratio = 10000.0f;
     while (1)
     {
         BOOL rs = QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL);
@@ -302,6 +305,16 @@ thread_return_t CProcess::check_limits(thread_param_t param)
         {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);//freezed
             break;
+        }
+        if (self->restrictions.get_restriction(restriction_load_ratio) != restriction_no_limit)
+        {
+            if (GetTickCount() - t > 1000)//change to time limit
+                ratio = (ratio + (double)bai.BasicInfo.TotalUserTime.QuadPart/(GetTickCount() - t))*0.5f;// make everything integer
+            if (ratio < 10.0f*self->restrictions.get_restriction(restriction_load_ratio))
+            {
+                PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT, COMPLETION_KEY, NULL);//freezed
+                break;
+            }
         }
         Sleep(1);
     }

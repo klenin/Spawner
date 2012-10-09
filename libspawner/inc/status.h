@@ -53,6 +53,7 @@ typedef enum
     terminate_reason_write_limit,
     terminate_reason_memory_limit,
     terminate_reason_user_time_limit,
+    terminate_reason_load_ratio_limit,
 } terminate_reason_t;
 
 #endif//_WIN32

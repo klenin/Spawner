@@ -22,6 +22,7 @@ typedef enum
     SP_REPORT_FILE,
     SP_OUTPUT_FILE,
     SP_INPUT_FILE,
+    SP_LOAD_RATIO,
     SP_WORKING_DIRECTORY,
 } spawner_arguments;
 

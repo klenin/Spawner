@@ -19,6 +19,7 @@ string format_report(CReport rep)
     osstream << "DeadLine:                  " << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), rep.restrictions.get_restriction(restriction_processor_time_limit), " (u)", restriction_no_limit) << std::endl;
     osstream << "MemoryLimit:               " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.restrictions.get_restriction(restriction_memory_limit), " (du)", restriction_no_limit) << std::endl;
     osstream << "WriteLimit:                " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.restrictions.get_restriction(restriction_write_limit), " (du)", restriction_no_limit) << std::endl;
+    osstream << "LoadRatioLimit:            " << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), rep.restrictions.get_restriction(restriction_load_ratio), " (%)", restriction_no_limit) << std::endl;
     osstream << "----------------------------------------------" << std::endl;
     osstream << "UserTime:                  " << 
         convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), rep.processor_time/10.0, " (u)") << std::endl;
@@ -73,6 +74,17 @@ int main(int argc, char *argv[])
     {
         restrictions.set_restriction(restriction_user_time_limit, convert(value_t(unit_time_second, degree_milli), 
             arguments.GetArgument(SP_TIME_LIMIT), restriction_no_limit));
+    }
+
+    if (arguments.ArgumentExists(SP_LOAD_RATIO))
+    {
+        restrictions.set_restriction(restriction_load_ratio, convert(value_t(unit_time_second, degree_milli), 
+            arguments.GetArgument(SP_LOAD_RATIO), restriction_no_limit));//dirty hack
+    }
+
+    if (arguments.ArgumentExists(SP_WORKING_DIRECTORY))
+    {
+        options.working_directory = arguments.GetArgument(SP_WORKING_DIRECTORY);
     }
 
     CProcess process(arguments.get_program());

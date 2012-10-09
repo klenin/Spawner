@@ -57,7 +57,7 @@ const map_cell exception_identifiers[] = {
 };
 
 const unsigned int process_status_descriptions_count = 6;
-const unsigned int terminate_reason_descriptions_count = 5;
+const unsigned int terminate_reason_descriptions_count = 6;
 
 typedef struct
 {
@@ -81,11 +81,12 @@ typedef struct
 } terminate_reason_description;
 
 const terminate_reason_description terminate_reason_descriptions[] = {
-    {terminate_reason_not_terminated,  "TERMINATE_REASON_NOT_TERMINATED"},
-    {terminate_reason_time_limit,      "TERMINATE_REASON_TIME_LIMIT"},
-    {terminate_reason_write_limit,     "TERMINATE_REASON_WRITE_LIMIT"},
-    {terminate_reason_memory_limit,    "TERMINATE_REASON_MEMORY_LIMIT"},
-    {terminate_reason_user_time_limit, "TERMINATE_REASON_USER_TIME_LIMIT"},
+    {terminate_reason_not_terminated,   "TERMINATE_REASON_NOT_TERMINATED"},
+    {terminate_reason_time_limit,       "TERMINATE_REASON_TIME_LIMIT"},
+    {terminate_reason_write_limit,      "TERMINATE_REASON_WRITE_LIMIT"},
+    {terminate_reason_memory_limit,     "TERMINATE_REASON_MEMORY_LIMIT"},
+    {terminate_reason_user_time_limit,  "TERMINATE_REASON_USER_TIME_LIMIT"},
+    {terminate_reason_load_ratio_limit, "TERMINATE_REASON_LOAD_RATIO_LIMIT"},
 };
 
 unsigned int get_exception_index(exception_t exception)
