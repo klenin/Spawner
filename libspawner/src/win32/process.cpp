@@ -119,7 +119,8 @@ void CProcess::wait()
 {
     if (restrictions.get_restriction(restriction_user_time_limit) == restriction_no_limit)
     {
-        WaitForSingleObject(process_info.hProcess, INFINITE);
+        //WaitForSingleObject(process_info.hProcess, INFINITE);
+        // careful with this comment - it may cause problems with make
     }
     DWORD dwNumBytes, dwKey;
     LPOVERLAPPED completedOverlapped;  

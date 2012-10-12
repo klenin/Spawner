@@ -53,19 +53,3 @@ SET (PROJECT_EXECUTABLE ${PROJECT_NAME})
 ADD_EXECUTABLE (${PROJECT_EXECUTABLE} ${SOURCES} ${HEADERS})
 
 TARGET_LINK_LIBRARIES(${PROJECT_EXECUTABLE} libspawner)
-# MESSAGE(${CMAKE_BINARY_DIR})
-
-#ADD_TEST(spmaintest0 sp -ml=12 ls -la)
-#ADD_TEST(spmaintest1 sp -ml=6 ls -la)
-#ADD_TEST(spmaintest2 sp -ml=3 ls -la)
-#ADD_TEST(spmaintest3 sp -ml=1.5 ls -la)
-#ADD_TEST(spmaintest4 sp -ml=0.7 ls -la)
-#ADD_TEST(spmaintest5 sp -ml=0.3 ls -la)
-#add_test(NAME runtestprog
-#    COMMAND ${CMAKE_COMMAND}
-#    -DTEST_PROG=$<TARGET_FILE:sp>
-#    -DPROGRAM_TO_TEST=ls
-#    -DARGUMENTS=
-#    -DTEST_NO=1
-#    -DSOURCEDIR=${PROJECT_SOURCE_DIR}
-#    -P ${PROJECT_SOURCE_DIR}/test/runtest.cmake)

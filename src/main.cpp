@@ -11,6 +11,7 @@ string format_report(CReport rep)
     std::ostringstream osstream;
     osstream << std::endl << "--------------- Spawner report ---------------" << std::endl;
     osstream << "Application:               " << rep.application_name << std::endl;
+    osstream << "Working directory:         " << rep.options.working_directory << std::endl;
     osstream << "Parameters:                " << rep.options.get_arguments() << std::endl; 
     osstream << "SecurityLevel:             " << (rep.restrictions.get_restriction(restriction_security_limit) == restriction_limited) << std::endl;
     osstream << "CreateProcessMethod:       " << std::endl;
