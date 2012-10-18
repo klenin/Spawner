@@ -41,7 +41,7 @@ struct unit_description
 };
 
 const unit_description unit_descriptions[] = {
-    {unit_no_unit,      "",         "",     0.0},
+    {unit_no_unit,      "",         "",     1.0},
     {unit_memory_byte,  "Byte",     "B",    1.0},
     {unit_memory_bit,   "bit",      "b",    0.125},
     {unit_time_second,  "Second",   "s",    1.0},
@@ -62,7 +62,7 @@ unsigned int get_unit_index(const unit_t &unit)
     for (unsigned int i = 0; i < units_count; i++)
         if (unit_descriptions[i].type == unit)
             return i;
-    return 0;
+    return units_count;
 }
 
 unsigned int get_degree_index(const degrees_enum &degree)
@@ -70,7 +70,7 @@ unsigned int get_degree_index(const degrees_enum &degree)
     for (unsigned int i = 0; i < degrees_count; i++)
         if (degree_descriptions[i].type == degree)
             return i;
-    return 0;
+    return degrees_count;
 }
 
 unsigned long convert(const value_t &from, const value_t &to, const unsigned long &val)
@@ -85,10 +85,8 @@ long double convert(const value_t &from, const value_t &to, const long double &v
     unsigned int from_degree_index = get_degree_index(from.degree_type), 
         to_degree_index = get_degree_index(to.degree_type);
 
-    if (from_unit_index == 0 || to_unit_index == 0)
-        return 0;// TODO fail
     if ((from.unit_type & unit_time) != (to.unit_type & unit_time) || (from.unit_type & unit_memory) != (to.unit_type & unit_memory))
-        return 0;// fail
+        return 0.0;// fail
 
     double base = 10;
     double p = (int)from.degree_type - (int)to.degree_type;
@@ -148,27 +146,35 @@ string convert(const value_t &from, const value_t &to, const long double &val, c
     return osstream.str();
 }
 
+// Reads value from string val and tries to convert it to to's type
+// If there were some errors - function returns default_value
+// Default from values for different types are
+// * memory - MB
+// * time - s
 unsigned long convert(const value_t &to, const string &val, const unsigned long &default_value)
 {
     string v = val;
     value_t from(unit_no_unit);
-    if (to.unit_type == unit_no_unit)
-        return default_value;
-    std::istringstream iss(val);
     long double value = 0.0;
+
+    std::istringstream iss(val);
     iss >> value;
+
     int current_index = iss.tellg();
+
     if (current_index == -1 && value == 0.0)
         return default_value;
+
     if (current_index != -1)
         v = v.substr(current_index, v.length() - current_index);
     else
         v = "";
+
     if (to.unit_type & unit_memory)
     {
         from = value_t(unit_memory_byte, degree_mega);
     }
-    else
+    if (to.unit_type & unit_time)
     {
         from = value_t(unit_time_second);
     }

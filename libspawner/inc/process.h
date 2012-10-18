@@ -38,7 +38,8 @@ protected:
     process_info_t process_info;
     startupinfo_t si;
 
-    thread_t thread, check, completition;
+    thread_t thread, check, completition, debug_thread;
+    handle_t process_initiated;
     handle_t hIOCP;
     handle_t hJob;
 
@@ -54,6 +55,7 @@ protected:
     terminate_reason_t terminate_reason;
     CReport report;
 
+    static thread_return_t debug(thread_param_t param);
     static thread_return_t process_completition(thread_param_t param);
     static thread_return_t check_limits(thread_param_t param);
 
@@ -64,7 +66,10 @@ protected:
     void finish();
 public:
 	CProcess(const string &file);
-	void SetArguments(); // ?!
+    void prepare();
+    int run();
+    bool set_terminate_reason(const terminate_reason_t &reason);
+    process_id get_process_id();
 	int Run();
     void RunAsync();
     //TODO implement Wait function

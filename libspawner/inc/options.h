@@ -11,12 +11,12 @@ class COptions
 {
     std::list<std::string> arguments;
 public:
-    COptions():show_gui(true), silent_errors(true){}
+    COptions():hide_gui(false), silent_errors(false){}
     void add_argument(std::string argument);
     std::string get_arguments();
     std::string string_arguments;
     std::string working_directory;
-    bool show_gui;
+    bool hide_gui;
     bool silent_errors;
 };
 

@@ -24,6 +24,7 @@ typedef enum
     SP_INPUT_FILE,
     SP_LOAD_RATIO,
     SP_WORKING_DIRECTORY,
+    SP_SILENT,
 } spawner_arguments;
 
 

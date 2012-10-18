@@ -25,6 +25,7 @@ public:
 //  size_t read_transfer_count;
     unsigned int exit_code;
     size_t total_time;
+    double load_ratio;
     unsigned long long processor_time;
     unsigned long long kernel_time;
     CRestrictions restrictions; // to much overhead

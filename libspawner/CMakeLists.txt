@@ -10,6 +10,7 @@ SET (${PROJECT_NAME}_MINOR_VERSION 1)
 SET (${PROJECT_NAME}_PATCH_LEVEL 0)
 
 INCLUDE_DIRECTORIES ("${PROJECT_SOURCE_DIR}/inc")
+INCLUDE_DIRECTORIES ("${PROJECT_SOURCE_DIR}")
 
 #OPTION(MYPROJECT_DEBUG "Build the project using debugging code" ON)
 
@@ -23,7 +24,7 @@ SET (CMAKE_BUILD_TYPE Release)
 
 # fix relative path
 FILE (GLOB SOURCES ./src/*.cpp)
-FILE (GLOB HEADERS ./inc/*.h)
+FILE (GLOB HEADERS ./inc/*.h ./*.h)
 
 
 FILE (GLOB LIB_WIN32_SOURCES "./src/win32/*.cpp")

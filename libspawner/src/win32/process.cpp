@@ -2,10 +2,193 @@
 #include <iostream>
 #include <windows.h>
 #include <winbase.h>
+#include <time.h>
+
+thread_return_t CProcess::debug(thread_param_t param)
+{
+    CProcess *self = (CProcess *)param;
+    ZeroMemory(&self->si, sizeof(self->si));
+
+    self->si.cb = sizeof(self->si);
+    self->si.dwFlags = STARTF_USESTDHANDLES;
+    self->si.hStdInput = self->std_input.ReadPipe();
+    self->si.hStdOutput = self->std_output.WritePipe();
+    self->si.hStdError = self->std_error.WritePipe();
+    DWORD process_creation_flags = PROCESS_CREATION_FLAGS;
+    self->si.lpDesktop = "";
+
+    if (self->options.hide_gui)
+    {
+        self->si.dwFlags |= STARTF_USESHOWWINDOW;
+        self->si.wShowWindow = SW_HIDE;
+    }
+
+    // Extracting program name and generating cmd line
+    char *cmd;
+    const char *wd = (self->options.working_directory != "")?self->options.working_directory.c_str():NULL;
+    string command_line;
+    size_t  index_win = self->application.find_last_of('\\'), 
+        index_nix = self->application.find_last_of('/');
+
+    if (index_win != string::npos)
+        command_line = self->application.substr(index_win + 1);
+    else if (index_nix != string::npos)
+        command_line = self->application.substr(index_nix + 1);
+    else
+        command_line = self->application;
+
+    command_line = command_line + " " + (self->options.string_arguments==""?self->options.get_arguments():self->options.string_arguments);
+    cmd = new char [command_line.size()+1];
+    strcpy(cmd, command_line.c_str());
+
+    if (self->options.silent_errors)
+    {
+        SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+        process_creation_flags |= DEBUG_PROCESS;
+        //debug_threadCreateThread(NULL, 0, check_limits, this, 0, NULL);
+        // _set_abort_behavior( 0, _WRITE_ABORT_MSG);
+        //res = GetErrorMode();
+        //DWORD le = GetLastError();
+    }
+
+    // check if program exists or smth like this
+    // if not exists try to execute full cmd
+    if ( !CreateProcess(self->application.c_str(),
+        cmd,
+        NULL, NULL,
+        TRUE,
+        process_creation_flags,
+        NULL, wd,
+        &self->si, &self->process_info) )
+    {
+        if ( !CreateProcess(NULL,
+            cmd,
+            NULL, NULL,
+            TRUE,
+            process_creation_flags,
+            NULL, wd,
+            &self->si, &self->process_info) )
+        {
+            DWORD le = GetLastError();
+            delete[] cmd;
+            throw("!!!");
+        }
+    }
+    delete[] cmd;
+    DEBUG_EVENT debug_event;
+    WaitForSingleObject(self->process_initiated, 0);
+    while (WaitForDebugEvent(&debug_event, INFINITE))
+    {
+        ContinueDebugEvent(debug_event.dwProcessId,
+            debug_event.dwThreadId,
+            DBG_CONTINUE);
+        if (debug_event.dwDebugEventCode == EXCEPTION_DEBUG_EVENT)
+        {
+            debug_event.dwProcessId = 0;
+        }
+        //std::cout << debug_event.u.DebugString.lpDebugStringData;
+    }
+    
+    return 0;
+}
+thread_return_t CProcess::process_completition(thread_param_t param)
+{
+    CProcess *self = (CProcess *)param;
+    self->wait();
+    return 0;
+}
+
+thread_return_t CProcess::check_limits(thread_param_t param)
+{
+    CProcess *self = (CProcess *)param;
+    DWORD t;
+    int dt;
+    JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
+
+    if (self->restrictions.get_restriction(restriction_processor_time_limit) == restriction_no_limit &&
+        self->restrictions.get_restriction(restriction_user_time_limit) == restriction_no_limit &&
+        self->restrictions.get_restriction(restriction_write_limit) == restriction_no_limit &&
+        self->restrictions.get_restriction(restriction_load_ratio) == restriction_no_limit)
+        return 0;
+    static const double sec_clocks = (double)1000.0/CLOCKS_PER_SEC;
+
+    t = GetTickCount();
+    dt = clock();
+    LONGLONG last_quad_part = 0;
+    self->report.load_ratio = 10000.0;
+    while (1)
+    {
+        BOOL rs = QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL);
+        if (!rs)
+        {
+            DWORD le = GetLastError();
+            cout << "!!!!" << le;// TODO: fail
+            break;
+        }
+        //bai.BasicInfo.ThisPeriodTotalKernelTime
+
+        if (self->restrictions.get_restriction(restriction_write_limit) != restriction_no_limit && 
+            bai.IoInfo.WriteTransferCount > self->restrictions.get_restriction(restriction_write_limit))
+        {
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT, COMPLETION_KEY, NULL);
+            break;
+        }
+
+        if (self->restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit && 
+            (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart > SECOND_COEFF * self->restrictions.get_restriction(restriction_processor_time_limit))
+        {
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);
+            break;
+        }
+        if (self->restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit && 
+            (GetTickCount() - t) > self->restrictions.get_restriction(restriction_user_time_limit))
+        {
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);//freezed
+            break;
+        }
+        if ((clock() - dt)*sec_clocks > 100.0 && bai.BasicInfo.TotalUserTime.QuadPart)
+        {
+            //change to time limit
+            self->report.load_ratio = (self->report.load_ratio + (double)(bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part)/(sec_clocks*(clock() - dt)))*0.5f;// make everything integer
+            last_quad_part = bai.BasicInfo.TotalUserTime.QuadPart;
+            dt = clock();
+            if (self->restrictions.get_restriction(restriction_load_ratio) != restriction_no_limit)
+            {
+                if (self->report.load_ratio < 0.01*self->restrictions.get_restriction(restriction_load_ratio))
+                {
+                    PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT, COMPLETION_KEY, NULL);//freezed
+                    break;
+                }
+            }
+        }
+        Sleep(1);
+    }
+    return 0;
+}
 
 // Initializing winapi process with pipes and options
 void CProcess::createProcess()
 {
+/*    process_initiated = CreateSemaphore( 
+            NULL,
+            2,
+            2,
+        NULL);
+    debug_thread = CreateThread(NULL, 0, debug, this, 0, NULL);
+    //DWORD res = WaitForSingleObject(process_initiated, 0);
+
+    LONG prev = 2;
+    while (prev)
+    {
+        WaitForSingleObject(process_initiated, 0);
+        ReleaseSemaphore(process_initiated, 1, &prev);
+    }
+    return;
+    //if (WaitForSingleObject(process_initiated, 0) == WAIT_OBJECT_0)
+    //{
+    //    ReleaseMutex(process_initiated);
+
+//    }*/
     ZeroMemory(&si, sizeof(si));
 
     si.cb = sizeof(si);
@@ -13,10 +196,10 @@ void CProcess::createProcess()
     si.hStdInput = std_input.ReadPipe();
     si.hStdOutput = std_output.WritePipe();
     si.hStdError = std_error.WritePipe();
-
     si.lpDesktop = "";
+    DWORD process_creation_flags = PROCESS_CREATION_FLAGS;
 
-    if (!options.show_gui)
+    if (options.hide_gui)
     {
         si.dwFlags |= STARTF_USESHOWWINDOW;
         si.wShowWindow = SW_HIDE;
@@ -27,7 +210,7 @@ void CProcess::createProcess()
     const char *wd = (options.working_directory != "")?options.working_directory.c_str():NULL;
     string command_line;
     size_t  index_win = application.find_last_of('\\'), 
-            index_nix = application.find_last_of('/');
+        index_nix = application.find_last_of('/');
 
     if (index_win != string::npos)
         command_line = application.substr(index_win + 1);
@@ -39,9 +222,15 @@ void CProcess::createProcess()
     command_line = command_line + " " + (options.string_arguments==""?options.get_arguments():options.string_arguments);
     cmd = new char [command_line.size()+1];
     strcpy(cmd, command_line.c_str());
-    
+
     if (options.silent_errors)
+    {
         SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+        //debug_threadCreateThread(NULL, 0, check_limits, this, 0, NULL);
+        // _set_abort_behavior( 0, _WRITE_ABORT_MSG);
+        //res = GetErrorMode();
+        //DWORD le = GetLastError();
+    }
 
     // check if program exists or smth like this
     // if not exists try to execute full cmd
@@ -49,17 +238,17 @@ void CProcess::createProcess()
         cmd,
         NULL, NULL,
         TRUE,
-        PROCESS_CREATION_FLAGS,
+        process_creation_flags,
         NULL, wd,
         &si, &process_info) )
     {
         if ( !CreateProcess(NULL,
-        cmd,
-        NULL, NULL,
-        TRUE,
-        PROCESS_CREATION_FLAGS,
-        NULL, wd,
-        &si, &process_info) )
+            cmd,
+            NULL, NULL,
+            TRUE,
+            process_creation_flags,
+            NULL, wd,
+            &si, &process_info) )
         {
             DWORD le = GetLastError();
             delete[] cmd;
@@ -67,6 +256,7 @@ void CProcess::createProcess()
         }
     }
     delete[] cmd;
+
 }
 
 // Initalizing jobobject objects
@@ -185,7 +375,7 @@ void CProcess::wait()
     GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);;
     std_output.wait_for_pipe(100);
     std_error.wait_for_pipe(100);
-    WaitForSingleObject(process_info.hProcess, 10000);// TODO: get rid of this
+    WaitForSingleObject(process_info.hProcess, INFINITE);// TODO: get rid of this
     running = false;
 }
 
@@ -200,6 +390,7 @@ void CProcess::finish()
     CloseHandleSafe(process_info.hProcess);
     CloseHandleSafe(process_info.hThread);
     CloseHandleSafe(check);
+    CloseHandleSafe(debug_thread);
 }
 
 CProcess::CProcess(const string &file):application(file), process_status(process_not_started), terminate_reason(terminate_reason_not_terminated),
@@ -209,20 +400,19 @@ CProcess::CProcess(const string &file):application(file), process_status(process
 	//working dir, etc
 }
 
-void CProcess::SetArguments()
+//not void, but bool
+void CProcess::prepare()
 {
-	//is this required?..
-	//after-constructor argument changing
-}
-
-int CProcess::Run()
-{
-    // deprecated
     createProcess();
     setRestrictions();
+}
+
+int CProcess::run()
+{
     running = true;
 
     DWORD w = ResumeThread(process_info.hThread);
+    //ContinueDebugEvent(process_info.dwProcessId, process_info.dwThreadId, DBG_CONTINUE);
 
     std_output.bufferize();
     std_error.bufferize();
@@ -233,7 +423,45 @@ int CProcess::Run()
     int exit_code = get_exit_code();
     finish();
 
-	return exit_code;
+    return exit_code;
+}
+
+bool CProcess::set_terminate_reason(const terminate_reason_t &reason)
+{
+    terminate_reason_t current_reason = get_terminate_reason();
+    if (current_reason != terminate_reason_not_terminated || reason == current_reason)
+        return false;
+
+    return true;
+}
+
+process_id CProcess::get_process_id()
+{
+    if (get_process_status() == process_not_started)
+        return 0;//error
+    return process_info.dwProcessId;
+}
+
+int CProcess::Run()
+{
+    createProcess();
+    setRestrictions();
+    // deprecated
+    running = true;
+
+    DWORD w = ResumeThread(process_info.hThread);
+
+    std_output.bufferize();
+    std_error.bufferize();
+
+    check = CreateThread(NULL, 0, check_limits, this, 0, NULL);
+    DEBUG_EVENT debug_event;
+    // create thread, waiting for completition
+    wait();
+    int exit_code = get_exit_code();
+    finish();
+
+    return exit_code;
 }
 
 void CProcess::RunAsync()
@@ -256,72 +484,6 @@ CProcess::~CProcess()
 {
 	//kills process if it is running
 }
-thread_return_t CProcess::process_completition(thread_param_t param)
-{
-    CProcess *self = (CProcess *)param;
-    self->wait();
-    return 0;
-}
-
-thread_return_t CProcess::check_limits(thread_param_t param)
-{
-    CProcess *self = (CProcess *)param;
-    DWORD t;
-    JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
-
-    if (self->restrictions.get_restriction(restriction_processor_time_limit) == restriction_no_limit &&
-        self->restrictions.get_restriction(restriction_user_time_limit) == restriction_no_limit &&
-        self->restrictions.get_restriction(restriction_write_limit) == restriction_no_limit &&
-        self->restrictions.get_restriction(restriction_load_ratio) == restriction_no_limit)
-        return 0;
-
-    t = GetTickCount();
-    double ratio = 10000.0f;
-    while (1)
-    {
-        BOOL rs = QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL);
-        if (!rs)
-        {
-            DWORD le = GetLastError();
-            cout << "!!!!" << le;
-            break;
-        }
-        //bai.BasicInfo.ThisPeriodTotalKernelTime
-
-        if (self->restrictions.get_restriction(restriction_write_limit) != restriction_no_limit && 
-            bai.IoInfo.WriteTransferCount > (1024 * 1024) * self->restrictions.get_restriction(restriction_write_limit))
-        {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT, COMPLETION_KEY, NULL);
-            break;
-        }
-
-        if (self->restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit && 
-            (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart > SECOND_COEFF * self->restrictions.get_restriction(restriction_processor_time_limit))
-        {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);
-            break;
-        }
-        if (self->restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit && 
-            (GetTickCount() - t) > self->restrictions.get_restriction(restriction_user_time_limit))
-        {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);//freezed
-            break;
-        }
-        if (self->restrictions.get_restriction(restriction_load_ratio) != restriction_no_limit)
-        {
-            if (GetTickCount() - t > 1000)//change to time limit
-                ratio = (ratio + (double)bai.BasicInfo.TotalUserTime.QuadPart/(GetTickCount() - t))*0.5f;// make everything integer
-            if (ratio < 10.0f*self->restrictions.get_restriction(restriction_load_ratio))
-            {
-                PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT, COMPLETION_KEY, NULL);//freezed
-                break;
-            }
-        }
-        Sleep(1);
-    }
-    return 0;
-}
-
 unsigned long CProcess::get_exit_code()
 {
     DWORD dwExitCode = 0;

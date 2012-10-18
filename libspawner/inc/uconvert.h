@@ -20,6 +20,7 @@ typedef enum
     degree_deci     = -0x1,
     degree_centi    = -0x2,
     degree_milli    = -0x3,
+    degree_m4       = -0x4,
     degree_micro    = -0x6,
     degree_nano     = -0x9,
     degree_pico     = -0xc,

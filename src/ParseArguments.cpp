@@ -42,6 +42,7 @@ CSimpleOpt::SOption Options[] =
     {SP_HIDE_REPORT,        "-hr",      SO_NONE},
     {SP_SHOW_OUTPUT,        "-so",      SO_NONE},
     {SP_SHOW_STDERR,        "-se",      SO_NONE},
+    {SP_SILENT,             "--silent", SO_NONE},
     {SP_REPORT_FILE,        "-sr",      SO_REQ_CMB},
     {SP_OUTPUT_FILE,        "-so",      SO_REQ_CMB},
     {SP_INPUT_FILE,         "-i" ,      SO_REQ_CMB},
@@ -69,9 +70,11 @@ CArguments::CArguments(int argc, char *argv[])
             if (args.OptionId() == SP_HELP) {
                 ShowUsage();
             }
-            /*printf("Option, ID: %d, Text: '%s', Argument: '%s'\n",
+            //*
+            printf("Option, ID: %d, Text: '%s', Argument: '%s'\n",
                 args.OptionId(), args.OptionText(),
-                args.OptionArg() ? args.OptionArg() : "");*/
+                args.OptionArg() ? args.OptionArg() : "");
+                //*/
             arguments[(spawner_arguments)args.OptionId()] = args.OptionArg() ? args.OptionArg() : "";
         }
         else {
