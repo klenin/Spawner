@@ -12,8 +12,8 @@ string format_report(CReport rep)
     osstream << "Working directory:         " << rep.options.working_directory << std::endl;
     osstream << "Parameters:                " << rep.options.get_arguments() << std::endl; 
     osstream << "SecurityLevel:             " << (rep.restrictions.get_restriction(restriction_security_limit) == restriction_limited) << std::endl;
-    osstream << "CreateProcessMethod:       " << std::endl;
-    osstream << "UserName:                  " << std::endl;
+    osstream << "CreateProcessMethod:       " << (rep.options.login==""?"Default":"WithLogon") << std::endl;
+    osstream << "UserName:                  " << rep.options.login << std::endl;
     osstream << "UserTimeLimit:             " << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), rep.restrictions.get_restriction(restriction_user_time_limit), " (u)", restriction_no_limit) << std::endl;
     osstream << "DeadLine:                  " << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), rep.restrictions.get_restriction(restriction_processor_time_limit), " (u)", restriction_no_limit) << std::endl;
     osstream << "MemoryLimit:               " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.restrictions.get_restriction(restriction_memory_limit), " (du)", restriction_no_limit) << std::endl;
@@ -21,6 +21,8 @@ string format_report(CReport rep)
     osstream << "LoadRatioLimit:            " << convert(value_t(unit_no_unit, degree_m4), value_t(unit_no_unit), rep.restrictions.get_restriction(restriction_load_ratio), " (%)", restriction_no_limit) << std::endl;
     osstream << "----------------------------------------------" << std::endl;
     osstream << "ProcessorTime:             " << convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), rep.processor_time/10.0, " (u)") << std::endl;
+    osstream << "KernelTime:                " << convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), rep.kernel_time/10.0, " (u)") << std::endl;
+    osstream << "UserTime:                  " << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), rep.user_time, " (u)") << std::endl;
     osstream << "PeakMemoryUsed:            " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.peak_memory_used, " (du)") << std::endl;
     osstream << "Written:                   " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_kilo), rep.write_transfer_count, " (du)") << std::endl;
     osstream << "LoadRatio:                 " << convert(value_t(unit_no_unit, degree_centi), value_t(unit_no_unit), rep.load_ratio, " (%)", restriction_no_limit) << std::endl;
@@ -88,17 +90,22 @@ int main(int argc, char *argv[])
 
     if (arguments.ArgumentExists(SP_SILENT))
         options.silent_errors = true;
+    if (arguments.ArgumentExists(SP_LOGIN))
+        options.silent_errors = true;
     options.hide_gui = true;
 
-    std::cout << arguments.get_program();
+    process_wrapper wrapper(arguments.get_program(), options, restrictions);
+    wrapper.run_process();
+    CReport rep = wrapper.get_report();
 
-    CProcess process(arguments.get_program());
+
+/*    CProcess process(arguments.get_program());
     process.set_restrictions(restrictions);
     process.set_options(options);
 
     process.Run();
 
-    CReport rep = process.get_report();
+    CReport rep = process.get_report();*/
 
     cout << format_report(rep);
 	return 0;

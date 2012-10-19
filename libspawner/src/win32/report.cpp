@@ -56,7 +56,7 @@ const map_cell exception_identifiers[] = {
     {exception_exception_no             , "EXCEPTION_NO", ""},
 };
 
-const unsigned int process_status_descriptions_count = 6;
+const unsigned int process_status_descriptions_count = 7;
 const unsigned int terminate_reason_descriptions_count = 7;
 
 typedef struct
@@ -72,6 +72,7 @@ const process_status_description process_status_descriptions[] = {
     {process_finished_abnormally, "PROCESS_FINISHED_ABNORMALLY"},
     {process_finished_terminated, "PROCESS_FINISHED_TERMINATED"},
     {process_not_started,         "PROCESS_NOT_STARTED"},
+    {process_failed_to_create,    "PROCESS_FAILED_TO_CREATE"},
 };
 
 typedef struct

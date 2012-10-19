@@ -37,7 +37,7 @@ public:
         restrictions[kind] = value;
     }
 
-    restriction_t get_restriction(restriction_kind_t kind)
+    restriction_t get_restriction(restriction_kind_t kind) const
     {
         return restrictions[kind];
     }

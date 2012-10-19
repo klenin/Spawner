@@ -12,7 +12,7 @@ typedef enum
     SP_TIME_LIMIT,
     SP_DEADLINE,
     SP_WRITE_LIMIT,
-    SP_USER,
+    SP_LOGIN,
     SP_PASSWORD,
     SP_RUNAS,
     SP_SECURITY_LEVEL,

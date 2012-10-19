@@ -3,8 +3,8 @@
 #include <windows.h>
 #include <winbase.h>
 #include <time.h>
-
-thread_return_t CProcess::debug(thread_param_t param)
+#include <vector>
+thread_return_t CProcess::debug_thread_proc(thread_param_t param)
 {
     CProcess *self = (CProcess *)param;
     ZeroMemory(&self->si, sizeof(self->si));
@@ -45,10 +45,6 @@ thread_return_t CProcess::debug(thread_param_t param)
     {
         SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
         process_creation_flags |= DEBUG_PROCESS;
-        //debug_threadCreateThread(NULL, 0, check_limits, this, 0, NULL);
-        // _set_abort_behavior( 0, _WRITE_ABORT_MSG);
-        //res = GetErrorMode();
-        //DWORD le = GetLastError();
     }
 
     // check if program exists or smth like this
@@ -88,9 +84,10 @@ thread_return_t CProcess::debug(thread_param_t param)
         }
         //std::cout << debug_event.u.DebugString.lpDebugStringData;
     }
-    
+
     return 0;
 }
+
 thread_return_t CProcess::process_completition(thread_param_t param)
 {
     CProcess *self = (CProcess *)param;
@@ -98,11 +95,14 @@ thread_return_t CProcess::process_completition(thread_param_t param)
     return 0;
 }
 
-thread_return_t CProcess::check_limits(thread_param_t param)
+thread_return_t CProcess::check_limits_proc(thread_param_t param)
 {
     CProcess *self = (CProcess *)param;
     DWORD t;
     int dt;
+    double total_rate = 10000.0;
+    std::vector<double> rates;
+    rates.push_back(total_rate);
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
 
     if (self->restrictions.get_restriction(restriction_processor_time_limit) == restriction_no_limit &&
@@ -149,7 +149,14 @@ thread_return_t CProcess::check_limits(thread_param_t param)
         if ((clock() - dt)*sec_clocks > 100.0 && bai.BasicInfo.TotalUserTime.QuadPart)
         {
             //change to time limit
-            self->report.load_ratio = (self->report.load_ratio + (double)(bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part)/(sec_clocks*(clock() - dt)))*0.5f;// make everything integer
+            double load_ratio = (self->report.load_ratio + (double)(bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part)/(sec_clocks*(clock() - dt)))*0.5f;
+            rates.push_back(load_ratio);// make everything integer
+            if (rates.size() >= MAX_RATE_COUNT)
+            {
+                rates.pop_back();
+            }
+            total_rate += load_ratio;
+            //self->report.load_ratio
             last_quad_part = bai.BasicInfo.TotalUserTime.QuadPart;
             dt = clock();
             if (self->restrictions.get_restriction(restriction_load_ratio) != restriction_no_limit)
@@ -169,26 +176,6 @@ thread_return_t CProcess::check_limits(thread_param_t param)
 // Initializing winapi process with pipes and options
 void CProcess::createProcess()
 {
-/*    process_initiated = CreateSemaphore( 
-            NULL,
-            2,
-            2,
-        NULL);
-    debug_thread = CreateThread(NULL, 0, debug, this, 0, NULL);
-    //DWORD res = WaitForSingleObject(process_initiated, 0);
-
-    LONG prev = 2;
-    while (prev)
-    {
-        WaitForSingleObject(process_initiated, 0);
-        ReleaseSemaphore(process_initiated, 1, &prev);
-    }
-    return;
-    //if (WaitForSingleObject(process_initiated, 0) == WAIT_OBJECT_0)
-    //{
-    //    ReleaseMutex(process_initiated);
-
-//    }*/
     ZeroMemory(&si, sizeof(si));
 
     si.cb = sizeof(si);
@@ -224,16 +211,10 @@ void CProcess::createProcess()
     strcpy(cmd, command_line.c_str());
 
     if (options.silent_errors)
-    {
         SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
-        //debug_threadCreateThread(NULL, 0, check_limits, this, 0, NULL);
-        // _set_abort_behavior( 0, _WRITE_ABORT_MSG);
-        //res = GetErrorMode();
-        //DWORD le = GetLastError();
-    }
 
-    // check if program exists or smth like this
-    // if not exists try to execute full cmd
+    // Trying to create process from application name
+    // If failed - not clear what to do if failed
     if ( !CreateProcess(application.c_str(),
         cmd,
         NULL, NULL,
@@ -251,8 +232,8 @@ void CProcess::createProcess()
             &si, &process_info) )
         {
             DWORD le = GetLastError();
+            process_status = process_failed_to_create;
             delete[] cmd;
-            throw("!!!");
         }
     }
     delete[] cmd;
@@ -307,6 +288,7 @@ void CProcess::setRestrictions()
 
 void CProcess::wait()
 {
+    clock_t program_run_time = clock();//TODO:make this global
     if (restrictions.get_restriction(restriction_user_time_limit) == restriction_no_limit)
     {
         //WaitForSingleObject(process_info.hProcess, INFINITE);
@@ -372,6 +354,9 @@ void CProcess::wait()
         //cout << dwNumBytes;
 
     } while (!message);
+    program_run_time = clock() - program_run_time;
+    cout << program_run_time;
+    report.user_time = (program_run_time*1000)/CLOCKS_PER_SEC;
     GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);;
     std_output.wait_for_pipe(100);
     std_error.wait_for_pipe(100);
@@ -390,7 +375,6 @@ void CProcess::finish()
     CloseHandleSafe(process_info.hProcess);
     CloseHandleSafe(process_info.hThread);
     CloseHandleSafe(check);
-    CloseHandleSafe(debug_thread);
 }
 
 CProcess::CProcess(const string &file):application(file), process_status(process_not_started), terminate_reason(terminate_reason_not_terminated),
@@ -417,7 +401,7 @@ int CProcess::run()
     std_output.bufferize();
     std_error.bufferize();
 
-    check = CreateThread(NULL, 0, check_limits, this, 0, NULL);
+    check = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
     // create thread, waiting for completition
     wait();
     int exit_code = get_exit_code();
@@ -445,6 +429,8 @@ process_id CProcess::get_process_id()
 int CProcess::Run()
 {
     createProcess();
+    if (get_process_status() == process_failed_to_create)
+        return -1;
     setRestrictions();
     // deprecated
     running = true;
@@ -454,8 +440,7 @@ int CProcess::Run()
     std_output.bufferize();
     std_error.bufferize();
 
-    check = CreateThread(NULL, 0, check_limits, this, 0, NULL);
-    DEBUG_EVENT debug_event;
+    check = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
     // create thread, waiting for completition
     wait();
     int exit_code = get_exit_code();
@@ -475,7 +460,7 @@ void CProcess::RunAsync()
     std_output.bufferize();
     std_error.bufferize();
 
-    check = CreateThread(NULL, 0, check_limits, this, 0, NULL);
+    check = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
     completition = CreateThread(NULL, 0, process_completition, this, 0, NULL);
     //WaitForSingleObject(completition, 100); // TODO fix this
     //create in another thread waiting function
@@ -496,7 +481,7 @@ void CProcess::suspend()
 {
     if (get_process_status() != process_still_active)
         return;
-    dumpThreads(true);
+    dump_threads(true);
     process_status = process_suspended;
     //SuspendThread(process_info.hThread);
 }
@@ -516,7 +501,7 @@ void CProcess::resume()
     get_process_status();
 }
 
-void CProcess::dumpThreads(bool suspend)
+void CProcess::dump_threads(bool suspend)
 {
     //if process is active and started!!!
     if (!is_running())
@@ -556,6 +541,8 @@ process_status_t CProcess::get_process_status()
 {
     // renew process status
     //cout << process_status << endl;
+    if (process_status == process_failed_to_create)
+        return process_status;
     // ************************* DIRTY HACK *************************//
     if (terminate_reason != terminate_reason_not_terminated)
         process_status = process_finished_terminated;
@@ -599,7 +586,8 @@ exception_t CProcess::get_exception()
 CReport CProcess::get_report()
 {
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
-    if (hJob == INVALID_HANDLE_VALUE)
+    report.process_status = get_process_status();
+    if (hJob == INVALID_HANDLE_VALUE || get_process_status() == process_failed_to_create)
         return report;
     if (!QueryInformationJobObject(hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL))
     {
@@ -607,6 +595,7 @@ CReport CProcess::get_report()
     }
 
     report.processor_time = bai.BasicInfo.TotalUserTime.QuadPart;
+    report.kernel_time = bai.BasicInfo.TotalKernelTime.QuadPart;
     report.write_transfer_count = bai.IoInfo.WriteTransferCount;
 
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION xli;
@@ -619,7 +608,6 @@ CReport CProcess::get_report()
 
     report.application_name = application;
 
-    report.process_status = get_process_status();
     report.exception = get_exception();
     report.terminate_reason = get_terminate_reason();
     report.exit_code = get_exit_code();
