@@ -4,7 +4,9 @@
 #include <winbase.h>
 #include <time.h>
 #include <vector>
-thread_return_t CProcess::debug_thread_proc(thread_param_t param)
+const size_t MAX_RATE_COUNT = 20;
+
+/*thread_return_t CProcess::debug_thread_proc(thread_param_t param)
 {
     CProcess *self = (CProcess *)param;
     ZeroMemory(&self->si, sizeof(self->si));
@@ -88,134 +90,41 @@ thread_return_t CProcess::debug_thread_proc(thread_param_t param)
     return 0;
 }
 
-thread_return_t CProcess::process_completition(thread_param_t param)
+bool CProcess::set_terminate_reason(const terminate_reason_t &reason)
 {
-    CProcess *self = (CProcess *)param;
-    self->wait();
-    return 0;
+    terminate_reason_t current_reason = get_terminate_reason();
+    if (current_reason != terminate_reason_not_terminated || reason == current_reason)
+        return false;
+
+    return true;
 }
 
-thread_return_t CProcess::check_limits_proc(thread_param_t param)
+process_id CProcess::get_process_id()
 {
-    CProcess *self = (CProcess *)param;
-    DWORD t;
-    int dt;
-    double total_rate = 10000.0;
-    std::vector<double> rates;
-    rates.push_back(total_rate);
-    JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
-
-    if (self->restrictions.get_restriction(restriction_processor_time_limit) == restriction_no_limit &&
-        self->restrictions.get_restriction(restriction_user_time_limit) == restriction_no_limit &&
-        self->restrictions.get_restriction(restriction_write_limit) == restriction_no_limit &&
-        self->restrictions.get_restriction(restriction_load_ratio) == restriction_no_limit)
-        return 0;
-    static const double sec_clocks = (double)1000.0/CLOCKS_PER_SEC;
-
-    t = GetTickCount();
-    dt = clock();
-    LONGLONG last_quad_part = 0;
-    self->report.load_ratio = 10000.0;
-    while (1)
-    {
-        BOOL rs = QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL);
-        if (!rs)
-        {
-            DWORD le = GetLastError();
-            cout << "!!!!" << le;// TODO: fail
-            break;
-        }
-        //bai.BasicInfo.ThisPeriodTotalKernelTime
-
-        if (self->restrictions.get_restriction(restriction_write_limit) != restriction_no_limit && 
-            bai.IoInfo.WriteTransferCount > self->restrictions.get_restriction(restriction_write_limit))
-        {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT, COMPLETION_KEY, NULL);
-            break;
-        }
-
-        if (self->restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit && 
-            (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart > SECOND_COEFF * self->restrictions.get_restriction(restriction_processor_time_limit))
-        {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);
-            break;
-        }
-        if (self->restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit && 
-            (GetTickCount() - t) > self->restrictions.get_restriction(restriction_user_time_limit))
-        {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);//freezed
-            break;
-        }
-        if ((clock() - dt)*sec_clocks > 100.0 && bai.BasicInfo.TotalUserTime.QuadPart)
-        {
-            //change to time limit
-            double load_ratio = (self->report.load_ratio + (double)(bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part)/(sec_clocks*(clock() - dt)))*0.5f;
-            rates.push_back(load_ratio);// make everything integer
-            if (rates.size() >= MAX_RATE_COUNT)
-            {
-                rates.pop_back();
-            }
-            total_rate += load_ratio;
-            //self->report.load_ratio
-            last_quad_part = bai.BasicInfo.TotalUserTime.QuadPart;
-            dt = clock();
-            if (self->restrictions.get_restriction(restriction_load_ratio) != restriction_no_limit)
-            {
-                if (self->report.load_ratio < 0.01*self->restrictions.get_restriction(restriction_load_ratio))
-                {
-                    PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT, COMPLETION_KEY, NULL);//freezed
-                    break;
-                }
-            }
-        }
-        Sleep(1);
-    }
-    return 0;
+    if (get_process_status() == process_not_started)
+        return 0;//error
+    return process_info.dwProcessId;
 }
 
-// Initializing winapi process with pipes and options
-void CProcess::createProcess()
+istringstream & CProcess::stdoutput()
 {
-    ZeroMemory(&si, sizeof(si));
+    return std_output.stream();
+}
 
-    si.cb = sizeof(si);
-    si.dwFlags = STARTF_USESTDHANDLES;
-    si.hStdInput = std_input.ReadPipe();
-    si.hStdOutput = std_output.WritePipe();
-    si.hStdError = std_error.WritePipe();
-    si.lpDesktop = "";
-    DWORD process_creation_flags = PROCESS_CREATION_FLAGS;
+istringstream & CProcess::stderror()
+{
+    return std_error.stream();
+}
 
-    if (options.hide_gui)
-    {
-        si.dwFlags |= STARTF_USESHOWWINDOW;
-        si.wShowWindow = SW_HIDE;
-    }
+bool CProcess::Wait(const unsigned long &ms_time)
+{
+    return WaitForSingleObject(completition, ms_time) != 0;
+}
+*/
 
-    // Extracting program name and generating cmd line
-    char *cmd;
-    const char *wd = (options.working_directory != "")?options.working_directory.c_str():NULL;
-    string command_line;
-    size_t  index_win = application.find_last_of('\\'), 
-        index_nix = application.find_last_of('/');
-
-    if (index_win != string::npos)
-        command_line = application.substr(index_win + 1);
-    else if (index_nix != string::npos)
-        command_line = application.substr(index_nix + 1);
-    else
-        command_line = application;
-
-    command_line = command_line + " " + (options.string_arguments==""?options.get_arguments():options.string_arguments);
-    cmd = new char [command_line.size()+1];
-    strcpy(cmd, command_line.c_str());
-
-    if (options.silent_errors)
-        SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
-
-    // Trying to create process from application name
-    // If failed - not clear what to do if failed
-    if ( !CreateProcess(application.c_str(),
+void process_class::init_process(char *cmd, const char *wd)
+{
+    if ( !CreateProcess(program.c_str(),
         cmd,
         NULL, NULL,
         TRUE,
@@ -233,16 +142,136 @@ void CProcess::createProcess()
         {
             DWORD le = GetLastError();
             process_status = process_failed_to_create;
-            delete[] cmd;
         }
     }
-    delete[] cmd;
-
 }
 
-// Initalizing jobobject objects
+void process_class::create_process()
+{
+    ZeroMemory(&si, sizeof(si));
 
-void CProcess::setRestrictions()
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdInput = std_input.read_pipe();
+    si.hStdOutput = std_output.write_pipe();
+    si.hStdError = std_error.write_pipe();
+    si.lpDesktop = "";
+    process_creation_flags = PROCESS_CREATION_FLAGS;
+
+    if (options.hide_gui)
+    {
+        si.dwFlags |= STARTF_USESHOWWINDOW;
+        si.wShowWindow = SW_HIDE;
+    }
+    if (options.silent_errors)
+        SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+    if (options.debug)
+        process_creation_flags |= DEBUG_PROCESS;
+
+    // Extracting program name and generating cmd line
+    char *cmd;
+    const char *wd = (options.working_directory != "")?options.working_directory.c_str():NULL;
+    string command_line;
+    size_t  index_win = program.find_last_of('\\'), 
+        index_nix = program.find_last_of('/');
+
+    if (index_win != string::npos)
+        command_line = program.substr(index_win + 1);
+    else if (index_nix != string::npos)
+        command_line = program.substr(index_nix + 1);
+    else
+        command_line = program;
+
+    command_line = command_line + " " + (options.string_arguments==""?options.get_arguments():options.string_arguments);
+    cmd = new char [command_line.size()+1];
+    strcpy(cmd, command_line.c_str());
+    init_process(cmd, wd);
+    delete[] cmd;
+}
+
+process_class::process_class(const std::string &program, const options_class &options) :program(program), options(options), std_input(STD_INPUT), std_output(STD_OUTPUT), std_error(STD_ERROR)
+{
+    create_process();
+}
+
+process_class::~process_class()
+{
+    std_output.finish();
+    std_error.finish();
+    CloseHandleSafe(process_info.hProcess);
+    CloseHandleSafe(process_info.hThread);
+    free();
+}
+
+unsigned long process_class::get_exit_code()
+{
+    DWORD dwExitCode = 0;
+    if (!GetExitCodeProcess(process_info.hProcess, &dwExitCode))
+        throw "!!!";
+    return dwExitCode;
+}
+
+process_status_t process_class::get_process_status()
+{
+    // renew process status
+    if (process_status == process_failed_to_create)
+        return process_status;
+    if (process_status & process_finished || process_status == process_suspended)
+        return process_status;
+    unsigned long exitcode = get_exit_code();
+    if (exitcode == exit_code_still_active)
+        process_status = process_still_active;
+    else
+        process_status = process_finished_abnormally;
+    if (exitcode == 0)
+        process_status = process_finished_normal;
+    return process_status;
+}
+
+exception_t process_class::get_exception()
+{
+    if (get_process_status() == process_finished_abnormally)
+        return (exception_t)get_exit_code();
+    else return exception_exception_no;
+}
+
+handle_t process_class::get_handle()
+{
+    return process_info.hProcess;
+}
+
+unsigned long process_class::get_id()
+{
+    return process_info.dwProcessId;
+}
+
+std::string process_class::get_program() const
+{
+    return program;
+}
+
+options_class process_class::get_options() const
+{
+    return options;
+}
+
+void process_class::run_process()
+{
+    if (get_process_status() == process_failed_to_create)
+        return;
+    ResumeThread(process_info.hThread);
+    std_output.bufferize();
+    std_error.bufferize();
+}
+
+void process_class::wait( const unsigned long &interval )
+{
+    WaitForSingleObject(process_info.hProcess, interval);// TODO: get rid of this
+    std_output.wait_for_pipe(100);
+    std_error.wait_for_pipe(100);
+}
+
+void process_wrapper::apply_restrictions()
 {
     /* implement restriction value check */
     hJob = CreateJobObject(NULL, NULL);
@@ -276,7 +305,7 @@ void CProcess::setRestrictions()
     }
 
     // Assigning created process to job object
-    AssignProcessToJobObject(hJob, process_info.hProcess);
+    AssignProcessToJobObject(hJob, process.get_handle());
 
     hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 1, 1);
 
@@ -286,7 +315,130 @@ void CProcess::setRestrictions()
     SetInformationJobObject(hJob, JobObjectAssociateCompletionPortInformation, &joacp, sizeof(joacp));
 }
 
-void CProcess::wait()
+thread_return_t process_wrapper::process_completition_proc( thread_param_t param )
+{
+    process_wrapper *self = (process_wrapper*)param;
+    self->wait();
+    return 0;
+}
+
+thread_return_t process_wrapper::check_limits_proc( thread_param_t param )
+{
+    process_wrapper *self = (process_wrapper*)param;
+    JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
+    restrictions_class restrictions = self->restrictions;
+
+    if (restrictions.get_restriction(restriction_processor_time_limit) == restriction_no_limit &&
+        restrictions.get_restriction(restriction_user_time_limit) == restriction_no_limit &&
+        restrictions.get_restriction(restriction_write_limit) == restriction_no_limit &&
+        restrictions.get_restriction(restriction_load_ratio) == restriction_no_limit)
+        return 0;
+
+    DWORD t;
+    int dt;
+    double total_rate = 10000.0;
+    LONGLONG last_quad_part = 0;
+    self->report.load_ratio = 10000.0;
+    std::vector<double> rates;
+    static const double sec_clocks = (double)1000.0/CLOCKS_PER_SEC;
+    rates.push_back(total_rate);
+
+    t = GetTickCount();
+    dt = clock();
+    while (1)
+    {
+        BOOL rs = QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL);
+        if (!rs)
+        {
+            DWORD le = GetLastError();
+            std::cout << "!!!!" << le;// TODO: fail
+            break;
+        }
+
+        if (restrictions.get_restriction(restriction_write_limit) != restriction_no_limit && 
+            bai.IoInfo.WriteTransferCount > restrictions.get_restriction(restriction_write_limit))
+        {
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT, COMPLETION_KEY, NULL);
+            break;
+        }
+
+        if (restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit && 
+            (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart > SECOND_COEFF * restrictions.get_restriction(restriction_processor_time_limit))
+        {
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);
+            break;
+        }
+        if (restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit && 
+            (GetTickCount() - t) > restrictions.get_restriction(restriction_user_time_limit))
+        {
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);//freezed
+            break;
+        }
+        if ((clock() - dt)*sec_clocks > 100.0 && bai.BasicInfo.TotalUserTime.QuadPart)
+        {
+            //change to time limit
+            double load_ratio = (double)(bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part)/(sec_clocks*(clock() - dt));
+            rates.push_back(load_ratio);// make everything integer
+            if (rates.size() >= MAX_RATE_COUNT)
+            {
+                total_rate -= rates[0];
+                rates.erase(rates.begin());
+            }
+            total_rate += load_ratio;
+            self->report.load_ratio = total_rate/rates.size();
+            last_quad_part = bai.BasicInfo.TotalUserTime.QuadPart;
+            dt = clock();
+            if (restrictions.get_restriction(restriction_load_ratio) != restriction_no_limit)
+            {
+                if (self->report.load_ratio < 0.01*self->restrictions.get_restriction(restriction_load_ratio))
+                {
+                    PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT, COMPLETION_KEY, NULL);//freezed
+                    break;
+                }
+            }
+        }
+        Sleep(1);
+    }
+    return 0;
+}
+
+void process_wrapper::dump_threads( bool suspend )
+{
+    //if process is active and started!!!
+    if (!is_running())
+        return;
+    //while (threads.empty())
+    //{
+    //CloseHandle(threads.begin()
+    //}
+    threads.clear();
+    HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+    if (h != INVALID_HANDLE_VALUE)
+    {
+        THREADENTRY32 te;
+        te.dwSize = sizeof(te);
+        if (Thread32First(h, &te)) 
+        {
+            do {
+                if (te.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) +
+                    sizeof(te.th32OwnerProcessID) && te.th32OwnerProcessID == process.get_id()) 
+                {
+                    handle_t handle = OpenThread(THREAD_ALL_ACCESS, FALSE, te.th32ThreadID);
+                    if (suspend)
+                        SuspendThread(handle);
+                    //may be close here??
+                    threads.push_back(handle);
+                    /*printf("Process 0x%04x Thread 0x%04x\n",
+                    te.th32OwnerProcessID, te.th32ThreadID);*/
+                }
+                te.dwSize = sizeof(te);
+            } while (Thread32Next(h, &te));
+        }
+        CloseHandle(h);
+    }
+}
+
+void process_wrapper::wait()
 {
     clock_t program_run_time = clock();//TODO:make this global
     if (restrictions.get_restriction(restriction_user_time_limit) == restriction_no_limit)
@@ -357,233 +509,51 @@ void CProcess::wait()
     program_run_time = clock() - program_run_time;
     cout << program_run_time;
     report.user_time = (program_run_time*1000)/CLOCKS_PER_SEC;
-    GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);;
-    std_output.wait_for_pipe(100);
-    std_error.wait_for_pipe(100);
-    WaitForSingleObject(process_info.hProcess, INFINITE);// TODO: get rid of this
+    GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
+    process.wait(INFINITE);
     running = false;
 }
 
-// Finalization
-void CProcess::finish()
+process_wrapper::process_wrapper( const std::string &program, const options_class &options, const restrictions_class &restrictions ) :process(program, options), restrictions(restrictions)
 {
-    get_report();
-    std_output.finish();
-    std_error.finish();
+    apply_restrictions();
+}
+
+process_wrapper::~process_wrapper()
+{
     CloseHandleSafe(hIOCP);
     CloseHandleSafe(hJob);
-    CloseHandleSafe(process_info.hProcess);
-    CloseHandleSafe(process_info.hThread);
-    CloseHandleSafe(check);
+    CloseHandleSafe(check_thread);
 }
 
-CProcess::CProcess(const string &file):application(file), process_status(process_not_started), terminate_reason(terminate_reason_not_terminated),
-    std_input(STD_INPUT), std_output(STD_OUTPUT), std_error(STD_ERROR), running(false)
+void process_wrapper::run_process()
 {
-	//getting arguments from list
-	//working dir, etc
-}
-
-//not void, but bool
-void CProcess::prepare()
-{
-    createProcess();
-    setRestrictions();
-}
-
-int CProcess::run()
-{
+    if (get_process_status() == process_failed_to_create || get_process_status() & process_finished)
+        return;
+    process.run_process();
     running = true;
-
-    DWORD w = ResumeThread(process_info.hThread);
-    //ContinueDebugEvent(process_info.dwProcessId, process_info.dwThreadId, DBG_CONTINUE);
-
-    std_output.bufferize();
-    std_error.bufferize();
-
-    check = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
-    // create thread, waiting for completition
+    check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
     wait();
-    int exit_code = get_exit_code();
-    finish();
-
-    return exit_code;
 }
 
-bool CProcess::set_terminate_reason(const terminate_reason_t &reason)
+void process_wrapper::run_async()
 {
-    terminate_reason_t current_reason = get_terminate_reason();
-    if (current_reason != terminate_reason_not_terminated || reason == current_reason)
-        return false;
-
-    return true;
-}
-
-process_id CProcess::get_process_id()
-{
-    if (get_process_status() == process_not_started)
-        return 0;//error
-    return process_info.dwProcessId;
-}
-
-int CProcess::Run()
-{
-    createProcess();
-    if (get_process_status() == process_failed_to_create)
-        return -1;
-    setRestrictions();
-    // deprecated
+    if (get_process_status() == process_failed_to_create || get_process_status() & process_finished)
+        return;
+    process.run_process();
     running = true;
-
-    DWORD w = ResumeThread(process_info.hThread);
-
-    std_output.bufferize();
-    std_error.bufferize();
-
-    check = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
-    // create thread, waiting for completition
-    wait();
-    int exit_code = get_exit_code();
-    finish();
-
-    return exit_code;
-}
-
-void CProcess::RunAsync()
-{
-    createProcess();
-    setRestrictions();    
-    running = true;
-
-    DWORD w = ResumeThread(process_info.hThread);
-
-    std_output.bufferize();
-    std_error.bufferize();
-
-    check = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
-    completition = CreateThread(NULL, 0, process_completition, this, 0, NULL);
+    check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
+    completition = CreateThread(NULL, 0, process_completition_proc, this, 0, NULL);
     //WaitForSingleObject(completition, 100); // TODO fix this
     //create in another thread waiting function
 }
-CProcess::~CProcess()
+
+terminate_reason_t process_wrapper::get_terminate_reason()
 {
-	//kills process if it is running
-}
-unsigned long CProcess::get_exit_code()
-{
-    DWORD dwExitCode = 0;
-    if (!GetExitCodeProcess(process_info.hProcess, &dwExitCode))
-        throw "!!!";
-    return dwExitCode;
+    return terminate_reason;
 }
 
-void CProcess::suspend()
-{
-    if (get_process_status() != process_still_active)
-        return;
-    dump_threads(true);
-    process_status = process_suspended;
-    //SuspendThread(process_info.hThread);
-}
-
-void CProcess::resume()
-{
-    if (get_process_status() != process_suspended)
-        return;
-    while (!threads.empty())
-    {
-        handle_t handle = threads.front();
-        threads.pop_front();
-        ResumeThread(handle);
-        CloseHandle(handle);
-    }
-    process_status = process_still_active;
-    get_process_status();
-}
-
-void CProcess::dump_threads(bool suspend)
-{
-    //if process is active and started!!!
-    if (!is_running())
-        return;
-    //while (threads.empty())
-    //{
-    //CloseHandle(threads.begin()
-    //}
-    threads.clear();
-    HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-    if (h != INVALID_HANDLE_VALUE)
-    {
-        THREADENTRY32 te;
-        te.dwSize = sizeof(te);
-        if (Thread32First(h, &te)) 
-        {
-            do {
-                if (te.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) +
-                    sizeof(te.th32OwnerProcessID) && te.th32OwnerProcessID == process_info.dwProcessId) 
-                {
-                    handle_t handle = OpenThread(THREAD_ALL_ACCESS, FALSE, te.th32ThreadID);
-                    if (suspend)
-                        SuspendThread(handle);
-                    //may be close here??
-                    threads.push_back(handle);
-                    /*printf("Process 0x%04x Thread 0x%04x\n",
-                    te.th32OwnerProcessID, te.th32ThreadID);*/
-                }
-                te.dwSize = sizeof(te);
-            } while (Thread32Next(h, &te));
-        }
-        CloseHandle(h);
-    }
-}
-
-process_status_t CProcess::get_process_status()
-{
-    // renew process status
-    //cout << process_status << endl;
-    if (process_status == process_failed_to_create)
-        return process_status;
-    // ************************* DIRTY HACK *************************//
-    if (terminate_reason != terminate_reason_not_terminated)
-        process_status = process_finished_terminated;
-    // ************************* END OF HACK ************************//
-    if (process_status & process_finished || process_status == process_suspended)
-        return process_status;
-    unsigned long exitcode = get_exit_code();
-    if (exitcode == exit_code_still_active)
-        process_status = process_still_active;
-    else
-        process_status = process_finished_abnormally;
-    if (exitcode == 0)
-        process_status = process_finished_normal;
-    return process_status;
-}
-
-istringstream & CProcess::stdoutput()
-{
-    return std_output.stream();
-}
-
-istringstream & CProcess::stderror()
-{
-    return std_error.stream();
-}
-
-bool CProcess::is_running()
-{
-    if (running)
-        return process_is_active;
-    return (bool)(get_process_status() & process_is_active);
-}
-
-exception_t CProcess::get_exception()
-{
-    if (get_process_status() == process_finished_abnormally)
-        return (exception_t)get_exit_code();
-    else return exception_exception_no;
-}
-
-CReport CProcess::get_report()
+report_class process_wrapper::get_report()
 {
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
     report.process_status = get_process_status();
@@ -606,40 +576,52 @@ CReport CProcess::get_report()
 
     report.peak_memory_used = xli.PeakJobMemoryUsed;
 
-    report.application_name = application;
+    report.application_name = process.get_program();
 
-    report.exception = get_exception();
+    report.exception = process.get_exception();
     report.terminate_reason = get_terminate_reason();
-    report.exit_code = get_exit_code();
+    report.exit_code = process.get_exit_code();
 
-    report.options = options;
+    report.options = process.get_options();
     report.restrictions = restrictions;
 
     return report;
 }
 
-terminate_reason_t CProcess::get_terminate_reason()
+process_status_t process_wrapper::get_process_status()
 {
-    return terminate_reason;
+    if (process_status == process_finished_terminated || process_status == process_suspended)
+        return process_status;
+    return process.get_process_status();
 }
 
-void CProcess::set_restrictions(const CRestrictions &Restrictions)
+bool process_wrapper::is_running()
 {
-    // TODO m.b. test restrictions here
-    restrictions = Restrictions;
+    if (running)
+        return true;
+    return (get_process_status() & process_is_active) != 0;
 }
 
-void CProcess::set_options(const COptions &Options)
+void process_wrapper::suspend()
 {
-    options = Options;
+    if (get_process_status() != process_still_active)
+        return;
+    dump_threads(true);
+    process_status = process_suspended;
+    //SuspendThread(process_info.hThread);
 }
 
-void CProcess::Finish()
+void process_wrapper::resume()
 {
-    finish();
-}
-
-bool CProcess::Wait(const unsigned long &ms_time)
-{
-    return WaitForSingleObject(completition, ms_time) != 0;
+    if (get_process_status() != process_suspended)
+        return;
+    while (!threads.empty())
+    {
+        handle_t handle = threads.front();
+        threads.pop_front();
+        ResumeThread(handle);
+        CloseHandle(handle);
+    }
+    process_status = process_still_active;
+    get_process_status();
 }

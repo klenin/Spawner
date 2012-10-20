@@ -4,7 +4,7 @@
 #include <spawner.h>
 
 // Formatting report
-string format_report(CReport rep)
+string format_report(report_class rep)
 {
     std::ostringstream osstream;
     osstream << std::endl << "--------------- Spawner report ---------------" << std::endl;
@@ -38,8 +38,6 @@ string format_report(CReport rep)
 
 int main(int argc, char *argv[])
 {
-    for (int i = 0; i < argc; i++)
-        std::cout << argv[i] << std::endl;
 	CArguments arguments(argc, argv);
     if (!arguments.valid())
     {
@@ -47,8 +45,8 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    CRestrictions restrictions;
-    COptions options;
+    restrictions_class restrictions;
+    options_class options;
 
     for (int i = arguments.get_arguments_index(); i < argc; i++)
         options.add_argument(argv[i]);
@@ -96,16 +94,7 @@ int main(int argc, char *argv[])
 
     process_wrapper wrapper(arguments.get_program(), options, restrictions);
     wrapper.run_process();
-    CReport rep = wrapper.get_report();
-
-
-/*    CProcess process(arguments.get_program());
-    process.set_restrictions(restrictions);
-    process.set_options(options);
-
-    process.Run();
-
-    CReport rep = process.get_report();*/
+    report_class rep = wrapper.get_report();
 
     cout << format_report(rep);
 	return 0;

@@ -11,8 +11,8 @@ typedef enum
     process_finished_normal     = 0x1, //b 0000 0001
     process_finished_abnormally = 0x5, //b 0000 0101
     process_finished_terminated = 0x9, //b 0000 1001
-    process_not_started         = 0xfc,//b 1111 1100
-    process_failed_to_create    = 0xf8,//b 1111 1000
+    process_not_started         = 0x80,//b 1000 0000
+    process_failed_to_create    = 0x90,//b 1001 0000
 } process_status_t;
 
 const unsigned int process_finished     = 0x1;//b 01

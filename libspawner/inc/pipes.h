@@ -22,18 +22,18 @@ const unsigned int STD_PIPE_OI = 0x2;// output<-input Write pipe
 const unsigned int BUFFER_SIZE = 4096;
 
 
-class CPipe
+class pipe_class
 {
 public:
-    CPipe();
-    CPipe(std_pipe_t handleType);
-    void Init();
-    pipe_t ReadPipe(){ return readPipe;}
-    pipe_t WritePipe(){ return writePipe;}
-    void ClosePipe();
-    ~CPipe();
-    bool Write(void *data, size_t size);
-    size_t Read(void *data, size_t size);
+    pipe_class();
+    pipe_class(std_pipe_t handleType);
+    void init();
+    pipe_t read_pipe(){ return readPipe;}
+    pipe_t write_pipe(){ return writePipe;}
+    void close_pipe();
+    ~pipe_class();
+    bool write(void *data, size_t size);
+    size_t read(void *data, size_t size);
     void bufferize();
     void wait();
     void finish();

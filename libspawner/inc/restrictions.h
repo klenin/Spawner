@@ -23,12 +23,12 @@ typedef unsigned int restriction_t;
 const restriction_t restriction_no_limit = 0xffffffff;
 const restriction_t restriction_limited  = 0x00000001;
 //TODO move source to platform independent .cpp
-class CRestrictions
+class restrictions_class
 {
 private:
     restriction_t restrictions[restriction_max];
 public:
-    CRestrictions()
+    restrictions_class()
     {
         for (int i = 0; i < restriction_max; i++)
             restrictions[i] = restriction_no_limit;

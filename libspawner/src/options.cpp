@@ -1,11 +1,11 @@
 #include "options.h"
 
-void COptions::add_argument(std::string argument)
+void options_class::add_argument(std::string argument)
 {
     arguments.push_back(argument);
 }
 
-std::string COptions::get_arguments()
+std::string options_class::get_arguments()
 {
     if (arguments.size() == 0)
         return "";

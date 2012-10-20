@@ -1,20 +1,20 @@
 #include "pipes.h"
 
-CPipe::CPipe() :readPipe(INVALID_HANDLE_VALUE), writePipe(INVALID_HANDLE_VALUE)//init with default_handle_value
+pipe_class::pipe_class() :readPipe(INVALID_HANDLE_VALUE), writePipe(INVALID_HANDLE_VALUE)//init with default_handle_value
 {
-    Init();
+    init();
 }
 
-CPipe::CPipe(std_pipe_t handleType) : readPipe(INVALID_HANDLE_VALUE), writePipe(INVALID_HANDLE_VALUE), pipe_type(handleType), reading_thread(INVALID_HANDLE_VALUE), reading_mutex(INVALID_HANDLE_VALUE)
+pipe_class::pipe_class(std_pipe_t handleType) : readPipe(INVALID_HANDLE_VALUE), writePipe(INVALID_HANDLE_VALUE), pipe_type(handleType), reading_thread(INVALID_HANDLE_VALUE), reading_mutex(INVALID_HANDLE_VALUE)
 {
-    Init();
+    init();
     if (pipe_type & STD_PIPE_OI)
         SetHandleInformation(writePipe, HANDLE_FLAG_INHERIT, 0);
     if (pipe_type & STD_PIPE_IO)
         SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
 }
 
-void CPipe::Init()
+void pipe_class::init()
 {
     SECURITY_ATTRIBUTES saAttr;   
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES); 
@@ -27,13 +27,13 @@ void CPipe::Init()
     //SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
 }
 
-void CPipe::ClosePipe()
+void pipe_class::close_pipe()
 {
     CloseHandleSafe(readPipe);
     CloseHandleSafe(writePipe);
 }
 
-CPipe::~CPipe()
+pipe_class::~pipe_class()
 {
     if (pipe_type & STD_PIPE_OI)
         CloseHandleSafe(readPipe);//replace with safe method
@@ -41,7 +41,7 @@ CPipe::~CPipe()
         CloseHandleSafe(writePipe);//replace with safe method
 }
 
-bool CPipe::Write(void *data, size_t size)
+bool pipe_class::write(void *data, size_t size)
 {
     BOOL bSuccess;
     DWORD dwWritten;
@@ -53,7 +53,7 @@ bool CPipe::Write(void *data, size_t size)
     return true;
 }
 
-size_t CPipe::Read(void *data, size_t size)
+size_t pipe_class::read(void *data, size_t size)
 {
     BOOL bSuccess;
     DWORD dwRead;
@@ -66,7 +66,7 @@ size_t CPipe::Read(void *data, size_t size)
 }
 
 
-void CPipe::bufferize()
+void pipe_class::bufferize()
 {
     if (reading_thread != INVALID_HANDLE_VALUE)
     {
@@ -80,14 +80,14 @@ void CPipe::bufferize()
     reading_thread = CreateThread(NULL, 0, reading_body, this, 0, NULL);
 }
 
-void CPipe::wait()
+void pipe_class::wait()
 {
     if (reading_mutex == INVALID_HANDLE_VALUE || reading_thread == INVALID_HANDLE_VALUE)
         return;
     WaitForSingleObject(reading_mutex, INFINITE);
 }
 
-void CPipe::finish()
+void pipe_class::finish()
 {
     WaitForSingleObject(reading_mutex, INFINITE);
     ReleaseMutex(reading_mutex);
@@ -95,25 +95,25 @@ void CPipe::finish()
     CloseHandleSafe(reading_mutex);
 }
 
-istringstream & CPipe::stream()
+istringstream & pipe_class::stream()
 {
     wait();
     ReleaseMutex(reading_mutex);
     return reading_buffer;
 }
 
-size_t CPipe::buffer_size()
+size_t pipe_class::buffer_size()
 {
     return buff_size;
 }
 
-thread_return_t CPipe::reading_body(thread_param_t param)
+thread_return_t pipe_class::reading_body(thread_param_t param)
 {
-    CPipe *self = (CPipe*)param;
+    pipe_class *self = (pipe_class*)param;
     for (;;)
     {
         char data[BUFFER_SIZE];
-        size_t bytes_count = self->Read(data, BUFFER_SIZE);
+        size_t bytes_count = self->read(data, BUFFER_SIZE);
         if (bytes_count == 0)
             break;
         WaitForSingleObject(self->reading_mutex, INFINITE);
@@ -136,7 +136,7 @@ thread_return_t CPipe::reading_body(thread_param_t param)
     return 0;
 }
 
-void CPipe::wait_for_pipe(const unsigned int &ms_time)
+void pipe_class::wait_for_pipe(const unsigned int &ms_time)
 {
     WaitForSingleObject(reading_thread, ms_time);
 }
