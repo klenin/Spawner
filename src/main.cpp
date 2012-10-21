@@ -65,16 +65,16 @@ int main(int argc, char *argv[])
             arguments.GetArgument(SP_WRITE_LIMIT), restriction_no_limit));
     }
 
-    if (arguments.ArgumentExists(SP_DEADLINE))
-    {
-        restrictions.set_restriction(restriction_processor_time_limit, convert(value_t(unit_time_second, degree_milli), 
-            arguments.GetArgument(SP_DEADLINE), restriction_no_limit));
-    }
-
     if (arguments.ArgumentExists(SP_TIME_LIMIT))
     {
-        restrictions.set_restriction(restriction_user_time_limit, convert(value_t(unit_time_second, degree_milli), 
+        restrictions.set_restriction(restriction_processor_time_limit, convert(value_t(unit_time_second, degree_milli), 
             arguments.GetArgument(SP_TIME_LIMIT), restriction_no_limit));
+    }
+
+    if (arguments.ArgumentExists(SP_DEADLINE))
+    {
+        restrictions.set_restriction(restriction_user_time_limit, convert(value_t(unit_time_second, degree_milli), 
+            arguments.GetArgument(SP_DEADLINE), restriction_no_limit));
     }
 
     if (arguments.ArgumentExists(SP_LOAD_RATIO))
