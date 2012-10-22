@@ -9,6 +9,8 @@ typedef struct
 
 // Note all 'thread' replaced with 'process'
 const map_cell exception_identifiers[] = {
+    {exception_unknown                  , "EXCEPTION_UNKNOWN"
+        ,""},
     {exception_access_violation         , "EXCEPTION_ACCESS_VIOLATION"
         ,"The Process tried to read from or write to a virtual address for which it does not have the appropriate access."},
     {exception_datatype_misalign        , "EXCEPTION_DATATYPE_MISALIGNMENT"

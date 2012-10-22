@@ -22,6 +22,7 @@ const unsigned int process_is_active    = 0x2;//b 10
 
 typedef enum
 {
+    exception_unknown                   = 3,
     exception_access_violation          = EXCEPTION_ACCESS_VIOLATION,
     exception_datatype_misalign         = EXCEPTION_DATATYPE_MISALIGNMENT,
     exception_breakpoint                = EXCEPTION_BREAKPOINT,

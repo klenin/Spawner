@@ -347,13 +347,8 @@ thread_return_t process_wrapper::check_limits_proc( thread_param_t param )
     dt = clock();
     while (1)
     {
-        BOOL rs = QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL);
-        if (!rs)
-        {
-            DWORD le = GetLastError();
-            std::cout << "!!!!" << le;// TODO: fail
+        if (!QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL))
             break;
-        }
 
         if (restrictions.get_restriction(restriction_write_limit) != restriction_no_limit && 
             bai.IoInfo.WriteTransferCount > restrictions.get_restriction(restriction_write_limit))
