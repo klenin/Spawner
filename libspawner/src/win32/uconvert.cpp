@@ -111,15 +111,15 @@ long double convert(const value_t &from, const value_t &to, const long double &v
     return v;
 }
 
-string convert(const value_t &from, const value_t &to, const long double &val, const char *format, const long double &inf_value)
+std::string convert(const value_t &from, const value_t &to, const long double &val, const char *format, const long double &inf_value)
 {
     if (val == inf_value)
         return infinite_string;
     double res = convert(from, to, val);
     unsigned int to_unit_index = get_unit_index(to.unit_type);
     unsigned int to_degree_index = get_degree_index(to.degree_type);
-    ostringstream osstream;
-    osstream.setf(ios::fixed,ios::floatfield);
+    std::ostringstream osstream;
+    osstream.setf(std::ios::fixed,std::ios::floatfield);
     osstream.precision(15);
     osstream << res;
     for (unsigned int i = 0; i < strlen(format); i++)
@@ -151,9 +151,9 @@ string convert(const value_t &from, const value_t &to, const long double &val, c
 // Default from values for different types are
 // * memory - MB
 // * time - s
-unsigned long convert(const value_t &to, const string &val, const unsigned long &default_value)
+unsigned long convert(const value_t &to, const std::string &val, const unsigned long &default_value)
 {
-    string v = val;
+    std::string v = val;
     value_t from(unit_no_unit);
     long double value = 0.0;
 
@@ -178,6 +178,39 @@ unsigned long convert(const value_t &to, const string &val, const unsigned long 
     {
         from = value_t(unit_time_second);
     }
+
+    if (v.length() > 0)
+    {
+        int len = v.length(), index = 0, degree_index = 0, unit_index = 0;
+        for (degree_index = 1; degree_index < degrees_count; degree_index++)
+        {
+            while (index < len && index < strlen(degree_descriptions[degree_index].short_name) && 
+                v[index]==degree_descriptions[degree_index].short_name[index])
+                index++;
+            if (index == strlen(degree_descriptions[degree_index].short_name))
+                break;
+            index = 0;
+        }
+        int old_index = index;
+        for (unit_index = 1; unit_index < units_count; unit_index++)
+        {
+            while (index < len && index-old_index < strlen(unit_descriptions[unit_index].short_name) && 
+                v[index]==unit_descriptions[unit_index].short_name[index - old_index])
+                index++;
+            if (index == (old_index + strlen(unit_descriptions[unit_index].short_name)))
+                break;
+            index = old_index;
+        }
+        if (degree_index < degrees_count)
+            from.degree_type = degree_descriptions[degree_index].type;
+        if (unit_index < units_count)
+            from.unit_type = unit_descriptions[unit_index].type;
+        if (!((to.unit_type & from.unit_type) & unit_memory || (to.unit_type & from.unit_type) & unit_time) ||
+            unit_index == units_count || degree_index == degrees_count)
+            return default_value;
+    }
+
+
     double result = abs(convert(from, to, value));
     return (unsigned long)result;
 }

@@ -6,8 +6,6 @@
 #include <string>
 #include <iostream>
 
-using namespace std;
-
 typedef enum
 {
     STD_INPUT   = 0x02,
@@ -38,13 +36,13 @@ public:
     void wait();
     void finish();
     /* think about safer way of reading from pipe */
-    istringstream &stream();
+    std::istringstream &stream();
     size_t buffer_size();
     void wait_for_pipe(const unsigned int &ms_time);
 private:
     handle_t reading_thread;
     handle_t reading_mutex;
-    istringstream reading_buffer;
+    std::istringstream reading_buffer;
     size_t buff_size;
     static thread_return_t reading_body(thread_param_t param);
     pipe_t readPipe, writePipe;

@@ -2,7 +2,6 @@
 #define _SPAWNER_UNIT_CONVERT_H_
 
 #include <string>
-using namespace std;
 
 typedef enum
 {
@@ -56,8 +55,8 @@ struct value_t
 
 unsigned long convert(const value_t &from, const value_t &to, const unsigned long &val);
 long double convert(const value_t &from, const value_t &to, const long double &val);
-string convert(const value_t &from, const value_t &to, const long double &val, const char *format, const long double &inf_value = -1);
+std::string convert(const value_t &from, const value_t &to, const long double &val, const char *format, const long double &inf_value = -1);
 
-unsigned long convert(const value_t &to, const string &val, const unsigned long &default_value = 0);
+unsigned long convert(const value_t &to, const std::string &val, const unsigned long &default_value = 0);
 
 #endif//_SPAWNER_UNIT_CONVERT_H_

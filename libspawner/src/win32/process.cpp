@@ -1,7 +1,7 @@
 #include <process.h>
-#include <iostream>
-#include <windows.h>
-#include <winbase.h>
+//#include <iostream>
+//#include <windows.h>
+//#include <winbase.h>
 #include <time.h>
 #include <vector>
 const size_t MAX_RATE_COUNT = 20;
@@ -122,7 +122,7 @@ bool CProcess::Wait(const unsigned long &ms_time)
 }
 */
 
-void process_class::init_process(char *cmd, const char *wd)
+bool process_class::init_process(char *cmd, const char *wd)
 {
     if ( !CreateProcess(program.c_str(),
         cmd,
@@ -142,8 +142,36 @@ void process_class::init_process(char *cmd, const char *wd)
         {
             DWORD le = GetLastError();
             process_status = process_failed_to_create;
+            return false;
         }
     }
+    return true;
+}
+
+bool process_class::init_process_with_logon(char *cmd, const char *wd)
+{
+    if ( !CreateProcess(program.c_str(),
+        cmd,
+        NULL, NULL,
+        TRUE,
+        process_creation_flags,
+        NULL, wd,
+        &si, &process_info) )
+    {
+        if ( !CreateProcess(NULL,
+            cmd,
+            NULL, NULL,
+            TRUE,
+            process_creation_flags,
+            NULL, wd,
+            &si, &process_info) )
+        {
+            DWORD le = GetLastError();
+            process_status = process_failed_to_create;
+            return false;
+        }
+    }
+    return true;
 }
 
 void process_class::create_process()
@@ -171,13 +199,13 @@ void process_class::create_process()
     // Extracting program name and generating cmd line
     char *cmd;
     const char *wd = (options.working_directory != "")?options.working_directory.c_str():NULL;
-    string command_line;
+    std::string command_line;
     size_t  index_win = program.find_last_of('\\'), 
         index_nix = program.find_last_of('/');
 
-    if (index_win != string::npos)
+    if (index_win != std::string::npos)
         command_line = program.substr(index_win + 1);
-    else if (index_nix != string::npos)
+    else if (index_nix != std::string::npos)
         command_line = program.substr(index_nix + 1);
     else
         command_line = program;
@@ -185,6 +213,12 @@ void process_class::create_process()
     command_line = command_line + " " + (options.string_arguments==""?options.get_arguments():options.string_arguments);
     cmd = new char [command_line.size()+1];
     strcpy(cmd, command_line.c_str());
+    if (options.login != "" && init_process_with_logon(cmd, wd))
+    {
+        delete[] cmd;
+        return;
+    }
+        
     init_process(cmd, wd);
     delete[] cmd;
 }
@@ -332,7 +366,7 @@ thread_return_t process_wrapper::check_limits_proc( thread_param_t param )
         restrictions.get_restriction(restriction_user_time_limit) == restriction_no_limit &&
         restrictions.get_restriction(restriction_write_limit) == restriction_no_limit &&
         restrictions.get_restriction(restriction_load_ratio) == restriction_no_limit)
-        return 0;
+        return 0;//may be comment this
 
     DWORD t;
     int dt;
@@ -504,7 +538,6 @@ void process_wrapper::wait()
 
     } while (!message);
     program_run_time = clock() - program_run_time;
-    cout << program_run_time;
     report.user_time = (program_run_time*1000)/CLOCKS_PER_SEC;
     GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
     process.wait(INFINITE);

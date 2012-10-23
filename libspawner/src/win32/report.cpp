@@ -127,12 +127,12 @@ const char *get_exception_text(exception_t exception)
 
 std::string get_exception_info(exception_t exception, std::string format)
 {
-    string res = format;
+    std::string res = format;
     unsigned int index = get_exception_index(exception);
     size_t pos = 0;
-    while ((pos = res.find("%n")) != string::npos)
+    while ((pos = res.find("%n")) != std::string::npos)
         res.replace(pos, 2, get_exception_name(index));
-    while ((pos = res.find("%t")) != string::npos)
+    while ((pos = res.find("%t")) != std::string::npos)
         res.replace(pos, 2, get_exception_text(index));
     //std::replace(res.begin(), res.end(), string("%n"), string(get_exception_name(index)));
     //std::replace(res.begin(), res.end(), string("%t"), string(get_exception_text(index)));

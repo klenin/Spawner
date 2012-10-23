@@ -6,6 +6,5 @@
 #include <inc/pipes.h>
 #include <inc/uconvert.h>
 #include <inc/report.h>
-#include <string>
 
 #endif//_SPAWNER_H_

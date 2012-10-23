@@ -95,7 +95,7 @@ void pipe_class::finish()
     CloseHandleSafe(reading_mutex);
 }
 
-istringstream & pipe_class::stream()
+std::istringstream & pipe_class::stream()
 {
     wait();
     ReleaseMutex(reading_mutex);
@@ -124,9 +124,9 @@ thread_return_t pipe_class::reading_body(thread_param_t param)
             self->reading_buffer.str(self->reading_buffer.rdbuf()->str() + data);
 
             if (self->pipe_type == STD_OUTPUT)
-                cout << "stdout :\n";
+                std::cout << "stdout :\n";
             if (self->pipe_type == STD_ERROR)
-                cout << "stderr :\n";
+                std::cout << "stderr :\n";
             //if echo
             std::cout << bytes_count << std::endl;
             std::cout.write(data, bytes_count);

@@ -17,6 +17,7 @@ public:
     std::string string_arguments;
     std::string working_directory;
     std::string login;
+    std::string password;
     bool hide_gui;
     bool debug;
     bool silent_errors;

@@ -1,10 +1,11 @@
 #include <ParseArguments.h>
 #include <iostream>
+#include <string>
 
 #include <spawner.h>
 
 // Formatting report
-string format_report(report_class rep)
+std::string format_report(report_class rep)
 {
     std::ostringstream osstream;
     osstream << std::endl << "--------------- Spawner report ---------------" << std::endl;
@@ -89,13 +90,15 @@ int main(int argc, char *argv[])
     if (arguments.ArgumentExists(SP_SILENT))
         options.silent_errors = true;
     if (arguments.ArgumentExists(SP_LOGIN))
-        options.silent_errors = true;
+        options.login = arguments.GetArgument(SP_LOGIN);
+    if (arguments.ArgumentExists(SP_PASSWORD))
+        options.password = arguments.GetArgument(SP_PASSWORD);
     options.hide_gui = true;
 
     process_wrapper wrapper(arguments.get_program(), options, restrictions);
     wrapper.run_process();
     report_class rep = wrapper.get_report();
 
-    cout << format_report(rep);
+    std::cout << format_report(rep);
 	return 0;
 }
