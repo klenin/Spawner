@@ -380,6 +380,8 @@ thread_return_t process_wrapper::check_limits_proc( thread_param_t param )
                 rates.erase(rates.begin());
             }
             total_rate += load_ratio;
+            if (total_rate < 0.0)
+                total_rate = 0.0;
             self->report.load_ratio = total_rate/rates.size();
             last_quad_part = bai.BasicInfo.TotalUserTime.QuadPart;
             dt = clock();
