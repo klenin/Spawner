@@ -12,10 +12,13 @@ std::string format_report(report_class rep)
     osstream << "Application:               " << rep.application_name << std::endl;
     osstream << "Working directory:         " << rep.options.working_directory << std::endl;
     osstream << "Parameters:                " << rep.options.get_arguments() << std::endl; 
+    osstream << "Silent:                    " << rep.options.silent_errors << std::endl; 
+    osstream << "Debug:                     " << rep.options.debug << std::endl; 
+    osstream << "HideUI:                    " << rep.options.hide_gui << std::endl; 
     osstream << "SecurityLevel:             " << (rep.restrictions.get_restriction(restriction_security_limit) == restriction_limited) << std::endl;
     osstream << "CreateProcessMethod:       " << (rep.options.login==""?"Default":"WithLogon") << std::endl;
     osstream << "UserName:                  " << rep.options.login << std::endl;
-    osstream << "UserTimeLimit:             " << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), rep.restrictions.get_restriction(restriction_processor_time_limit), " (u)", restriction_no_limit) << std::endl;
+    osstream << "TimeLimit:                 " << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), rep.restrictions.get_restriction(restriction_processor_time_limit), " (u)", restriction_no_limit) << std::endl;
     osstream << "DeadLine:                  " << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), rep.restrictions.get_restriction(restriction_user_time_limit), " (u)", restriction_no_limit) << std::endl;
     osstream << "MemoryLimit:               " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.restrictions.get_restriction(restriction_memory_limit), " (du)", restriction_no_limit) << std::endl;
     osstream << "WriteLimit:                " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.restrictions.get_restriction(restriction_write_limit), " (du)", restriction_no_limit) << std::endl;
