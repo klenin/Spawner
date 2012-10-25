@@ -28,7 +28,7 @@ std::string format_report(report_class rep)
     osstream << "KernelTime:                " << convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), rep.kernel_time/10.0, " (u)") << std::endl;
     osstream << "UserTime:                  " << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), rep.user_time, " (u)") << std::endl;
     osstream << "PeakMemoryUsed:            " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.peak_memory_used, " (du)") << std::endl;
-    osstream << "Written:                   " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_kilo), rep.write_transfer_count, " (du)") << std::endl;
+    osstream << "Written:                   " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.write_transfer_count, " (du)") << std::endl;
     osstream << "LoadRatio:                 " << convert(value_t(unit_no_unit, degree_centi), value_t(unit_no_unit), rep.load_ratio, " (%)", restriction_no_limit) << std::endl;
     osstream << "TerminateReason:           " << get_terminate_reason(rep.terminate_reason) << std::endl;
     osstream << "ExitStatus:                " << get_status_text(rep.process_status) << std::endl;
