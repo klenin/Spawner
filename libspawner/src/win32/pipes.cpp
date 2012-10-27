@@ -89,8 +89,11 @@ void pipe_class::wait()
 
 void pipe_class::finish()
 {
-    WaitForSingleObject(reading_mutex, INFINITE);
-    ReleaseMutex(reading_mutex);
+    if (reading_mutex != INVALID_HANDLE_VALUE)
+    {
+        WaitForSingleObject(reading_mutex, INFINITE);
+        ReleaseMutex(reading_mutex);
+    }
     CloseHandleSafe(reading_thread);
     CloseHandleSafe(reading_mutex);
 }

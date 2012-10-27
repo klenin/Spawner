@@ -7,6 +7,7 @@
 /* * Make report.cpp kinda cross-platform                               */
 /************************************************************************/
 
+#include <stdlib.h>
 #ifdef _WIN32
 
 #ifndef _MSC_VER
@@ -46,5 +47,7 @@ const unsigned long infinite = INFINITE;
 #else
 
 #endif//_WIN32
+
+wchar_t *a2w(const char *str);
 
 #endif//_SPAWNER_PLATFORM_H_

@@ -1,7 +1,4 @@
 #include <process.h>
-//#include <iostream>
-//#include <windows.h>
-//#include <winbase.h>
 #include <time.h>
 #include <vector>
 const size_t MAX_RATE_COUNT = 20;
@@ -150,27 +147,71 @@ bool process_class::init_process(char *cmd, const char *wd)
 
 bool process_class::init_process_with_logon(char *cmd, const char *wd)
 {
-    if ( !CreateProcess(program.c_str(),
-        cmd,
-        NULL, NULL,
-        TRUE,
-        process_creation_flags,
-        NULL, wd,
-        &si, &process_info) )
+    /*HANDLE hToken;
+
+    if (!LogonUser(options.login.c_str(), NULL, options.password.c_str(), LOGON32_LOGON_INTERACTIVE, LOGON32_PROVIDER_DEFAULT, 
+        &hToken))
     {
-        if ( !CreateProcess(NULL,
-            cmd,
-            NULL, NULL,
-            TRUE,
-            process_creation_flags,
-            NULL, wd,
-            &si, &process_info) )
+        //throw GetWin32Error("LogonUser");
+        return false;
+    }
+
+    //CHAR commandLine[4096];
+    //sprintf(commandLine, "\"%s\" %s ", application, parameters);
+
+    //ZeroMemory(&startupInfo, sizeof(startupInfo));
+    //startupInfo.cb = sizeof(startupInfo);
+    //startupInfo.wShowWindow = (WORD)(creationFlags & CREATE_NO_WINDOW);
+    //startupInfo.lpDesktop = "";
+
+    if (!CreateProcessAsUser(hToken, NULL, cmd, NULL, NULL, TRUE, 
+        process_creation_flags, NULL, wd, &si, &process_info))
+    {
+        //throw GetWin32Error("CreateProcessAsUser");
+        return false;
+    }
+    return true;*/
+    STARTUPINFOW siw;
+    //USES_CONVERSION;
+    ZeroMemory(&siw, sizeof(siw));
+    siw.cb = sizeof(si);
+    siw.dwFlags = STARTF_USESTDHANDLES;
+    siw.hStdInput = si.hStdInput;
+    siw.hStdOutput = si.hStdOutput;
+    siw.hStdError = si.hStdError;
+    siw.wShowWindow = si.wShowWindow;
+    siw.lpDesktop = L"";
+    wchar_t *login = a2w(options.login.c_str());
+    wchar_t *password = a2w(options.password.c_str());
+    wchar_t *wprogram = a2w(program.c_str());
+    wchar_t *wcmd = a2w(cmd);
+    wchar_t *wwd = a2w(wd);
+    //wchar_t *login = a2w(options.login.c_str());
+    if ( !CreateProcessWithLogonW(login, NULL, password, 0,  
+        wprogram, wcmd, process_creation_flags,
+        NULL, wwd, &siw, &process_info) )
+    {
+        if ( !CreateProcessWithLogonW(login, NULL, password, 0,  
+            NULL, wcmd, process_creation_flags,
+            NULL, wwd, &siw, &process_info) )
         {
             DWORD le = GetLastError();
-            process_status = process_failed_to_create;
+            delete[] login;
+            delete[] password;
+            delete[] wprogram;
+            delete[] wcmd;
+            delete[] wwd;
             return false;
         }
     }
+    delete[] login;
+    delete[] password;
+    delete[] wprogram;
+    delete[] wcmd;
+    delete[] wwd;
+    JOBOBJECT_BASIC_PROCESS_ID_LIST info;
+    DWORD sz = 0;
+    QueryInformationJobObject(NULL, JobObjectBasicProcessIdList, &info, sizeof(info), &sz);
     return true;
 }
 
@@ -219,7 +260,8 @@ void process_class::create_process()
         return;
     }
         
-    init_process(cmd, wd);
+    if (!init_process(cmd, wd))
+        process_status = process_failed_to_create;
     delete[] cmd;
 }
 
@@ -307,6 +349,8 @@ void process_class::wait( const unsigned long &interval )
 
 void process_wrapper::apply_restrictions()
 {
+    if (process.get_process_status() == process_failed_to_create)
+        return;
     /* implement restriction value check */
     hJob = CreateJobObject(NULL, NULL);
     DWORD le = GetLastError();
@@ -325,6 +369,7 @@ void process_wrapper::apply_restrictions()
     }
 
     SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, &joeli, sizeof(joeli));
+    le = GetLastError();
 
     // Security limit
     if (restrictions.get_restriction(restriction_security_limit) != restriction_no_limit)
@@ -340,13 +385,16 @@ void process_wrapper::apply_restrictions()
 
     // Assigning created process to job object
     AssignProcessToJobObject(hJob, process.get_handle());
+    le = GetLastError();
 
     hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 1, 1);
+    le = GetLastError();
 
     JOBOBJECT_ASSOCIATE_COMPLETION_PORT joacp; 
     joacp.CompletionKey = (PVOID)COMPLETION_KEY; 
     joacp.CompletionPort = hIOCP; 
     SetInformationJobObject(hJob, JobObjectAssociateCompletionPortInformation, &joacp, sizeof(joacp));
+    le = GetLastError();
 }
 
 thread_return_t process_wrapper::process_completition_proc( thread_param_t param )
@@ -544,7 +592,8 @@ void process_wrapper::wait()
     running = false;
 }
 
-process_wrapper::process_wrapper( const std::string &program, const options_class &options, const restrictions_class &restrictions ) :process(program, options), restrictions(restrictions)
+process_wrapper::process_wrapper( const std::string &program, const options_class &options, const restrictions_class &restrictions ) :process(program, options), restrictions(restrictions),
+    hIOCP(INVALID_HANDLE_VALUE), hJob(INVALID_HANDLE_VALUE), check_thread(INVALID_HANDLE_VALUE)
 {
     apply_restrictions();
 }
