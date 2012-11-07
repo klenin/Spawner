@@ -10,11 +10,12 @@
 #include <stdlib.h>
 #ifdef _WIN32
 
-#ifndef _MSC_VER
-#define _WIN32_WINNT 0x0500
-#endif//_MSC_VER
+//#ifndef _MSC_VER
+#define _WIN32_WINNT 0x0501
+//#endif//_MSC_VER
 #include <windows.h>
 #include <tlhelp32.h>
+//#include <winioctl.h>
 
 typedef HANDLE thread_t;
 

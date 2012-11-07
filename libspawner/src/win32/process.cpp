@@ -26,7 +26,7 @@ const size_t MAX_RATE_COUNT = 20;
     char *cmd;
     const char *wd = (self->options.working_directory != "")?self->options.working_directory.c_str():NULL;
     string command_line;
-    size_t  index_win = self->application.find_last_of('\\'), 
+    size_t  index_win = self->application.find_last_of('\\'),
         index_nix = self->application.find_last_of('/');
 
     if (index_win != string::npos)
@@ -149,7 +149,7 @@ bool process_class::init_process_with_logon(char *cmd, const char *wd)
 {
     /*HANDLE hToken;
 
-    if (!LogonUser(options.login.c_str(), NULL, options.password.c_str(), LOGON32_LOGON_INTERACTIVE, LOGON32_PROVIDER_DEFAULT, 
+    if (!LogonUser(options.login.c_str(), NULL, options.password.c_str(), LOGON32_LOGON_INTERACTIVE, LOGON32_PROVIDER_DEFAULT,
         &hToken))
     {
         //throw GetWin32Error("LogonUser");
@@ -164,7 +164,7 @@ bool process_class::init_process_with_logon(char *cmd, const char *wd)
     //startupInfo.wShowWindow = (WORD)(creationFlags & CREATE_NO_WINDOW);
     //startupInfo.lpDesktop = "";
 
-    if (!CreateProcessAsUser(hToken, NULL, cmd, NULL, NULL, TRUE, 
+    if (!CreateProcessAsUser(hToken, NULL, cmd, NULL, NULL, TRUE,
         process_creation_flags, NULL, wd, &si, &process_info))
     {
         //throw GetWin32Error("CreateProcessAsUser");
@@ -187,11 +187,11 @@ bool process_class::init_process_with_logon(char *cmd, const char *wd)
     wchar_t *wcmd = a2w(cmd);
     wchar_t *wwd = a2w(wd);
     //wchar_t *login = a2w(options.login.c_str());
-    if ( !CreateProcessWithLogonW(login, NULL, password, 0,  
+    if ( !CreateProcessWithLogonW(login, NULL, password, 0,
         wprogram, wcmd, process_creation_flags,
         NULL, wwd, &siw, &process_info) )
     {
-        if ( !CreateProcessWithLogonW(login, NULL, password, 0,  
+        if ( !CreateProcessWithLogonW(login, NULL, password, 0,
             NULL, wcmd, process_creation_flags,
             NULL, wwd, &siw, &process_info) )
         {
@@ -241,7 +241,7 @@ void process_class::create_process()
     char *cmd;
     const char *wd = (options.working_directory != "")?options.working_directory.c_str():NULL;
     std::string command_line;
-    size_t  index_win = program.find_last_of('\\'), 
+    size_t  index_win = program.find_last_of('\\'),
         index_nix = program.find_last_of('/');
 
     if (index_win != std::string::npos)
@@ -259,7 +259,7 @@ void process_class::create_process()
         delete[] cmd;
         return;
     }
-        
+
     if (!init_process(cmd, wd))
         process_status = process_failed_to_create;
     delete[] cmd;
@@ -347,13 +347,54 @@ void process_class::wait( const unsigned long &interval )
     std_error.wait_for_pipe(100);
 }
 
+PVOID GetInfoTable(ULONG ATableType)
+{
+    /*ULONG mSize = 0x4000;
+    PVOID mPtr = NULL;
+    NTSTATUS St;
+    do
+    {
+        mPtr = ExAllocatePool(PagedPool, mSize);
+        memset(mPtr, 0, mSize);
+        if (mPtr)
+        {
+            St = ZwQuerySystemInformation(ATableType, mPtr, mSize, NULL);
+        } else return NULL;
+        if (St == STATUS_INFO_LENGTH_MISMATCH)
+        {
+            ExFreePool(mPtr);
+            mSize = mSize * 2;
+        }
+    } while (St == STATUS_INFO_LENGTH_MISMATCH);
+    if (St == STATUS_SUCCESS) return mPtr;
+    ExFreePool(mPtr);*/
+    return NULL;
+}
 void process_wrapper::apply_restrictions()
 {
+    return;
     if (process.get_process_status() == process_failed_to_create)
         return;
+    //NTSTATUS status;
+    HANDLE processHandle;
+    HANDLE jobHandle = NULL;
+
+    /*if (!NT_SUCCESS(status = PhOpenProcess(
+        &processHandle,
+        ProcessQueryAccess,
+        (HANDLE)Context
+        )))
+        return status;*/
+
+//    status = KphOpenProcessJob(process.get_handle(), GENERIC_ALL, &jobHandle);
+
     /* implement restriction value check */
     hJob = CreateJobObject(NULL, NULL);
     DWORD le = GetLastError();
+
+    // Assigning created process to job object
+    AssignProcessToJobObject(hJob, process.get_handle());
+    le = GetLastError();
 
     // Memory and time limit
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION joeli;
@@ -361,7 +402,7 @@ void process_wrapper::apply_restrictions()
     joeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION;
 
     if (restrictions.get_restriction(restriction_memory_limit) != restriction_no_limit)
-    {   
+    {
         joeli.JobMemoryLimit = restrictions.get_restriction(restriction_memory_limit);
         joeli.ProcessMemoryLimit = restrictions.get_restriction(restriction_memory_limit);
         joeli.BasicLimitInformation.LimitFlags |=
@@ -383,16 +424,12 @@ void process_wrapper::apply_restrictions()
         SetInformationJobObject(hJob, JobObjectBasicUIRestrictions, &buir, sizeof(buir));
     }
 
-    // Assigning created process to job object
-    AssignProcessToJobObject(hJob, process.get_handle());
-    le = GetLastError();
-
     hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 1, 1);
     le = GetLastError();
 
-    JOBOBJECT_ASSOCIATE_COMPLETION_PORT joacp; 
-    joacp.CompletionKey = (PVOID)COMPLETION_KEY; 
-    joacp.CompletionPort = hIOCP; 
+    JOBOBJECT_ASSOCIATE_COMPLETION_PORT joacp;
+    joacp.CompletionKey = (PVOID)COMPLETION_KEY;
+    joacp.CompletionPort = hIOCP;
     SetInformationJobObject(hJob, JobObjectAssociateCompletionPortInformation, &joacp, sizeof(joacp));
     le = GetLastError();
 }
@@ -432,20 +469,20 @@ thread_return_t process_wrapper::check_limits_proc( thread_param_t param )
         if (!QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL))
             break;
 
-        if (restrictions.get_restriction(restriction_write_limit) != restriction_no_limit && 
+        if (restrictions.get_restriction(restriction_write_limit) != restriction_no_limit &&
             bai.IoInfo.WriteTransferCount > restrictions.get_restriction(restriction_write_limit))
         {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT, COMPLETION_KEY, NULL);
             break;
         }
 
-        if (restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit && 
+        if (restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit &&
             (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart > SECOND_COEFF * restrictions.get_restriction(restriction_processor_time_limit))
         {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);
             break;
         }
-        if (restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit && 
+        if (restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit &&
             (GetTickCount() - t) > restrictions.get_restriction(restriction_user_time_limit))
         {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);//freezed
@@ -496,11 +533,11 @@ void process_wrapper::dump_threads( bool suspend )
     {
         THREADENTRY32 te;
         te.dwSize = sizeof(te);
-        if (Thread32First(h, &te)) 
+        if (Thread32First(h, &te))
         {
             do {
                 if (te.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) +
-                    sizeof(te.th32OwnerProcessID) && te.th32OwnerProcessID == process.get_id()) 
+                    sizeof(te.th32OwnerProcessID) && te.th32OwnerProcessID == process.get_id())
                 {
                     handle_t handle = OpenThread(THREAD_ALL_ACCESS, FALSE, te.th32ThreadID);
                     if (suspend)
@@ -526,12 +563,12 @@ void process_wrapper::wait()
         // careful with this comment - it may cause problems with make
     }
     DWORD dwNumBytes, dwKey;
-    LPOVERLAPPED completedOverlapped;  
+    LPOVERLAPPED completedOverlapped;
     static CHAR buf[1024];
     //set msg
     int message = 0;
     do
-    {     
+    {
         GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
 
         switch (dwNumBytes)
@@ -544,7 +581,7 @@ void process_wrapper::wait()
             terminate_reason = terminate_reason_time_limit;
             process_status = process_finished_terminated;
             break;
-        case JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT:  
+        case JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT:
             message++;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_write_limit;
