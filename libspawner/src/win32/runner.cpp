@@ -264,8 +264,8 @@ void runner::wait()
 }
 
 runner::runner(const std::string &program, const options_class &options):
-        program(program), options(options), std_input(STD_INPUT), std_output(STD_OUTPUT), 
-        std_error(STD_ERROR), process_status(process_not_started)
+        program(program), options(options), std_input(PIPE_INPUT), std_output(PIPE_OUTPUT), 
+        std_error(PIPE_OUTPUT), process_status(process_not_started)
 {
     if (!std_input.valid() || !std_output.valid() || !std_error.valid())
         raise_error(*this, LAST);
@@ -381,4 +381,9 @@ void runner::safe_release()
 {
     process_status = process_spawner_crash;
     free();// make it safe!!!
+}
+
+void runner::set_pipe( const pipes_t &pipe_type, pipe_class &pipe_object )
+{
+    pipes[pipe_type] = pipe_object;
 }

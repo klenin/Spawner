@@ -43,6 +43,7 @@ std::string format_report(const report_class &rep, const options_class &options,
 
 int main(int argc, char *argv[])
 {
+    read_pipe_class test(std::cin);
 	CArguments arguments(argc, argv);
     if (!arguments.valid())
     {
@@ -109,12 +110,32 @@ int main(int argc, char *argv[])
 
     secure_runner secure_runner_instance(arguments.get_program(), options, restrictions);
 
+    std::istream *stdinput = NULL;
+    std::ostream *stdoutput = NULL, *stderror = NULL;
+
     if (arguments.ArgumentExists(SP_OUTPUT_FILE))
-        secure_runner_instance.std_out().set_stream(arguments.GetArgument(SP_OUTPUT_FILE));
+    {
+        if (arguments.GetArgument(SP_OUTPUT_FILE) == "std")
+            stdoutput = &std::cout;
+        else
+            stdoutput = new std::ofstream(arguments.GetArgument(SP_OUTPUT_FILE));
+    }
+
     if (arguments.ArgumentExists(SP_ERROR_FILE))
-        secure_runner_instance.std_err().set_stream(arguments.GetArgument(SP_ERROR_FILE));
+    {
+        if (arguments.GetArgument(SP_ERROR_FILE) == "std")
+            stderror = &std::cout;// replace with std::cerr
+        else
+            stderror = new std::ofstream(arguments.GetArgument(SP_ERROR_FILE));
+    }
+
     if (arguments.ArgumentExists(SP_INPUT_FILE))
-        secure_runner_instance.std_in().set_stream(arguments.GetArgument(SP_INPUT_FILE));
+    {
+        if (arguments.GetArgument(SP_INPUT_FILE) == "std")
+            stdinput = &std::cin;
+        else
+            stdinput = new std::ifstream(arguments.GetArgument(SP_INPUT_FILE));
+    }
 
     secure_runner_instance.run_process();
     report_class rep = secure_runner_instance.get_report();

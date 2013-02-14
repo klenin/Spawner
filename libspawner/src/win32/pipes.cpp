@@ -2,14 +2,24 @@
 #include <error.h>
 #include <iostream>
 #include <fstream>
-const unsigned int BUFFER_SIZE = 4096;
+const unsigned int BUFFER_SIZE = 4096;//provide this in to constructor
 
 //move this to separate function
-pipe_class::pipe_class(std_pipe_t handleType): 
-    readPipe(INVALID_HANDLE_VALUE), writePipe(INVALID_HANDLE_VALUE), pipe_type(handleType), 
-    buffer_thread(INVALID_HANDLE_VALUE), reading_mutex(INVALID_HANDLE_VALUE), state(true)
+pipe_class::pipe_class(std_pipe_t pipe_type): pipe_type(pipe_type)
 {
-    //creating pipe
+    create_pipe();
+}
+
+pipe_class::pipe_class(std::string file_name, std_pipe_t pipe_type): pipe_type(pipe_type), file_name* {
+}
+
+bool pipe_class::create_pipe()
+{
+    readPipe = INVALID_HANDLE_VALUE;
+    writePipe = INVALID_HANDLE_VALUE;
+    buffer_thread = INVALID_HANDLE_VALUE;
+    reading_mutex = INVALID_HANDLE_VALUE;
+    state = true;
     SECURITY_ATTRIBUTES saAttr;   
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES); 
     saAttr.bInheritHandle = TRUE; 
@@ -17,35 +27,31 @@ pipe_class::pipe_class(std_pipe_t handleType):
     if (!CreatePipe(&readPipe, &writePipe, &saAttr, 0))
     {
         raise_error(*this, "CreatePipe");
-        return;
+        return false;
     }
     //setting inheritance
     HANDLE handle = writePipe;
-    if (pipe_type & STD_OUTPUT)
+    if (pipe_type == PIPE_OUTPUT)
         handle = readPipe;
     if (!SetHandleInformation(handle, HANDLE_FLAG_INHERIT, 0))
     {
         raise_error(*this, "SetHandleInformation");
-        return;
+        return false;
     }
+    return true;
 }
 
 void pipe_class::close_pipe()
 {
-    if (pipe_type & STD_INPUT)
+    if (pipe_type & PIPE_INPUT)
         CloseHandleSafe(readPipe);
-    if (pipe_type & STD_OUTPUT)
+    if (pipe_type & PIPE_OUTPUT)
         CloseHandleSafe(writePipe);
     finish();
 }
 
 pipe_class::~pipe_class()
 {
-/*    if (pipe_type & STD_INPUT)
-        CloseHandleSafe(readPipe);//replace with safe method
-    if (pipe_type & STD_OUTPUT)
-        CloseHandleSafe(writePipe);//replace with safe method*/
-//    finish();
     close_pipe();
 }
 
@@ -79,7 +85,6 @@ size_t pipe_class::read(void *data, size_t size)
 
 bool pipe_class::bufferize()
 {
-    LPTHREAD_START_ROUTINE thread_start_routine = writing_buffer;
     if (buffer_thread != INVALID_HANDLE_VALUE)
     {
         //trying to bufferize twice
@@ -88,14 +93,6 @@ bool pipe_class::bufferize()
     if (reading_mutex == INVALID_HANDLE_VALUE)
     {
         reading_mutex = CreateMutex(NULL, FALSE, NULL);
-    }
-    if (pipe_type & STD_OUTPUT)
-        thread_start_routine = reading_buffer;
-    buffer_thread = CreateThread(NULL, 0, thread_start_routine, this, 0, NULL);
-    if (!buffer_thread)
-    {
-        raise_error(*this, "CreateThread");
-        return false;
     }
     return true;
 }
@@ -118,11 +115,6 @@ void pipe_class::finish()
     CloseHandleSafe(reading_mutex);
 }
 
-void pipe_class::set_stream(const std::string &name)
-{
-    stream_name = name;
-}
-
 std::istringstream & pipe_class::stream()
 {
     wait();
@@ -133,71 +125,6 @@ std::istringstream & pipe_class::stream()
 size_t pipe_class::buffer_size()
 {
     return buff_size;
-}
-
-thread_return_t pipe_class::writing_buffer(thread_param_t param)
-{
-    pipe_class *self = (pipe_class*)param;
-    std::istream *is = NULL;
-
-    if (self->stream_name.length() == 0)
-        return 0;
-
-    if (self->stream_name == "std")//replace with stderr, stdin and stdout correspondingly 
-        is = &std::cin;
-    else
-        is = new std::ifstream(self->stream_name.c_str());
-
-    char buff[BUFFER_SIZE + 1];
-    while (!is->eof())
-    {
-        is->get(buff, BUFFER_SIZE);//only for TEXT data
-        if (!self->write(buff, is->gcount()))
-            break;
-    }
-    if (is && is != &std::cin)
-        delete is;
-    return 0;
-}
-
-thread_return_t pipe_class::reading_buffer(thread_param_t param)
-{
-    pipe_class *self = (pipe_class*)param;
-    std::ostream *os = NULL;
-    if (self->stream_name.length() == 0)
-        return 0;
-    if (self->stream_name == "std")
-    {
-        if (self->pipe_type == STD_OUTPUT)
-            os = &std::cout;
-        if (self->pipe_type == STD_ERROR)
-            os = &std::cerr;
-    }
-    else
-        os = new std::ofstream(self->stream_name.c_str());
-    for (;;)
-    {
-        char data[BUFFER_SIZE];
-        size_t bytes_count = self->read(data, BUFFER_SIZE);
-        if (bytes_count == 0)
-            break;
-        WaitForSingleObject(self->reading_mutex, INFINITE);
-        if (bytes_count != 0)
-        {
-            data[bytes_count] = 0;
-            self->buff_size += bytes_count;
-            self->pipe_buffer.str(self->pipe_buffer.rdbuf()->str() + data);
-            if (os)
-            {
-                os->write(data, bytes_count);
-                os->flush();
-            }
-        }
-        ReleaseMutex(self->reading_mutex);
-    }
-    if (os != &std::cerr && os != &std::cout)
-        delete os;
-    return 0;
 }
 
 void pipe_class::wait_for_pipe(const unsigned int &ms_time)
@@ -215,3 +142,99 @@ bool pipe_class::valid()
 {
     return state;
 }
+
+pipe_t pipe_class::get_pipe()
+{
+    return 0;
+}
+
+thread_return_t read_pipe_class::writing_buffer(thread_param_t param)
+{
+    read_pipe_class *self = (read_pipe_class*)param;
+
+    if (self->input_stream == dummy_istream)
+        return 0;
+
+    char buff[BUFFER_SIZE + 1];
+    while (!self->input_stream.eof())
+    {
+        self->input_stream.get(buff, BUFFER_SIZE);
+        if (!self->write(buff, self->input_stream.gcount()))
+            break;
+    }
+    return 0;
+}
+
+read_pipe_class::read_pipe_class(): pipe_class(PIPE_INPUT), input_stream(dummy_istream)
+{}
+read_pipe_class::read_pipe_class(std::istream &input_stream): pipe_class(PIPE_INPUT), input_stream(input_stream)
+{}
+
+bool read_pipe_class::bufferize()
+{
+    if (!pipe_class::bufferize())
+        return false;
+    buffer_thread = CreateThread(NULL, 0, writing_buffer, this, 0, NULL);
+    if (!buffer_thread)
+    {
+        raise_error(*this, "CreateThread");
+        return false;
+    }
+    return true;
+}
+
+pipe_t read_pipe_class::get_pipe()
+{
+    return read_pipe();
+}
+
+
+thread_return_t write_pipe_class::reading_buffer(thread_param_t param)
+{
+    write_pipe_class *self = (write_pipe_class*)param;
+    std::ostream *os = NULL;
+    if (self->output_stream == dummy_ostream)
+        return 0;
+    for (;;)
+    {
+        char data[BUFFER_SIZE];
+        size_t bytes_count = self->read(data, BUFFER_SIZE);
+        if (bytes_count == 0)
+            break;
+        WaitForSingleObject(self->reading_mutex, INFINITE);
+        if (bytes_count != 0)
+        {
+            data[bytes_count] = 0;
+            self->buff_size += bytes_count;
+            self->pipe_buffer.str(self->pipe_buffer.rdbuf()->str() + data);
+            self->output_stream.write(data, bytes_count);
+            self->output_stream.flush();
+        }
+        ReleaseMutex(self->reading_mutex);
+    }
+    return 0;
+}
+
+write_pipe_class::write_pipe_class(): pipe_class(PIPE_OUTPUT), output_stream(dummy_ostream)
+{}
+write_pipe_class::write_pipe_class(std::ostream &output_stream): pipe_class(PIPE_OUTPUT), output_stream(output_stream)
+{}
+
+bool write_pipe_class::bufferize()
+{
+    if (!pipe_class::bufferize())
+        return false;
+    buffer_thread = CreateThread(NULL, 0, reading_buffer, this, 0, NULL);
+    if (!buffer_thread)
+    {
+        raise_error(*this, "CreateThread");
+        return false;
+    }
+    return true;
+}
+
+pipe_t write_pipe_class::get_pipe()
+{
+    return write_pipe();
+}
+
