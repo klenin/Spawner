@@ -5,12 +5,13 @@
 const unsigned int BUFFER_SIZE = 4096;//provide this in to constructor
 
 //move this to separate function
-pipe_class::pipe_class(std_pipe_t pipe_type): pipe_type(pipe_type)
-{
-    create_pipe();
-}
 
-pipe_class::pipe_class(std::string file_name, std_pipe_t pipe_type): pipe_type(pipe_type), file_name* {
+pipe_class::pipe_class(): pipe_type(PIPE_UNDEFINED), buffer_thread(INVALID_HANDLE_VALUE), 
+    reading_mutex(INVALID_HANDLE_VALUE) {
+}
+pipe_class::pipe_class(std_pipe_t pipe_type): pipe_type(pipe_type), buffer_thread(INVALID_HANDLE_VALUE), 
+    reading_mutex(INVALID_HANDLE_VALUE) {
+    create_pipe();
 }
 
 bool pipe_class::create_pipe()
@@ -115,18 +116,6 @@ void pipe_class::finish()
     CloseHandleSafe(reading_mutex);
 }
 
-std::istringstream & pipe_class::stream()
-{
-    wait();
-    ReleaseMutex(reading_mutex);
-    return pipe_buffer;
-}
-
-size_t pipe_class::buffer_size()
-{
-    return buff_size;
-}
-
 void pipe_class::wait_for_pipe(const unsigned int &ms_time)
 {
     WaitForSingleObject(buffer_thread, ms_time);
@@ -148,29 +137,77 @@ pipe_t pipe_class::get_pipe()
     return 0;
 }
 
-thread_return_t read_pipe_class::writing_buffer(thread_param_t param)
-{
-    read_pipe_class *self = (read_pipe_class*)param;
+input_buffer_class dummy_input_buffer;
+output_buffer_class dummy_output_buffer;
 
-    if (self->input_stream == dummy_istream)
+input_buffer_class::input_buffer_class(): buffer_size(BUFFER_SIZE) {
+}
+
+input_buffer_class::input_buffer_class(const size_t &buffer_size_param): buffer_size(buffer_size_param) {
+}
+
+
+output_buffer_class::output_buffer_class(): buffer_size(BUFFER_SIZE) {
+}
+
+output_buffer_class::output_buffer_class(const size_t &buffer_size_param): buffer_size(buffer_size_param) {
+}
+
+
+input_file_stream_buffer_class::input_file_stream_buffer_class(): input_buffer_class() {
+}
+input_file_stream_buffer_class::input_file_stream_buffer_class(const std::string &file_name, const size_t &buffer_size_param): 
+    input_buffer_class(), input_stream(INVALID_HANDLE_VALUE) {
+    input_stream = CreateFile(file_name.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+}
+bool input_file_stream_buffer_class::readable() {
+    return true;
+}
+size_t input_file_stream_buffer_class::read(void *data, size_t size) {
+    DWORD bytes_read = 0;
+    ReadFile(input_stream, data, size, &bytes_read, NULL);
+    return bytes_read;
+}
+
+output_file_stream_buffer_class::output_file_stream_buffer_class(): output_buffer_class() {
+}
+output_file_stream_buffer_class::output_file_stream_buffer_class(const std::string &file_name, const size_t &buffer_size_param = BUFFER_SIZE): 
+    output_buffer_class(buffer_size_param), output_stream(INVALID_HANDLE_VALUE) {
+    output_stream = CreateFile(file_name.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+}
+bool output_file_stream_buffer_class::writeable() {
+    return true;
+}
+size_t output_file_stream_buffer_class::write(void *data, size_t size) {
+    DWORD bytes_written = 0;
+    WriteFile(output_stream, data, size, &bytes_written, NULL);
+    return bytes_written;
+}
+
+
+thread_return_t input_pipe_class::writing_buffer(thread_param_t param) {
+    input_pipe_class *self = (input_pipe_class*)param;
+
+    if (!self->input_buffer.readable())
         return 0;
 
-    char buff[BUFFER_SIZE + 1];
-    while (!self->input_stream.eof())
-    {
-        self->input_stream.get(buff, BUFFER_SIZE);
-        if (!self->write(buff, self->input_stream.gcount()))
+    char buffer[BUFFER_SIZE + 1];
+    size_t read_count;
+    while (read_count = self->input_buffer.read(buffer, BUFFER_SIZE)) {
+        if (!self->write(buffer, read_count))
             break;
     }
     return 0;
 }
 
-read_pipe_class::read_pipe_class(): pipe_class(PIPE_INPUT), input_stream(dummy_istream)
-{}
-read_pipe_class::read_pipe_class(std::istream &input_stream): pipe_class(PIPE_INPUT), input_stream(input_stream)
-{}
+input_pipe_class::input_pipe_class(): pipe_class(PIPE_INPUT), input_buffer(dummy_input_buffer){
+}
 
-bool read_pipe_class::bufferize()
+input_pipe_class::input_pipe_class(input_buffer_class &input_buffer_param): 
+    pipe_class(PIPE_INPUT), input_buffer(input_buffer_param){
+}
+
+bool input_pipe_class::bufferize()
 {
     if (!pipe_class::bufferize())
         return false;
@@ -183,17 +220,17 @@ bool read_pipe_class::bufferize()
     return true;
 }
 
-pipe_t read_pipe_class::get_pipe()
+pipe_t input_pipe_class::get_pipe()
 {
-    return read_pipe();
+    return input_pipe();
 }
 
 
-thread_return_t write_pipe_class::reading_buffer(thread_param_t param)
+thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
 {
-    write_pipe_class *self = (write_pipe_class*)param;
+    output_pipe_class *self = (output_pipe_class*)param;
     std::ostream *os = NULL;
-    if (self->output_stream == dummy_ostream)
+    if (!self->output_buffer.writeable())
         return 0;
     for (;;)
     {
@@ -205,22 +242,20 @@ thread_return_t write_pipe_class::reading_buffer(thread_param_t param)
         if (bytes_count != 0)
         {
             data[bytes_count] = 0;
-            self->buff_size += bytes_count;
-            self->pipe_buffer.str(self->pipe_buffer.rdbuf()->str() + data);
-            self->output_stream.write(data, bytes_count);
-            self->output_stream.flush();
+            self->output_buffer.write(data, bytes_count);
         }
         ReleaseMutex(self->reading_mutex);
     }
     return 0;
 }
 
-write_pipe_class::write_pipe_class(): pipe_class(PIPE_OUTPUT), output_stream(dummy_ostream)
+output_pipe_class::output_pipe_class(): pipe_class(PIPE_OUTPUT), output_buffer(dummy_output_buffer)
 {}
-write_pipe_class::write_pipe_class(std::ostream &output_stream): pipe_class(PIPE_OUTPUT), output_stream(output_stream)
+output_pipe_class::output_pipe_class(output_buffer_class &output_buffer_param): 
+    pipe_class(PIPE_OUTPUT), output_buffer(output_buffer_param)
 {}
 
-bool write_pipe_class::bufferize()
+bool output_pipe_class::bufferize()
 {
     if (!pipe_class::bufferize())
         return false;
@@ -233,8 +268,8 @@ bool write_pipe_class::bufferize()
     return true;
 }
 
-pipe_t write_pipe_class::get_pipe()
+pipe_t output_pipe_class::get_pipe()
 {
-    return write_pipe();
+    return output_pipe();
 }
 

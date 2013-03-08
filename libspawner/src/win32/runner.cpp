@@ -188,15 +188,17 @@ bool runner::init_process_with_logon(char *cmd, const char *wd)
 
 void runner::create_process()
 {
+
     if (process_status == process_spawner_crash)
         return;
     ZeroMemory(&si, sizeof(si));
 
     si.cb = sizeof(si);
     si.dwFlags = STARTF_USESTDHANDLES;
-    si.hStdInput = std_input.read_pipe();
-    si.hStdOutput = std_output.write_pipe();
-    si.hStdError = std_error.write_pipe();
+    if (pipes.find(STD_OUTPUT_PIPE) != pipes.end())
+        si.hStdOutput = pipes[STD_OUTPUT_PIPE]->output_pipe();
+    //si.hStdInput = std_input.read_pipe();
+    //si.hStdError = std_error.write_pipe();
     si.lpDesktop = "";
     process_creation_flags = PROCESS_CREATION_FLAGS;
 
@@ -224,14 +226,20 @@ void runner::create_process()
     size_t  index_win = program.find_last_of('\\'),
         index_nix = program.find_last_of('/');
 
-    if (index_win != std::string::npos)
+    if (index_win != std::string::npos) {
         command_line = program.substr(index_win + 1);
-    else if (index_nix != std::string::npos)
+    } else if (index_nix != std::string::npos) {
         command_line = program.substr(index_nix + 1);
-    else
+    } else {
         command_line = program;
+    }
 
-    command_line = command_line + " " + (options.string_arguments==""?options.get_arguments():options.string_arguments);
+    command_line = command_line + " ";
+    if (options.string_arguments == "") {
+        command_line += options.get_arguments();
+    } else {
+        command_line += options.string_arguments;
+    }
     cmd = new char [command_line.size()+1];
     strcpy(cmd, command_line.c_str());
     if (options.login != "" && init_process_with_logon(cmd, wd))
@@ -251,9 +259,9 @@ void runner::create_process()
 
 void runner::free()
 {
-/*    std_output.finish();
-    std_error.finish();
-    std_input.finish();*/
+    for (std::map<pipes_t, pipe_class*>::iterator it = pipes.begin(); it != pipes.end(); ++it) {
+        delete it->second;
+    }
     CloseHandleSafe(process_info.hProcess);
     CloseHandleSafe(process_info.hThread);
 }
@@ -264,11 +272,8 @@ void runner::wait()
 }
 
 runner::runner(const std::string &program, const options_class &options):
-        program(program), options(options), std_input(PIPE_INPUT), std_output(PIPE_OUTPUT), 
-        std_error(PIPE_OUTPUT), process_status(process_not_started)
+        program(program), options(options), process_status(process_not_started)
 {
-    if (!std_input.valid() || !std_output.valid() || !std_error.valid())
-        raise_error(*this, LAST);
 }
 
 runner::~runner()
@@ -334,21 +339,6 @@ report_class runner::get_report()
     return report;
 }
 
-pipe_class & runner::std_in()
-{
-    return std_input;
-}
-
-pipe_class & runner::std_out()
-{
-    return std_output;
-}
-
-pipe_class & runner::std_err()
-{
-    return std_error;
-}
-
 void runner::run_process()
 {
     create_process();
@@ -360,11 +350,12 @@ void runner::run_process()
         raise_error(*this, "ResumeThread");
         return;
     }
-    if (!std_output.bufferize() || !std_error.bufferize() || !std_input.bufferize())
-    {
-        //pipes will be destroyed with default destructor, no need to close them
-        raise_error(*this, LAST);
-        return;
+    for (std::map<pipes_t, pipe_class*>::iterator it = pipes.begin(); it != pipes.end(); ++it) {
+        pipe_class *pipe = it->second;
+        if (!pipe->bufferize()) {
+            raise_error(*this, LAST);
+            return;
+        }
     }
     wait();
 }
@@ -372,9 +363,9 @@ void runner::run_process()
 void runner::wait( const unsigned long &interval )
 {
     WaitForSingleObject(process_info.hProcess, interval);// TODO: get rid of this
-    std_output.wait_for_pipe(100);
-    std_error.wait_for_pipe(100);
-    std_input.wait_for_pipe(100);
+    //std_output.wait_for_pipe(100);
+    //std_error.wait_for_pipe(100);
+    //std_input.wait_for_pipe(100);
 }
 
 void runner::safe_release()
@@ -383,7 +374,7 @@ void runner::safe_release()
     free();// make it safe!!!
 }
 
-void runner::set_pipe( const pipes_t &pipe_type, pipe_class &pipe_object )
+void runner::set_pipe(const pipes_t &pipe_type, pipe_class *pipe_object)
 {
     pipes[pipe_type] = pipe_object;
 }

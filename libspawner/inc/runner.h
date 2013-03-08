@@ -17,8 +17,7 @@ private:
     options_class options;
     std::string program;
 protected:
-    std::map<pipes_t, pipe_class> pipes;
-    pipe_class std_input, std_output, std_error;
+    std::map<pipes_t, pipe_class*> pipes;
     process_info_t process_info;
     process_status_t process_status;
     bool running;
@@ -39,13 +38,10 @@ public:
     options_class get_options() const;
     virtual report_class get_report();
 
-    pipe_class &std_in();
-    pipe_class &std_out();
-    pipe_class &std_err();
     virtual void run_process();
     void wait(const unsigned long &interval);
     virtual void safe_release();
-    void set_pipe(const pipes_t &pipe_type, pipe_class &pipe_object);
+    void set_pipe(const pipes_t &pipe_type, pipe_class *pipe_object);
 };
 
 #endif//_SPAWNER_RUNNER_H_
