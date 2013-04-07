@@ -112,28 +112,35 @@ int main(int argc, char *argv[])
 
     if (arguments.ArgumentExists(SP_OUTPUT_FILE))
     {
-        output_file_stream_buffer_class output_buffer(arguments.GetArgument(SP_OUTPUT_FILE), 4096);
+        output_buffer_class *output_buffer = NULL;
+        if (arguments.GetArgument(SP_OUTPUT_FILE) == "std") {
+            output_buffer = new output_stdout_buffer_class(4096);
+        } else {
+            output_buffer = new output_file_buffer_class(arguments.GetArgument(SP_OUTPUT_FILE), 4096);
+        }
         secure_runner_instance.set_pipe(STD_OUTPUT_PIPE, new output_pipe_class(output_buffer));
-        /*if (arguments.GetArgument(SP_OUTPUT_FILE) == "std")
-            stdoutput = &std::cout;
-        else
-            stdoutput = new std::ofstream(arguments.GetArgument(SP_OUTPUT_FILE));*/
     }
 
     if (arguments.ArgumentExists(SP_ERROR_FILE))
     {
-        /*if (arguments.GetArgument(SP_ERROR_FILE) == "std")
-            stderror = &std::cout;// replace with std::cerr
-        else
-            stderror = new std::ofstream(arguments.GetArgument(SP_ERROR_FILE));*/
+        output_buffer_class *output_buffer = NULL;
+        if (arguments.GetArgument(SP_ERROR_FILE) == "std") {
+            output_buffer = new output_stdout_buffer_class(4096);
+        } else {
+            output_buffer = new output_file_buffer_class(arguments.GetArgument(SP_ERROR_FILE), 4096);
+        }
+        secure_runner_instance.set_pipe(STD_ERROR_PIPE, new output_pipe_class(output_buffer));
     }
 
     if (arguments.ArgumentExists(SP_INPUT_FILE))
     {
-        /*if (arguments.GetArgument(SP_INPUT_FILE) == "std")
-            stdinput = &std::cin;
-        else
-            stdinput = new std::ifstream(arguments.GetArgument(SP_INPUT_FILE));*/
+        input_buffer_class *input_buffer = NULL;
+        if (arguments.GetArgument(SP_INPUT_FILE) == "std") {
+            input_buffer = new input_buffer_class(4096);
+        } else {
+            input_buffer = new input_file_buffer_class(arguments.GetArgument(SP_INPUT_FILE), 4096);
+        }
+        secure_runner_instance.set_pipe(STD_INPUT_PIPE, new input_pipe_class(input_buffer));
     }
 
     secure_runner_instance.run_process();

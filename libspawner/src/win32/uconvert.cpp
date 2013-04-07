@@ -5,7 +5,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-const char infinite_string[] = "INFINITY";
+const char infinite_string[] = "Infinity";
+const unsigned int DEFAULT_PRECISION = 6;
 
 struct degree_description
 {
@@ -121,7 +122,7 @@ std::string convert(const value_t &from, const value_t &to, const long double &v
     unsigned int to_degree_index = get_degree_index(to.degree_type);
     std::ostringstream osstream;
     osstream.setf(std::ios::fixed,std::ios::floatfield);
-    osstream.precision(15);
+    osstream.precision(DEFAULT_PRECISION);
     osstream << res;
     for (unsigned int i = 0; i < strlen(format); i++)
     {

@@ -48,22 +48,37 @@ public:
     }
 };
 
-class input_file_stream_buffer_class: public input_buffer_class {
+class handle_buffer_class {
 protected:
-    handle_t input_stream;
+    handle_t stream;
+    size_t protected_read(void *data, size_t size);
+    size_t protected_write(void *data, size_t size);
+    void init_handle(handle_t stream_arg);
 public:
-    input_file_stream_buffer_class();
-    input_file_stream_buffer_class(const std::string &file_name, const size_t &buffer_size_param);
+    handle_buffer_class();
+    ~handle_buffer_class();
+};
+
+class input_file_buffer_class: public input_buffer_class, protected handle_buffer_class {
+public:
+    input_file_buffer_class();
+    input_file_buffer_class(const std::string &file_name, const size_t &buffer_size_param);
     virtual bool readable();
     virtual size_t read(void *data, size_t size);
 };
 
-class output_file_stream_buffer_class: public output_buffer_class {
-protected:
-    handle_t output_stream;
+class output_file_buffer_class: public output_buffer_class, protected handle_buffer_class {
 public:
-    output_file_stream_buffer_class();
-    output_file_stream_buffer_class(const std::string &file_name, const size_t &buffer_size_param);
+    output_file_buffer_class();
+    output_file_buffer_class(const std::string &file_name, const size_t &buffer_size_param);
+    virtual bool writeable();
+    virtual size_t write(void *data, size_t size);
+};
+
+class output_stdout_buffer_class: public output_buffer_class, protected handle_buffer_class {
+public:
+    output_stdout_buffer_class();
+    output_stdout_buffer_class(const size_t &buffer_size_param);
     virtual bool writeable();
     virtual size_t write(void *data, size_t size);
 };
@@ -78,12 +93,12 @@ protected:
     std_pipe_t pipe_type;
 	std::string file_name;
     bool state;
+    pipe_t input_pipe(){ return readPipe;}
+    pipe_t output_pipe(){ return writePipe;}
 public:
     pipe_class();
     pipe_class(std_pipe_t pipe_type);
 	pipe_class(std::string file_name, std_pipe_t pipe_type);
-    pipe_t input_pipe(){ return readPipe;}
-    pipe_t output_pipe(){ return writePipe;}
     void close_pipe();
     ~pipe_class();
     size_t write(void *data, size_t size);
@@ -101,11 +116,11 @@ public:
 class input_pipe_class: public pipe_class
 {
 protected:
-    input_buffer_class &input_buffer;
+    input_buffer_class *input_buffer;
     static thread_return_t writing_buffer(thread_param_t param);
 public:
     input_pipe_class();
-    input_pipe_class(input_buffer_class &input_buffer_arg);
+    input_pipe_class(input_buffer_class *input_buffer_arg);
     virtual bool bufferize();
     virtual pipe_t get_pipe();
 };
@@ -113,11 +128,11 @@ public:
 class output_pipe_class: public pipe_class
 {
 protected:
-    output_buffer_class &output_buffer;
+    output_buffer_class *output_buffer;
     static thread_return_t reading_buffer(thread_param_t param);
 public:
     output_pipe_class();
-    output_pipe_class(output_buffer_class &output_buffer_arg);
+    output_pipe_class(output_buffer_class *output_buffer_arg);
     virtual bool bufferize();
     virtual pipe_t get_pipe();
 };

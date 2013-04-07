@@ -153,57 +153,93 @@ output_buffer_class::output_buffer_class(): buffer_size(BUFFER_SIZE) {
 output_buffer_class::output_buffer_class(const size_t &buffer_size_param): buffer_size(buffer_size_param) {
 }
 
+handle_buffer_class::handle_buffer_class(): stream(INVALID_HANDLE_VALUE) {
+}
 
-input_file_stream_buffer_class::input_file_stream_buffer_class(): input_buffer_class() {
-}
-input_file_stream_buffer_class::input_file_stream_buffer_class(const std::string &file_name, const size_t &buffer_size_param): 
-    input_buffer_class(), input_stream(INVALID_HANDLE_VALUE) {
-    input_stream = CreateFile(file_name.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-}
-bool input_file_stream_buffer_class::readable() {
-    return true;
-}
-size_t input_file_stream_buffer_class::read(void *data, size_t size) {
+size_t handle_buffer_class::protected_read(void *data, size_t size) {
     DWORD bytes_read = 0;
-    ReadFile(input_stream, data, size, &bytes_read, NULL);
+    ReadFile(stream, data, size, &bytes_read, NULL);
     return bytes_read;
 }
-
-output_file_stream_buffer_class::output_file_stream_buffer_class(): output_buffer_class() {
-}
-output_file_stream_buffer_class::output_file_stream_buffer_class(const std::string &file_name, const size_t &buffer_size_param = BUFFER_SIZE): 
-    output_buffer_class(buffer_size_param), output_stream(INVALID_HANDLE_VALUE) {
-    output_stream = CreateFile(file_name.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-}
-bool output_file_stream_buffer_class::writeable() {
-    return true;
-}
-size_t output_file_stream_buffer_class::write(void *data, size_t size) {
+size_t handle_buffer_class::protected_write(void *data, size_t size) {
     DWORD bytes_written = 0;
-    WriteFile(output_stream, data, size, &bytes_written, NULL);
+    WriteFile(stream, data, size, &bytes_written, NULL);
     return bytes_written;
+}
+void handle_buffer_class::init_handle(handle_t stream_arg) {
+    stream = stream_arg;
+}
+handle_buffer_class::~handle_buffer_class() {
+    CloseHandleSafe(stream);
+}
+
+
+input_file_buffer_class::input_file_buffer_class(): input_buffer_class(), handle_buffer_class() {
+}
+input_file_buffer_class::input_file_buffer_class(const std::string &file_name, const size_t &buffer_size_param): 
+    input_buffer_class(), handle_buffer_class() {
+    handle_t handle = CreateFile(file_name.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (true){}
+    init_handle(handle);
+}
+bool input_file_buffer_class::readable() {
+    return (stream != INVALID_HANDLE_VALUE);
+}
+size_t input_file_buffer_class::read(void *data, size_t size) {
+    return protected_read(data, size);
+}
+
+output_file_buffer_class::output_file_buffer_class(): output_buffer_class(), handle_buffer_class() {
+}
+output_file_buffer_class::output_file_buffer_class(const std::string &file_name, const size_t &buffer_size_param = BUFFER_SIZE): 
+    output_buffer_class(buffer_size_param), handle_buffer_class() {
+    handle_t handle = CreateFile(file_name.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (true){}
+    init_handle(handle);
+}
+bool output_file_buffer_class::writeable() {
+    return (stream != INVALID_HANDLE_VALUE);
+}
+size_t output_file_buffer_class::write(void *data, size_t size) {
+    return protected_write(data, size);
+}
+
+
+output_stdout_buffer_class::output_stdout_buffer_class(): output_buffer_class(), handle_buffer_class() {
+}
+output_stdout_buffer_class::output_stdout_buffer_class(const size_t &buffer_size_param = BUFFER_SIZE): 
+    output_buffer_class(buffer_size_param), handle_buffer_class() {
+    handle_t handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (true){}
+    init_handle(handle);
+}
+bool output_stdout_buffer_class::writeable() {
+    return (stream != INVALID_HANDLE_VALUE);
+}
+size_t output_stdout_buffer_class::write(void *data, size_t size) {
+    return protected_write(data, size);
 }
 
 
 thread_return_t input_pipe_class::writing_buffer(thread_param_t param) {
     input_pipe_class *self = (input_pipe_class*)param;
 
-    if (!self->input_buffer.readable())
+    if (!self->input_buffer->readable())
         return 0;
 
     char buffer[BUFFER_SIZE + 1];
     size_t read_count;
-    while (read_count = self->input_buffer.read(buffer, BUFFER_SIZE)) {
+    while (read_count = self->input_buffer->read(buffer, BUFFER_SIZE)) {
         if (!self->write(buffer, read_count))
             break;
     }
     return 0;
 }
 
-input_pipe_class::input_pipe_class(): pipe_class(PIPE_INPUT), input_buffer(dummy_input_buffer){
+input_pipe_class::input_pipe_class(): pipe_class(PIPE_INPUT), input_buffer(&dummy_input_buffer){
 }
 
-input_pipe_class::input_pipe_class(input_buffer_class &input_buffer_param): 
+input_pipe_class::input_pipe_class(input_buffer_class *input_buffer_param): 
     pipe_class(PIPE_INPUT), input_buffer(input_buffer_param){
 }
 
@@ -230,7 +266,7 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
 {
     output_pipe_class *self = (output_pipe_class*)param;
     std::ostream *os = NULL;
-    if (!self->output_buffer.writeable())
+    if (!self->output_buffer->writeable())
         return 0;
     for (;;)
     {
@@ -242,16 +278,16 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
         if (bytes_count != 0)
         {
             data[bytes_count] = 0;
-            self->output_buffer.write(data, bytes_count);
+            self->output_buffer->write(data, bytes_count);
         }
         ReleaseMutex(self->reading_mutex);
     }
     return 0;
 }
 
-output_pipe_class::output_pipe_class(): pipe_class(PIPE_OUTPUT), output_buffer(dummy_output_buffer)
+output_pipe_class::output_pipe_class(): pipe_class(PIPE_OUTPUT), output_buffer(&dummy_output_buffer)
 {}
-output_pipe_class::output_pipe_class(output_buffer_class &output_buffer_param): 
+output_pipe_class::output_pipe_class(output_buffer_class *output_buffer_param): 
     pipe_class(PIPE_OUTPUT), output_buffer(output_buffer_param)
 {}
 

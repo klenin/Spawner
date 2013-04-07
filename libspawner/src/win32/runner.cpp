@@ -196,9 +196,11 @@ void runner::create_process()
     si.cb = sizeof(si);
     si.dwFlags = STARTF_USESTDHANDLES;
     if (pipes.find(STD_OUTPUT_PIPE) != pipes.end())
-        si.hStdOutput = pipes[STD_OUTPUT_PIPE]->output_pipe();
-    //si.hStdInput = std_input.read_pipe();
-    //si.hStdError = std_error.write_pipe();
+        si.hStdOutput = pipes[STD_OUTPUT_PIPE]->get_pipe();
+    if (pipes.find(STD_ERROR_PIPE) != pipes.end())
+        si.hStdError = pipes[STD_ERROR_PIPE]->get_pipe();
+    if (pipes.find(STD_INPUT_PIPE) != pipes.end())
+        si.hStdInput = pipes[STD_INPUT_PIPE]->get_pipe();
     si.lpDesktop = "";
     process_creation_flags = PROCESS_CREATION_FLAGS;
 
