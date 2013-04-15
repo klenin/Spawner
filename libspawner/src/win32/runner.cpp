@@ -273,8 +273,30 @@ void runner::wait()
     WaitForSingleObject(process_info.hProcess, INFINITE);
 }
 
+void runner::requisites() {
+    if (ResumeThread(process_info.hThread) == (DWORD)-1)
+    {
+        raise_error(*this, "ResumeThread");
+        return;
+    }
+    for (std::map<pipes_t, pipe_class*>::iterator it = pipes.begin(); it != pipes.end(); ++it) {
+        pipe_class *pipe = it->second;
+        if (!pipe->bufferize()) {
+            raise_error(*this, LAST);
+            return;
+        }
+    }
+}
+
+thread_return_t runner::async_body(thread_param_t param) {
+    runner *self = (runner*)param;
+    self->run_process();
+    return 0;
+}
+
 runner::runner(const std::string &program, const options_class &options):
-        program(program), options(options), process_status(process_not_started)
+        program(program), options(options), process_status(process_not_started),
+        running_thread(INVALID_HANDLE_VALUE)
 {
 }
 
@@ -347,24 +369,19 @@ void runner::run_process()
     if (get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal)
         return;
     running = true;
-    if (ResumeThread(process_info.hThread) == (DWORD)-1)
-    {
-        raise_error(*this, "ResumeThread");
-        return;
-    }
-    for (std::map<pipes_t, pipe_class*>::iterator it = pipes.begin(); it != pipes.end(); ++it) {
-        pipe_class *pipe = it->second;
-        if (!pipe->bufferize()) {
-            raise_error(*this, LAST);
-            return;
-        }
-    }
+    requisites();
     wait();
 }
 
-void runner::wait( const unsigned long &interval )
+void runner::run_process_async() {
+    running_thread = CreateThread(NULL, 0, async_body, this, 0, NULL);
+}
+
+bool runner::wait_for( const unsigned long &interval )
 {
-    WaitForSingleObject(process_info.hProcess, interval);// TODO: get rid of this
+    if (get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal)
+        return true;
+    return WaitForSingleObject(process_info.hProcess, interval) == WAIT_OBJECT_0;// TODO: get rid of this
     //std_output.wait_for_pipe(100);
     //std_error.wait_for_pipe(100);
     //std_input.wait_for_pipe(100);

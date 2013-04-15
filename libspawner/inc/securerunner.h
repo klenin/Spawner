@@ -29,7 +29,7 @@ protected:
 public:
     secure_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions);
     ~secure_runner();
-    void run_async();
+    virtual void requisites();
 
     terminate_reason_t get_terminate_reason();
 

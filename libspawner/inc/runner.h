@@ -22,11 +22,14 @@ protected:
     process_status_t process_status;
     bool running;
     report_class report;
+    thread_t running_thread;
     bool init_process(char *cmd, const char *wd);
     bool init_process_with_logon(char *cmd, const char *wd);
     virtual void create_process();
     virtual void free();
     virtual void wait();
+    virtual void requisites();
+    static thread_return_t async_body(thread_param_t param);
 public:
     runner(const std::string &program, const options_class &options);
     ~runner();
@@ -39,7 +42,8 @@ public:
     virtual report_class get_report();
 
     virtual void run_process();
-    void wait(const unsigned long &interval);
+    virtual void run_process_async();
+    bool wait_for(const unsigned long &interval);
     virtual void safe_release();
     void set_pipe(const pipes_t &pipe_type, pipe_class *pipe_object);
 };

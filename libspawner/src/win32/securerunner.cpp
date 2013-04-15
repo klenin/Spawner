@@ -268,7 +268,7 @@ void secure_runner::wait()
 
     GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
 
-    runner::wait(INFINITE); // delete this
+    runner::wait_for(INFINITE); // delete this
     running = false;
 }
 
@@ -282,12 +282,9 @@ secure_runner::~secure_runner()
     free();
 }
 
-void secure_runner::run_async()
+void secure_runner::requisites()
 {
-    if (get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal)
-        return;
-    runner::run_process();
-    running = true;
+    runner::requisites();
     check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
     completition = CreateThread(NULL, 0, process_completition_proc, this, 0, NULL);
     //WaitForSingleObject(completition, 100); // TODO fix this
