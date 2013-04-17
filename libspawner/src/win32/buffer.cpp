@@ -13,7 +13,7 @@ output_buffer_class::output_buffer_class(): buffer_size(BUFFER_SIZE) {
 output_buffer_class::output_buffer_class(const size_t &buffer_size_param): buffer_size(buffer_size_param) {
 }
 
-handle_buffer_class::handle_buffer_class(): stream(INVALID_HANDLE_VALUE) {
+handle_buffer_class::handle_buffer_class(): stream(handle_default_value) {
 }
 
 size_t handle_buffer_class::protected_read(void *data, size_t size) {
@@ -43,7 +43,7 @@ input_file_buffer_class::input_file_buffer_class(const std::string &file_name, c
     init_handle(handle);
 }
 bool input_file_buffer_class::readable() {
-    return (stream != INVALID_HANDLE_VALUE);
+    return (stream != handle_default_value);
 }
 size_t input_file_buffer_class::read(void *data, size_t size) {
     return protected_read(data, size);
@@ -58,7 +58,7 @@ output_file_buffer_class::output_file_buffer_class(const std::string &file_name,
     init_handle(handle);
 }
 bool output_file_buffer_class::writeable() {
-    return (stream != INVALID_HANDLE_VALUE);
+    return (stream != handle_default_value);
 }
 size_t output_file_buffer_class::write(void *data, size_t size) {
     return protected_write(data, size);
@@ -74,7 +74,7 @@ output_stdout_buffer_class::output_stdout_buffer_class(const size_t &buffer_size
     init_handle(handle);
 }
 bool output_stdout_buffer_class::writeable() {
-    return (stream != INVALID_HANDLE_VALUE);
+    return (stream != handle_default_value);
 }
 size_t output_stdout_buffer_class::write(void *data, size_t size) {
     return protected_write(data, size);

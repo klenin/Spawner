@@ -7,20 +7,20 @@ input_buffer_class dummy_input_buffer;
 output_buffer_class dummy_output_buffer;
 //move this to separate function
 
-pipe_class::pipe_class(): pipe_type(PIPE_UNDEFINED), buffer_thread(INVALID_HANDLE_VALUE), 
-    reading_mutex(INVALID_HANDLE_VALUE) {
+pipe_class::pipe_class(): pipe_type(PIPE_UNDEFINED), buffer_thread(handle_default_value), 
+    reading_mutex(handle_default_value) {
 }
-pipe_class::pipe_class(std_pipe_t pipe_type): pipe_type(pipe_type), buffer_thread(INVALID_HANDLE_VALUE), 
-    reading_mutex(INVALID_HANDLE_VALUE) {
+pipe_class::pipe_class(std_pipe_t pipe_type): pipe_type(pipe_type), buffer_thread(handle_default_value), 
+    reading_mutex(handle_default_value) {
     create_pipe();
 }
 
 bool pipe_class::create_pipe()
 {
-    readPipe = INVALID_HANDLE_VALUE;
-    writePipe = INVALID_HANDLE_VALUE;
-    buffer_thread = INVALID_HANDLE_VALUE;
-    reading_mutex = INVALID_HANDLE_VALUE;
+    readPipe = handle_default_value;
+    writePipe = handle_default_value;
+    buffer_thread = handle_default_value;
+    reading_mutex = handle_default_value;
     state = true;
     SECURITY_ATTRIBUTES saAttr;   
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES); 
@@ -87,12 +87,12 @@ size_t pipe_class::read(void *data, size_t size)
 
 bool pipe_class::bufferize()
 {
-    if (buffer_thread != INVALID_HANDLE_VALUE)
+    if (buffer_thread != handle_default_value)
     {
         //trying to bufferize twice
         return false;
     }        
-    if (reading_mutex == INVALID_HANDLE_VALUE)
+    if (reading_mutex == handle_default_value)
     {
         reading_mutex = CreateMutex(NULL, FALSE, NULL);
     }
@@ -101,14 +101,14 @@ bool pipe_class::bufferize()
 
 void pipe_class::wait()
 {
-    if (reading_mutex == INVALID_HANDLE_VALUE || buffer_thread == INVALID_HANDLE_VALUE)
+    if (reading_mutex == handle_default_value || buffer_thread == handle_default_value)
         return;
     WaitForSingleObject(reading_mutex, INFINITE);
 }
 
 void pipe_class::finish()
 {
-    if (reading_mutex != INVALID_HANDLE_VALUE)
+    if (reading_mutex != handle_default_value)
     {
         WaitForSingleObject(reading_mutex, INFINITE);
         ReleaseMutex(reading_mutex);

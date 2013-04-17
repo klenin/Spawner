@@ -59,7 +59,7 @@ public:
         return true;
     }
     bool ready() {
-        return incoming.size();
+        return incoming.size() != 0;
     }
     std::string stock() {
         std::string result;
@@ -96,7 +96,7 @@ public:
     }
     virtual size_t get_buffer_size() {
         while (!ready);
-        return buffer.tellp();
+        return (size_t)buffer.tellp();
     }
     void set_ready() {
         offset = 0;

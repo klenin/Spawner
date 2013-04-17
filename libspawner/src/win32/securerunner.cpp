@@ -59,7 +59,7 @@ void secure_runner::apply_restrictions()
 
     }
 
-    hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 1, 1);
+    hIOCP = CreateIoCompletionPort(handle_default_value, NULL, 1, 1);
     le = GetLastError();
 
     JOBOBJECT_ASSOCIATE_COMPLETION_PORT joacp;
@@ -171,7 +171,7 @@ void secure_runner::dump_threads( bool suspend )
     //}
     threads.clear();
     HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-    if (h != INVALID_HANDLE_VALUE)
+    if (h != handle_default_value)
     {
         THREADENTRY32 te;
         te.dwSize = sizeof(te);
@@ -273,7 +273,7 @@ void secure_runner::wait()
 }
 
 secure_runner::secure_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions):runner(program, options), restrictions(restrictions),
-    hIOCP(INVALID_HANDLE_VALUE), hJob(INVALID_HANDLE_VALUE), check_thread(INVALID_HANDLE_VALUE)
+    hIOCP(handle_default_value), hJob(handle_default_value), check_thread(handle_default_value)
 {
 }
 
@@ -300,7 +300,7 @@ report_class secure_runner::get_report()
 {
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
     report.process_status = get_process_status();
-    if (hJob != INVALID_HANDLE_VALUE && get_process_status() != process_spawner_crash)
+    if (hJob != handle_default_value && get_process_status() != process_spawner_crash)
     {
         if (!QueryInformationJobObject(hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL))
         {

@@ -1,6 +1,8 @@
 #ifndef _SPAWNER_RESTRICTIONS_H_
 #define _SPAWNER_RESTRICTIONS_H_
 
+#include <string>
+
 enum restriction_kind_t
 {
     restriction_user_time_limit         = 0x0,
@@ -23,19 +25,11 @@ class restrictions_class
 private:
     restriction_t restrictions[restriction_max];
 public:
-    restrictions_class()
-    {
-        for (int i = 0; i < restriction_max; i++)
-            restrictions[i] = restriction_no_limit;
-    }
-    void set_restriction(restriction_kind_t kind, restriction_t value){
-        restrictions[kind] = value;
-    }
-
-    restriction_t get_restriction(restriction_kind_t kind) const
-    {
-        return restrictions[kind];
-    }
+    restrictions_class();
+    void set_restriction(const restriction_kind_t &kind, const restriction_t &value);
+    void set_restriction(const std::string &kind, const restriction_t &value);
+    restriction_t get_restriction(const restriction_kind_t &kind) const;
+    static restriction_kind_t restriction_by_name(const std::string &name);
 };
 
 

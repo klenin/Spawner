@@ -188,6 +188,8 @@ bool runner::init_process_with_logon(char *cmd, const char *wd)
 
 void runner::create_process()
 {
+    init_mutex = CreateMutex(NULL, FALSE, NULL);
+    WaitForSingleObject(init_mutex, INFINITE);
 
     if (process_status == process_spawner_crash)
         return;
@@ -247,15 +249,18 @@ void runner::create_process()
     if (options.login != "" && init_process_with_logon(cmd, wd))
     {
         report.login = options.login;
+        ReleaseMutex(init_mutex);
         delete[] cmd;
         return;
     }
+    //IMPORTANT: if logon option selected & failed signalize it
     DWORD len = MAX_USER_NAME;
     char user_name[MAX_USER_NAME];
     if (GetUserNameA(user_name, &len))//error here is not critical
         report.login = user_name;
 
-    init_process(cmd, wd);
+    running = init_process(cmd, wd);
+    ReleaseMutex(init_mutex);
     delete[] cmd;
 }
 
@@ -296,8 +301,7 @@ thread_return_t runner::async_body(thread_param_t param) {
 
 runner::runner(const std::string &program, const options_class &options):
         program(program), options(options), process_status(process_not_started),
-        running_thread(INVALID_HANDLE_VALUE)
-{
+        running_thread(handle_default_value), running(false), init_mutex(handle_default_value) {
 }
 
 runner::~runner()
@@ -377,7 +381,7 @@ void runner::run_process_async() {
     running_thread = CreateThread(NULL, 0, async_body, this, 0, NULL);
 }
 
-bool runner::wait_for( const unsigned long &interval )
+bool runner::wait_for(const unsigned long &interval)
 {
     if (get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal)
         return true;
@@ -385,6 +389,13 @@ bool runner::wait_for( const unsigned long &interval )
     //std_output.wait_for_pipe(100);
     //std_error.wait_for_pipe(100);
     //std_input.wait_for_pipe(100);
+}
+
+bool runner::wait_for_init(const unsigned long &interval) {
+    while (init_mutex == handle_default_value) {//not very good, made for synchro with async(mutex belongs to creator thread)
+        Sleep(10);
+    }
+    return WaitForSingleObject(init_mutex, interval) == WAIT_OBJECT_0;// TODO: get rid of this
 }
 
 void runner::safe_release()

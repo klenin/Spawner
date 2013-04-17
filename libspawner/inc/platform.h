@@ -47,6 +47,8 @@ const unsigned long exit_code_exception_int_divide_by_zero = EXCEPTION_INT_DIVID
 
 const unsigned long infinite = INFINITE;
 
+const handle_t handle_default_value = INVALID_HANDLE_VALUE;
+
 #else
 
 #endif//_WIN32

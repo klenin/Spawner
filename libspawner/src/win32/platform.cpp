@@ -2,10 +2,10 @@
 
 void CloseHandleSafe(HANDLE &handle)
 {
-    if (handle == INVALID_HANDLE_VALUE || handle == NULL)
+    if (handle == handle_default_value || handle == NULL)
         return;
     CloseHandle(handle);
-    handle = INVALID_HANDLE_VALUE;
+    handle = handle_default_value;
 }
 
 wchar_t *a2w(const char *str)
