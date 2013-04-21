@@ -393,7 +393,7 @@ bool runner::wait_for(const unsigned long &interval)
 
 bool runner::wait_for_init(const unsigned long &interval) {
     while (init_mutex == handle_default_value) {//not very good, made for synchro with async(mutex belongs to creator thread)
-        Sleep(10);
+        Sleep(5);
     }
     return WaitForSingleObject(init_mutex, interval) == WAIT_OBJECT_0;// TODO: get rid of this
 }

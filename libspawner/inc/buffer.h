@@ -105,7 +105,7 @@ public:
 
     virtual size_t read(void *data, size_t size) {
         while (!ready)
-            Sleep(10);
+            Sleep(5);
         std::string s = buffer.str();
         size = min(size, (size_t)s.length());
         memcpy(data, s.c_str(), size);
