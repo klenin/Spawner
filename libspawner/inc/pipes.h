@@ -29,9 +29,10 @@ protected:
     pipe_t readPipe, writePipe;
     std_pipe_t pipe_type;
 	std::string file_name;
+    std::string name;
     bool state;
-    pipe_t input_pipe(){ return readPipe;}
-    pipe_t output_pipe(){ return writePipe;}
+    pipe_t input_pipe();
+    pipe_t output_pipe();
 public:
     pipe_class();
     pipe_class(std_pipe_t pipe_type);
