@@ -11,19 +11,19 @@
 
 const size_t MAX_RATE_COUNT = 20;
 
-void secure_runner::apply_restrictions()
-{
+bool secure_runner::create_restrictions() {
     if (get_process_status() == process_spawner_crash)
-        return;
+        return false;
 
     HANDLE jobHandle = NULL;
 
     /* implement restriction value check */
-    hJob = CreateJobObject(NULL, NULL);
+    std::string job_name = "Local\\";
+    job_name += options.session.hash();
+    hJob = CreateJobObject(NULL, job_name.c_str());
     DWORD le = GetLastError();
 
     // Assigning created process to job object
-    AssignProcessToJobObject(hJob, process_info.hProcess);
     le = GetLastError();
 
     // Memory and time limit
@@ -67,13 +67,23 @@ void secure_runner::apply_restrictions()
     joacp.CompletionPort = hIOCP;
     SetInformationJobObject(hJob, JobObjectAssociateCompletionPortInformation, &joacp, sizeof(joacp));
     le = GetLastError();
+    return true;
+}
+
+bool secure_runner::apply_restrictions()
+{
+    //if (!create_restrictions)
+    //    return false;
+
+    AssignProcessToJobObject(hJob, process_info.hProcess);
+    return true;
 }
 
 void secure_runner::create_process()
 {
     runner::create_process();
-    apply_restrictions();
-    check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);// may be move this to wait function
+    create_restrictions();
+    //check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);// may be move this to wait function
 }
 
 thread_return_t secure_runner::process_completition_proc( thread_param_t param )
@@ -272,7 +282,8 @@ void secure_runner::wait()
     running = false;
 }
 
-secure_runner::secure_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions):runner(program, options), restrictions(restrictions),
+secure_runner::secure_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions): 
+    runner(program, options), restrictions(restrictions),
     hIOCP(handle_default_value), hJob(handle_default_value), check_thread(handle_default_value)
 {
 }
@@ -284,9 +295,12 @@ secure_runner::~secure_runner()
 
 void secure_runner::requisites()
 {
+    apply_restrictions();
+
     runner::requisites();
+
     check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
-    completition = CreateThread(NULL, 0, process_completition_proc, this, 0, NULL);
+    //completition = CreateThread(NULL, 0, process_completition_proc, this, 0, NULL);
     //WaitForSingleObject(completition, 100); // TODO fix this
     //create in another thread waiting function
 }

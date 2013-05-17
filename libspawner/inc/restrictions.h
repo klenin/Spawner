@@ -2,6 +2,7 @@
 #define _SPAWNER_RESTRICTIONS_H_
 
 #include <string>
+#include <inc/session.h>
 
 enum restriction_kind_t
 {
@@ -29,6 +30,7 @@ public:
     void set_restriction(const restriction_kind_t &kind, const restriction_t &value);
     void set_restriction(const std::string &kind, const restriction_t &value);
     restriction_t get_restriction(const restriction_kind_t &kind) const;
+    //void create_restriction_objects(const session_class &session, handle_t *job, handle_t *completition_port);
     static restriction_kind_t restriction_by_name(const std::string &name);
 };
 

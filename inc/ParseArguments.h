@@ -28,6 +28,8 @@ typedef enum
     SP_SILENT,
     SP_HIDE_GUI,
     SP_CMD,
+    SP_DELEGATED,
+    SP_DELEGATED_SESSION,
 } spawner_arguments;
 
 

@@ -11,12 +11,11 @@
 
 class runner
 {
-private:
+protected:
     DWORD process_creation_flags;
     startupinfo_t si;
     options_class options;
     std::string program;
-protected:
     std::map<pipes_t, pipe_class*> pipes;
     process_info_t process_info;
     process_status_t process_status;

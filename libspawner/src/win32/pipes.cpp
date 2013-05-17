@@ -84,8 +84,8 @@ handle_t util_open_named_pipe(const char *name, const std_pipe_t &pipe_type) {
         dwError = GetLastError();
         CloseHandle( connected_pipe_handle );
         SetLastError(dwError);
-        return connected_pipe_handle;
     }
+    return connected_pipe_handle;
 }
 
 pipe_t pipe_class::input_pipe() { 

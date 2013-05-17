@@ -1,5 +1,7 @@
-#include <runner.h>
-#include <error.h>
+#include <inc/runner.h>
+#include <inc/error.h>
+
+#include <iostream>
 const size_t MAX_USER_NAME = 1024;
 
 /*thread_return_t CProcess::debug_thread_proc(thread_param_t param)
@@ -149,7 +151,7 @@ bool runner::init_process_with_logon(char *cmd, const char *wd)
     //USES_CONVERSION;
     ZeroMemory(&siw, sizeof(siw));
     siw.cb = sizeof(si);
-    siw.dwFlags = STARTF_USESTDHANDLES;
+    //siw.dwFlags = STARTF_USESTDHANDLES;
     siw.hStdInput = si.hStdInput;
     siw.hStdOutput = si.hStdOutput;
     siw.hStdError = si.hStdError;
@@ -196,7 +198,9 @@ void runner::create_process()
     ZeroMemory(&si, sizeof(si));
 
     si.cb = sizeof(si);
-    si.dwFlags = STARTF_USESTDHANDLES;
+    if (!options.delegated) {//#TODO fix this
+        si.dwFlags = STARTF_USESTDHANDLES;
+    }
     if (pipes.find(STD_OUTPUT_PIPE) != pipes.end())
         si.hStdOutput = pipes[STD_OUTPUT_PIPE]->get_pipe();
     if (pipes.find(STD_ERROR_PIPE) != pipes.end())
@@ -205,7 +209,7 @@ void runner::create_process()
         si.hStdInput = pipes[STD_INPUT_PIPE]->get_pipe();
     si.lpDesktop = "";
     process_creation_flags = PROCESS_CREATION_FLAGS;
-
+ 
     if (options.hide_gui)
     {
         si.dwFlags |= STARTF_USESHOWWINDOW;
@@ -256,10 +260,15 @@ void runner::create_process()
     //IMPORTANT: if logon option selected & failed signalize it
     DWORD len = MAX_USER_NAME;
     char user_name[MAX_USER_NAME];
+
     if (GetUserNameA(user_name, &len))//error here is not critical
         report.login = user_name;
 
+    std::cout << cmd;
     running = init_process(cmd, wd);
+        if (options.session_id != ""){
+        while (1) {Sleep(1000);}}
+
     ReleaseMutex(init_mutex);
     delete[] cmd;
 }

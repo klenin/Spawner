@@ -17,7 +17,8 @@ protected:
     process_status_t process_status;
     terminate_reason_t terminate_reason;
 
-    void apply_restrictions();
+    virtual bool create_restrictions();
+    virtual bool apply_restrictions();
     virtual void create_process();
 
     static thread_return_t process_completition_proc(thread_param_t param);
@@ -26,10 +27,11 @@ protected:
     void dump_threads(bool suspend);
     virtual void free();
     virtual void wait();
+    virtual void requisites();
 public:
     secure_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions);
     ~secure_runner();
-    virtual void requisites();
+
 
     terminate_reason_t get_terminate_reason();
 

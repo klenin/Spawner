@@ -5,6 +5,11 @@ void options_class::add_argument(std::string argument)
     arguments.push_back(argument);
 }
 
+void options_class::push_argument_front(std::string argument)
+{
+    arguments.push_front(argument);
+}
+
 std::string options_class::get_arguments() const
 {
     if (arguments.size() == 0)

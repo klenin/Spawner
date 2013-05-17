@@ -9,5 +9,6 @@
 #include <inc/report.h>
 #include <inc/error.h>
 #include <inc/session.h>
+#include <inc/delegate.h>
 
 #endif//_SPAWNER_H_

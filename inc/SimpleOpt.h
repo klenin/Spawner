@@ -514,7 +514,7 @@ private:
 
     // Find the '=' character within a string.
     inline SOCHAR * FindEquals(SOCHAR *s) const {
-        while (*s && *s != (SOCHAR)'=') ++s;
+        while (*s && (*s != (SOCHAR)'='&&*s != (SOCHAR)':')) ++s;
         return *s ? s : NULL;
     }
     bool IsEqual(SOCHAR a_cLeft, SOCHAR a_cRight, int a_nArgType) const;

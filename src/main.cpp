@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
     }
 
     restrictions_class restrictions;
-    options_class options;
+    options_class options(session_class::base_session);
 
     for (int i = arguments.get_arguments_index(); i < argc; i++)
         options.add_argument(argv[i]);
@@ -96,55 +96,68 @@ int main(int argc, char *argv[])
     if (arguments.ArgumentExists(SP_WORKING_DIRECTORY))
         options.working_directory = arguments.GetArgument(SP_WORKING_DIRECTORY);
 
-    if (arguments.ArgumentExists(SP_SILENT))
+    if (arguments.ArgumentExists(SP_SILENT)) {
         options.silent_errors = true;
-    if (arguments.ArgumentExists(SP_LOGIN))
+    }
+    if (arguments.ArgumentExists(SP_LOGIN)) {
         options.login = arguments.GetArgument(SP_LOGIN);
-    if (arguments.ArgumentExists(SP_PASSWORD))
+    }
+    if (arguments.ArgumentExists(SP_PASSWORD)) {
         options.password = arguments.GetArgument(SP_PASSWORD);
-    if (arguments.ArgumentExists(SP_HIDE_GUI))
+    }
+    if (arguments.ArgumentExists(SP_HIDE_GUI)) {
         options.hide_gui = true;
-    if (arguments.ArgumentExists(SP_CMD))
+    }
+    if (arguments.ArgumentExists(SP_CMD)) {
 	    options.use_cmd = true;
-
-    secure_runner secure_runner_instance(arguments.get_program(), options, restrictions);
-
-
-    if (arguments.ArgumentExists(SP_OUTPUT_FILE))
-    {
-        output_buffer_class *output_buffer = NULL;
-        if (arguments.GetArgument(SP_OUTPUT_FILE) == "std") {
-            output_buffer = new output_stdout_buffer_class(4096);
-        } else {
-            output_buffer = new output_file_buffer_class(arguments.GetArgument(SP_OUTPUT_FILE), 4096);
-        }
-        secure_runner_instance.set_pipe(STD_OUTPUT_PIPE, new output_pipe_class(output_buffer));
+    }
+    if (arguments.ArgumentExists(SP_DELEGATED_SESSION)) {
+        options.session_id = arguments.GetArgument(SP_DELEGATED_SESSION);
+    } 
+    secure_runner *secure_runner_instance;
+    if (arguments.ArgumentExists(SP_DELEGATED)) {
+        options.delegated = true;
+        secure_runner_instance = new delegate_runner(arguments.get_program(), options, restrictions);
+    } else if (arguments.ArgumentExists(SP_DELEGATED_SESSION)){
+        secure_runner_instance = new delegate_instance_runner(arguments.get_program(), options, restrictions);
+    } else {
+        secure_runner_instance = new secure_runner(arguments.get_program(), options, restrictions);
     }
 
-    if (arguments.ArgumentExists(SP_ERROR_FILE))
-    {
-        output_buffer_class *output_buffer = NULL;
-        if (arguments.GetArgument(SP_ERROR_FILE) == "std") {
-            output_buffer = new output_stdout_buffer_class(4096);
-        } else {
-            output_buffer = new output_file_buffer_class(arguments.GetArgument(SP_ERROR_FILE), 4096);
+    if (!arguments.ArgumentExists(SP_DELEGATED_SESSION)) {
+        if (arguments.ArgumentExists(SP_OUTPUT_FILE)) {
+            output_buffer_class *output_buffer = NULL;
+            if (arguments.GetArgument(SP_OUTPUT_FILE) == "std") {
+                output_buffer = new output_stdout_buffer_class(4096);
+            } else {
+                output_buffer = new output_file_buffer_class(arguments.GetArgument(SP_OUTPUT_FILE), 4096);
+            }
+            secure_runner_instance->set_pipe(STD_OUTPUT_PIPE, new output_pipe_class(session_class::base_session, "stdout", output_buffer));
         }
-        secure_runner_instance.set_pipe(STD_ERROR_PIPE, new output_pipe_class(output_buffer));
+
+        if (arguments.ArgumentExists(SP_ERROR_FILE)) {
+            output_buffer_class *output_buffer = NULL;
+            if (arguments.GetArgument(SP_ERROR_FILE) == "std") {
+                output_buffer = new output_stdout_buffer_class(4096);
+            } else {
+                output_buffer = new output_file_buffer_class(arguments.GetArgument(SP_ERROR_FILE), 4096);
+            }
+            secure_runner_instance->set_pipe(STD_ERROR_PIPE, new output_pipe_class(session_class::base_session, "stderr", output_buffer));
+        }
+
+        if (arguments.ArgumentExists(SP_INPUT_FILE)) {
+            input_buffer_class *input_buffer = NULL;
+            if (arguments.GetArgument(SP_INPUT_FILE) == "std") {
+                input_buffer = new input_buffer_class(4096);
+            } else {
+                input_buffer = new input_file_buffer_class(arguments.GetArgument(SP_INPUT_FILE), 4096);
+            }
+            secure_runner_instance->set_pipe(STD_INPUT_PIPE, new input_pipe_class(session_class::base_session, "stdin", input_buffer));
+        }
     }
 
-    if (arguments.ArgumentExists(SP_INPUT_FILE))
-    {
-        input_buffer_class *input_buffer = NULL;
-        if (arguments.GetArgument(SP_INPUT_FILE) == "std") {
-            input_buffer = new input_buffer_class(4096);
-        } else {
-            input_buffer = new input_file_buffer_class(arguments.GetArgument(SP_INPUT_FILE), 4096);
-        }
-        secure_runner_instance.set_pipe(STD_INPUT_PIPE, new input_pipe_class(input_buffer));
-    }
-
-    secure_runner_instance.run_process();
-    report_class rep = secure_runner_instance.get_report();
+    secure_runner_instance->run_process();
+    report_class rep = secure_runner_instance->get_report();
     if (!arguments.ArgumentExists(SP_HIDE_REPORT))
         std::cout << format_report(rep, options, restrictions);
     if (arguments.ArgumentExists(SP_REPORT_FILE))
@@ -153,5 +166,6 @@ int main(int argc, char *argv[])
         fo << format_report(rep, options, restrictions);
         fo.close();
     }
+    delete secure_runner_instance;
 	return 0;
 }
