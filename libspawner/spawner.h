@@ -8,5 +8,6 @@
 #include <inc/uconvert.h>
 #include <inc/report.h>
 #include <inc/error.h>
+#include <inc/session.h>
 
 #endif//_SPAWNER_H_

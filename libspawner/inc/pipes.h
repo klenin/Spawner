@@ -1,8 +1,9 @@
 #ifndef _SPAWNER_PIPES_H_
 #define _SPAWNER_PIPES_H_
 
-#include "platform.h"
-#include "buffer.h"
+#include <inc/platform.h>
+#include <inc/buffer.h>
+#include <inc/session.h>
 #include <sstream>
 #include <fstream>
 #include <string>
@@ -23,20 +24,19 @@ enum std_pipe_t {
 class pipe_class
 {
 protected:
-    bool create_pipe();
+    bool create_named_pipe();
     handle_t buffer_thread;
     handle_t reading_mutex;
     pipe_t readPipe, writePipe;
     std_pipe_t pipe_type;
-	std::string file_name;
     std::string name;
     bool state;
     pipe_t input_pipe();
     pipe_t output_pipe();
 public:
     pipe_class();
-    pipe_class(std_pipe_t pipe_type);
-	pipe_class(std::string file_name, std_pipe_t pipe_type);
+    pipe_class(const std_pipe_t &pipe_type);
+	pipe_class(const session_class &session, const std::string &pipe_name, const std_pipe_t &pipe_type, const bool &create = true);
     void close_pipe();
     ~pipe_class();
     size_t write(void *data, size_t size);
@@ -58,7 +58,8 @@ protected:
     static thread_return_t writing_buffer(thread_param_t param);
 public:
     input_pipe_class();
-    input_pipe_class(input_buffer_class *input_buffer_arg);
+    input_pipe_class(input_buffer_class *input_buffer_param);
+    input_pipe_class(const session_class &session, const std::string &pipe_name, input_buffer_class *input_buffer_param, const bool &create = true);
     virtual bool bufferize();
     virtual pipe_t get_pipe();
 };
@@ -70,7 +71,8 @@ protected:
     static thread_return_t reading_buffer(thread_param_t param);
 public:
     output_pipe_class();
-    output_pipe_class(output_buffer_class *output_buffer_arg);
+    output_pipe_class(output_buffer_class *output_buffer_param);
+    output_pipe_class(const session_class &session, const std::string &pipe_name, output_buffer_class *output_buffer_param, const bool &create = true);
     virtual bool bufferize();
     virtual pipe_t get_pipe();
 };
