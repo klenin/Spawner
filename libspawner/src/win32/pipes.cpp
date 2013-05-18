@@ -271,25 +271,31 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
 {
     output_pipe_class *self = (output_pipe_class*)param;
     ConnectNamedPipe(self->readPipe, 0);
-    if (!self->output_buffer->writeable())
-        return 0;
+	if (!self->output_buffers.size()) {
+		return 0;
+	}
+	for (int i = 0; i < self->output_buffers.size(); ++i) {
+	    if (!self->output_buffers[i]->writeable()) {
+			return 0;
+		}
+	}
     for (;;)
     {
         DWORD	nAvailableRead =1024;
-	//DWORD	dwRead;
-	//char	cCheckChar; 	
-    bool bSuccess = true;//false;
+		//DWORD	dwRead;
+		//char	cCheckChar; 	
+		bool bSuccess = true;//false;
 
-	/* Check if there's available data in the pipe */
-    /*bSuccess = PeekNamedPipe( self->readPipe,
-							  &cCheckChar,
-							  sizeof(char),
-					          &dwRead,
-						      &nAvailableRead,
-							  NULL );*/
-    if (!bSuccess || !nAvailableRead) {
-        continue;
-    }
+		/* Check if there's available data in the pipe */
+		/*bSuccess = PeekNamedPipe( self->readPipe,
+								  &cCheckChar,
+								  sizeof(char),
+								  &dwRead,
+								  &nAvailableRead,
+								  NULL );*/
+		if (!bSuccess || !nAvailableRead) {
+			continue;
+		}
         char data[BUFFER_SIZE];
         size_t bytes_count = self->read(data, nAvailableRead);//BUFFER_SIZE);
         if (bytes_count == 0)
@@ -298,21 +304,31 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
         if (bytes_count != 0)
         {
             data[bytes_count] = 0;
-            self->output_buffer->write(data, bytes_count);
+			for (int i = 0; i < self->output_buffers.size(); ++i) {
+				self->output_buffers[i]->write(data, bytes_count);
+			}
         }
         ReleaseMutex(self->reading_mutex);
     }
     return 0;
 }
 
-output_pipe_class::output_pipe_class(): pipe_class(PIPE_OUTPUT), output_buffer(&dummy_output_buffer)
+output_pipe_class::output_pipe_class(): pipe_class(PIPE_OUTPUT)
 {}
 output_pipe_class::output_pipe_class(output_buffer_class *output_buffer_param): 
-    pipe_class(PIPE_OUTPUT), output_buffer(output_buffer_param)
-{}
+    pipe_class(PIPE_OUTPUT)
+{
+	output_buffers.push_back(output_buffer_param);
+}
 
 output_pipe_class::output_pipe_class(const session_class &session, const std::string &pipe_name, output_buffer_class *output_buffer_param, const bool &create): 
-    pipe_class(session, pipe_name, PIPE_OUTPUT, create), output_buffer(output_buffer_param)
+    pipe_class(session, pipe_name, PIPE_OUTPUT, create)//, output_buffer(output_buffer_param)
+{
+	output_buffers.push_back(output_buffer_param);
+}
+
+output_pipe_class::output_pipe_class(const session_class &session, const std::string &pipe_name, std::vector<output_buffer_class *> output_buffer_param, const bool &create): 
+    pipe_class(session, pipe_name, PIPE_OUTPUT, create), output_buffers(output_buffer_param)
 {}
 
 bool output_pipe_class::bufferize()

@@ -3,6 +3,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 typedef enum
 {
@@ -39,7 +40,7 @@ private:
     bool v;
     std::string program;
     int arguments_index;
-    std::map<spawner_arguments, std::string> arguments;
+    std::map<spawner_arguments, std::vector<std::string> > arguments;
 public:
 	CArguments(int argc, char *argv[]);
 	~CArguments();
@@ -47,7 +48,8 @@ public:
     void ShowUsage();
     int get_arguments_index();
     std::string get_program();
-    std::string GetArgument(const spawner_arguments &key);
+    std::string GetArgument(const spawner_arguments &key, const int &index = 0);
+	size_t ArgumentCount(const spawner_arguments &key);
     bool ArgumentExists(const spawner_arguments &key);
 };
 

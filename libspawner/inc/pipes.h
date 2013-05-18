@@ -67,12 +67,13 @@ public:
 class output_pipe_class: public pipe_class
 {
 protected:
-    output_buffer_class *output_buffer;
+    std::vector<output_buffer_class *> output_buffers;
     static thread_return_t reading_buffer(thread_param_t param);
 public:
     output_pipe_class();
     output_pipe_class(output_buffer_class *output_buffer_param);
     output_pipe_class(const session_class &session, const std::string &pipe_name, output_buffer_class *output_buffer_param, const bool &create = true);
+    output_pipe_class(const session_class &session, const std::string &pipe_name, std::vector<output_buffer_class *> output_buffer_param, const bool &create = true);
     virtual bool bufferize();
     virtual pipe_t get_pipe();
 };

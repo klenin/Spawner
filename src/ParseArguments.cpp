@@ -39,7 +39,7 @@ CSimpleOpt::SOption Options[] =
     {SP_PASSWORD,	        "-p" ,      SO_REQ_CMB},
     {SP_LOAD_RATIO,	        "-lr" ,     SO_REQ_CMB},
 //	{SP_RUNAS,
-    {SP_SECURITY_LEVEL,     "-s" ,      SO_NONE},
+    {SP_SECURITY_LEVEL,     "-s" ,      SO_REQ_CMB},
     {SP_HIDE_REPORT,        "-hr",      SO_NONE},
     {SP_SHOW_OUTPUT,        "-so",      SO_NONE},
     {SP_SHOW_STDERR,        "-se",      SO_NONE},
@@ -79,7 +79,9 @@ CArguments::CArguments(int argc, char *argv[])
                 args.OptionId(), args.OptionText(),
                 args.OptionArg() ? args.OptionArg() : "");
                 //*/
-            arguments[(spawner_arguments)args.OptionId()] = args.OptionArg() ? args.OptionArg() : "";
+			//spawner_arhuments sp_arguments = (spawner_arguments)args.OptionId();
+			//if (arguments.find(sp_arguments) == arguments.end()) 
+            arguments[(spawner_arguments)args.OptionId()].push_back(args.OptionArg() ? args.OptionArg() : "");// = args.OptionArg() ? args.OptionArg() : "";
         }
         else {
             printf("Invalid argument: %s\nUse spawner --help for details\n", args.OptionText());
@@ -121,12 +123,22 @@ void CArguments::ShowUsage()
     std::cout << "\tspawner --help   to get this message" << std::endl;
 }
 
-std::string CArguments::GetArgument(const spawner_arguments &key)
+std::string CArguments::GetArgument(const spawner_arguments &key, const int &index)
 {
-    return arguments[key];
+	if (arguments.find(key) == arguments.end()) {
+		return "";
+	}
+    return arguments[key][index];
 }
 
 bool CArguments::ArgumentExists(const spawner_arguments &key)
 {
     return arguments.find(key) != arguments.end();
+}
+
+size_t CArguments::ArgumentCount(const spawner_arguments &key) {
+	if (arguments.find(key) == arguments.end()) {
+		return 0;
+	}
+	return arguments[key].size();
 }
