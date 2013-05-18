@@ -34,7 +34,19 @@ void delegate_runner::create_process() {
     }
     //piped redirect in fact is not required(//guess in child process)
 //    create_restrictions();
+    HANDLE job_object = CreateJobObject(NULL, NULL);
+    AssignProcessToJobObject(job_object, GetCurrentProcess());
+    DWORD le = GetLastError();
+
     secure_runner::create_process();
+
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION extended_limit_information;
+    memset(&extended_limit_information, 0, sizeof(extended_limit_information));
+    extended_limit_information.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_BREAKAWAY_OK | JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK;
+
+    if (!SetInformationJobObject(job_object, JobObjectExtendedLimitInformation, &extended_limit_information, sizeof(extended_limit_information)))
+        le = GetLastError();
+    
 }
 
 
@@ -53,13 +65,13 @@ bool delegate_instance_runner::create_restrictions() {
 
 void delegate_instance_runner::requisites() {
     apply_restrictions();
-    /*if (ResumeThread(process_info.hThread) == (DWORD)-1)
+    if (ResumeThread(process_info.hThread) == (DWORD)-1)
     {
         raise_error(*this, "ResumeThread");
         return;
-    }*/
+    }
 }
 
 void delegate_instance_runner::wait() {
-    while (1) Sleep(1000);
+    //while (1) Sleep(1000);
 }

@@ -162,13 +162,15 @@ bool runner::init_process_with_logon(char *cmd, const char *wd)
     wchar_t *wprogram = a2w(program.c_str());
     wchar_t *wcmd = a2w(cmd);
     wchar_t *wwd = a2w(wd);
+
+    DWORD creation_flags = CREATE_SUSPENDED | /* | */CREATE_SEPARATE_WOW_VDM;// | CREATE_NO_WINDOW;
     //wchar_t *login = a2w(options.login.c_str());
     if ( !CreateProcessWithLogonW(login, NULL, password, 0,
-        wprogram, wcmd, process_creation_flags,
+        wprogram, wcmd, creation_flags,
         NULL, wwd, &siw, &process_info) )
     {
         if (!options.use_cmd || !CreateProcessWithLogonW(login, NULL, password, 0,
-            NULL, wcmd, process_creation_flags,
+            NULL, wcmd, creation_flags,
             NULL, wwd, &siw, &process_info) )
         {
             raise_error(*this, "CreateProcessWithLogonW");
@@ -199,7 +201,7 @@ void runner::create_process()
 
     si.cb = sizeof(si);
     if (!options.delegated) {//#TODO fix this
-        si.dwFlags = STARTF_USESTDHANDLES;
+        //si.dwFlags = STARTF_USESTDHANDLES;
     }
     if (pipes.find(STD_OUTPUT_PIPE) != pipes.end())
         si.hStdOutput = pipes[STD_OUTPUT_PIPE]->get_pipe();
@@ -266,8 +268,8 @@ void runner::create_process()
 
     std::cout << cmd;
     running = init_process(cmd, wd);
-        if (options.session_id != ""){
-        while (1) {Sleep(1000);}}
+        //if (options.sesson_id != ""){
+        //while (1) {Sleep(1000);}}
 
     ReleaseMutex(init_mutex);
     delete[] cmd;

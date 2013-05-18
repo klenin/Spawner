@@ -46,7 +46,7 @@ void error_list::push_error(const std::string &place)
 std::string error_list::pop_error()
 {
     if (!error_list::remains())
-        return "";
+        return "<none>";
     std::string res = instance.errors.front();
     instance.errors.pop_front();
     return res;

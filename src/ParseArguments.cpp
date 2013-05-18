@@ -41,14 +41,17 @@ CSimpleOpt::SOption Options[] =
 //	{SP_RUNAS,
     {SP_SECURITY_LEVEL,     "-s" ,      SO_REQ_CMB},
     {SP_HIDE_REPORT,        "-hr",      SO_NONE},
-    {SP_SHOW_OUTPUT,        "-so",      SO_NONE},
+    {SP_SHOW_OUTPUT,        "-ho",      SO_REQ_CMB},
     {SP_SHOW_STDERR,        "-se",      SO_NONE},
     {SP_HIDE_GUI,           "-hg" ,     SO_NONE},
+    {SP_HIDE_GUI,           "-sw" ,     SO_REQ_CMB},
     {SP_SILENT,             "--silent", SO_NONE},
     {SP_CMD,                "--cmd",    SO_NONE},
     {SP_REPORT_FILE,        "-sr",      SO_REQ_CMB},
     {SP_OUTPUT_FILE,        "--out",    SO_REQ_CMB},
     {SP_INPUT_FILE,         "--in" ,    SO_REQ_CMB},
+    {SP_OUTPUT_FILE,        "-so",      SO_REQ_CMB},
+    {SP_INPUT_FILE,         "-i" ,      SO_REQ_CMB},
     {SP_ERROR_FILE,         "--err" ,   SO_REQ_CMB},
     {SP_WORKING_DIRECTORY,  "-wd" ,     SO_REQ_CMB},
     SO_END_OF_OPTIONS
@@ -74,7 +77,7 @@ CArguments::CArguments(int argc, char *argv[])
             if (args.OptionId() == SP_HELP) {
                 ShowUsage();
             }
-            //*
+            /*
             printf("Option, ID: %d, Text: '%s', Argument: '%s'\n",
                 args.OptionId(), args.OptionText(),
                 args.OptionArg() ? args.OptionArg() : "");
