@@ -35,6 +35,7 @@ CSimpleOpt::SOption Options[] =
     {SP_WRITE_LIMIT,        "-wl",      SO_REQ_CMB},
     {SP_LOGIN,              "-u" ,      SO_REQ_CMB},
     {SP_DELEGATED,          "--delegated",SO_NONE},
+    {SP_DELEGATED,          "-runas",   SO_REQ_CMB},
     {SP_DELEGATED_SESSION,  "--session",SO_REQ_CMB},
     {SP_PASSWORD,	        "-p" ,      SO_REQ_CMB},
     {SP_LOAD_RATIO,	        "-lr" ,     SO_REQ_CMB},
