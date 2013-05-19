@@ -16,6 +16,7 @@ protected:
     startupinfo_t si;
     options_class options;
     std::string program;
+    std::string force_program;
     std::map<pipes_t, pipe_class*> pipes;
     process_info_t process_info;
     process_status_t process_status;

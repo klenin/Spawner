@@ -36,6 +36,7 @@ protected:
 public:
     pipe_class();
     pipe_class(const std_pipe_t &pipe_type);
+	pipe_class(const std::string &session, const std::string &pipe_name, const std_pipe_t &pipe_type, const bool &create = true);
 	pipe_class(const session_class &session, const std::string &pipe_name, const std_pipe_t &pipe_type, const bool &create = true);
     void close_pipe();
     ~pipe_class();
@@ -54,12 +55,14 @@ public:
 class input_pipe_class: public pipe_class
 {
 protected:
-    input_buffer_class *input_buffer;
+    std::vector<input_buffer_class *> input_buffers;
     static thread_return_t writing_buffer(thread_param_t param);
 public:
     input_pipe_class();
     input_pipe_class(input_buffer_class *input_buffer_param);
+    input_pipe_class(const std::string &session, const std::string &pipe_name);
     input_pipe_class(const session_class &session, const std::string &pipe_name, input_buffer_class *input_buffer_param, const bool &create = true);
+    input_pipe_class(const session_class &session, const std::string &pipe_name, std::vector<input_buffer_class *> input_buffer_param, const bool &create = true);
     virtual bool bufferize();
     virtual pipe_t get_pipe();
 };
@@ -72,6 +75,7 @@ protected:
 public:
     output_pipe_class();
     output_pipe_class(output_buffer_class *output_buffer_param);
+    output_pipe_class(const std::string &session, const std::string &pipe_name);
     output_pipe_class(const session_class &session, const std::string &pipe_name, output_buffer_class *output_buffer_param, const bool &create = true);
     output_pipe_class(const session_class &session, const std::string &pipe_name, std::vector<output_buffer_class *> output_buffer_param, const bool &create = true);
     virtual bool bufferize();

@@ -8,7 +8,6 @@ class delegate_runner: public secure_runner
 protected:
     virtual void create_process();
     virtual bool apply_restrictions();
-    std::string running_program;
     //virtual void requisites();
 public:
     delegate_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions);

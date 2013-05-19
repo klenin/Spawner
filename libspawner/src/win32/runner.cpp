@@ -122,7 +122,10 @@ bool CProcess::Wait(const unsigned long &ms_time)
 
 bool runner::init_process(char *cmd, const char *wd)
 {
-    if ( !CreateProcess(program.c_str(),
+    std::string run_program = program;
+    if (force_program.length())
+        run_program = force_program;
+    if ( !CreateProcess(run_program.c_str(),
         cmd,
         NULL, NULL,
         TRUE,
@@ -151,19 +154,24 @@ bool runner::init_process_with_logon(char *cmd, const char *wd)
     //USES_CONVERSION;
     ZeroMemory(&siw, sizeof(siw));
     siw.cb = sizeof(si);
+    siw.dwFlags = si.dwFlags;
     //siw.dwFlags = STARTF_USESTDHANDLES;
     siw.hStdInput = si.hStdInput;
     siw.hStdOutput = si.hStdOutput;
     siw.hStdError = si.hStdError;
     siw.wShowWindow = si.wShowWindow;
     siw.lpDesktop = L"";
+    std::string run_program = program;
+    if (force_program.length())
+        run_program = force_program;
+
     wchar_t *login = a2w(options.login.c_str());
     wchar_t *password = a2w(options.password.c_str());
-    wchar_t *wprogram = a2w(program.c_str());
+    wchar_t *wprogram = a2w(run_program.c_str());
     wchar_t *wcmd = a2w(cmd);
     wchar_t *wwd = a2w(wd);
 
-    DWORD creation_flags = CREATE_SUSPENDED | /* | */CREATE_SEPARATE_WOW_VDM;// | CREATE_NO_WINDOW;
+    DWORD creation_flags = CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW;
     //wchar_t *login = a2w(options.login.c_str());
     if ( !CreateProcessWithLogonW(login, NULL, password, 0,
         wprogram, wcmd, creation_flags,
@@ -201,14 +209,14 @@ void runner::create_process()
 
     si.cb = sizeof(si);
     if (!options.delegated) {//#TODO fix this
-        //si.dwFlags = STARTF_USESTDHANDLES;
+        si.dwFlags = STARTF_USESTDHANDLES;
+        if (pipes.find(STD_OUTPUT_PIPE) != pipes.end())
+            si.hStdOutput = pipes[STD_OUTPUT_PIPE]->get_pipe();
+        if (pipes.find(STD_ERROR_PIPE) != pipes.end())
+            si.hStdError = pipes[STD_ERROR_PIPE]->get_pipe();
+        if (pipes.find(STD_INPUT_PIPE) != pipes.end())
+            si.hStdInput = pipes[STD_INPUT_PIPE]->get_pipe();
     }
-    if (pipes.find(STD_OUTPUT_PIPE) != pipes.end())
-        si.hStdOutput = pipes[STD_OUTPUT_PIPE]->get_pipe();
-    if (pipes.find(STD_ERROR_PIPE) != pipes.end())
-        si.hStdError = pipes[STD_ERROR_PIPE]->get_pipe();
-    if (pipes.find(STD_INPUT_PIPE) != pipes.end())
-        si.hStdInput = pipes[STD_INPUT_PIPE]->get_pipe();
     si.lpDesktop = "";
     process_creation_flags = PROCESS_CREATION_FLAGS;
  
@@ -232,16 +240,20 @@ void runner::create_process()
         if (GetCurrentDirectoryA(MAX_PATH, working_directory))//error here is not critical
             report.working_directory = working_directory;
     }
+    std::string run_program = program;
+    if (force_program.length())
+        run_program = force_program;
+
     std::string command_line;
-    size_t  index_win = program.find_last_of('\\'),
-        index_nix = program.find_last_of('/');
+    size_t  index_win = run_program.find_last_of('\\'),
+        index_nix = run_program.find_last_of('/');
 
     if (index_win != std::string::npos) {
-        command_line = program.substr(index_win + 1);
+        command_line = run_program.substr(index_win + 1);
     } else if (index_nix != std::string::npos) {
-        command_line = program.substr(index_nix + 1);
+        command_line = run_program.substr(index_nix + 1);
     } else {
-        command_line = program;
+        command_line = run_program;
     }
 
     command_line = command_line + " ";
@@ -266,10 +278,8 @@ void runner::create_process()
     if (GetUserNameA(user_name, &len))//error here is not critical
         report.login = user_name;
 
-    std::cout << cmd;
+    //std::cout << cmd;
     running = init_process(cmd, wd);
-        //if (options.sesson_id != ""){
-        //while (1) {Sleep(1000);}}
 
     ReleaseMutex(init_mutex);
     delete[] cmd;

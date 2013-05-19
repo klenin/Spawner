@@ -4,7 +4,8 @@
 const char *SPAWNER_PROGRAM = "sp.exe";
 
 delegate_runner::delegate_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions):
-    secure_runner(SPAWNER_PROGRAM, options, restrictions), running_program(program) {
+    secure_runner(program, options, restrictions) {
+    force_program = SPAWNER_PROGRAM;
 }
 
 /*void delegate_runner::requisites() {
@@ -24,7 +25,7 @@ void delegate_runner::create_process() {
     options.use_cmd = true;
     //also parse all this shit trollolo
     //program = "ping";
-    options.push_argument_front(running_program);
+    options.push_argument_front(program);
     std::string session = "--session=";
     session += options.session.hash();
     options.push_argument_front(session);
@@ -52,7 +53,10 @@ void delegate_runner::create_process() {
 
 
 delegate_instance_runner::delegate_instance_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions):
-    secure_runner(program, options, restrictions) {  
+    secure_runner(program, options, restrictions) {
+    set_pipe(STD_INPUT_PIPE, new input_pipe_class(options.session_id, "stdin"));
+    set_pipe(STD_OUTPUT_PIPE, new output_pipe_class(options.session_id, "stdout"));
+    set_pipe(STD_ERROR_PIPE, new output_pipe_class(options.session_id, "stderr"));
 }
 
 bool delegate_instance_runner::create_restrictions() {

@@ -67,8 +67,8 @@ size_t output_file_buffer_class::write(void *data, size_t size) {
 
 output_stdout_buffer_class::output_stdout_buffer_class(): output_buffer_class(), handle_buffer_class() {
 }
-output_stdout_buffer_class::output_stdout_buffer_class(const size_t &buffer_size_param = BUFFER_SIZE): 
-    output_buffer_class(buffer_size_param), handle_buffer_class() {
+output_stdout_buffer_class::output_stdout_buffer_class(const size_t &buffer_size_param, const unsigned int &color_param): 
+    output_buffer_class(buffer_size_param), handle_buffer_class(), color(color_param) {
     handle_t handle = GetStdHandle(STD_OUTPUT_HANDLE);
     if (true){}
     init_handle(handle);
@@ -77,5 +77,20 @@ bool output_stdout_buffer_class::writeable() {
     return (stream != handle_default_value);
 }
 size_t output_stdout_buffer_class::write(void *data, size_t size) {
-    return protected_write(data, size);
+    if (color) {
+        WORD attributes = color;
+        if (!SetConsoleTextAttribute(stream, attributes))
+        {
+        //    throw GetWin32Error("SetConsoleTextAttribute");     
+        }
+    }
+    size_t result = protected_write(data, size);
+    if (color) {
+        WORD attributes = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
+        if (!SetConsoleTextAttribute(stream, attributes))
+        {
+        //    throw GetWin32Error("SetConsoleTextAttribute");     
+        }
+    }
+    return result;
 }

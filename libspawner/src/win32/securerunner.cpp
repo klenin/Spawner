@@ -75,7 +75,9 @@ bool secure_runner::apply_restrictions()
     //if (!create_restrictions)
     //    return false;
 
-    AssignProcessToJobObject(hJob, process_info.hProcess);
+    if (!AssignProcessToJobObject(hJob, process_info.hProcess)) {
+        DWORD le = GetLastError();
+    }
     return true;
 }
 

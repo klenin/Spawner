@@ -2,30 +2,71 @@
 #include <error.h>
 #include <iostream>
 #include <fstream>
+#include <AccCtrl.h>
+#include <Aclapi.h>//advapi32.lib
 
 input_buffer_class dummy_input_buffer;
 output_buffer_class dummy_output_buffer;
 //move this to separate function
 
 pipe_class::pipe_class(): pipe_type(PIPE_UNDEFINED), buffer_thread(handle_default_value), 
-    reading_mutex(handle_default_value) {
+    reading_mutex(handle_default_value), readPipe(handle_default_value), writePipe(handle_default_value) {
 }
 pipe_class::pipe_class(const std_pipe_t &pipe_type): pipe_type(pipe_type), buffer_thread(handle_default_value), 
-    reading_mutex(handle_default_value) {
+    reading_mutex(handle_default_value), readPipe(handle_default_value), writePipe(handle_default_value) {
     //create_pipe();
 }
 
 pipe_class::pipe_class(const session_class &session, const std::string &pipe_name, const std_pipe_t &pipe_type, const bool &create): 
-    pipe_type(pipe_type), buffer_thread(handle_default_value), 
+    pipe_type(pipe_type), buffer_thread(handle_default_value), readPipe(handle_default_value), writePipe(handle_default_value),
     reading_mutex(handle_default_value) {
-    name = std::string("\\\\.\\pipe\\") + session.hash() + pipe_name;
+    name = std::string("\\\\.\\pipe\\") + (std::string)session + pipe_name;
+    if (create) {
+        create_named_pipe();
+    }
+}
+
+pipe_class::pipe_class(const std::string &session, const std::string &pipe_name, const std_pipe_t &pipe_type, const bool &create): 
+    pipe_type(pipe_type), buffer_thread(handle_default_value), readPipe(handle_default_value), writePipe(handle_default_value),
+    reading_mutex(handle_default_value) {
+    name = std::string("\\\\.\\pipe\\") + session + pipe_name;
     if (create) {
         create_named_pipe();
     }
 }
 // http://summerpinn.wordpress.com/2011/03/13/child-process-output-redirection-asynchronous-named-pipe/
 
-HANDLE util_create_named_pipe(const char *name, const std_pipe_t &pipe_type) {
+    //grants all security rights, which is not as good as it seems <------ fail, need to be created before entering in the job object - i.e. before running programs
+    HANDLE util_create_named_pipe(const char *name, const std_pipe_t &pipe_type) {
+        SID_IDENTIFIER_AUTHORITY SIDAuthWorld = SECURITY_WORLD_SID_AUTHORITY;
+    PSID everyone_sid = NULL;
+    AllocateAndInitializeSid(&SIDAuthWorld, 1, SECURITY_WORLD_RID, 
+       0, 0, 0, 0, 0, 0, 0, &everyone_sid);
+
+    EXPLICIT_ACCESS ea;
+    ZeroMemory(&ea, sizeof(EXPLICIT_ACCESS));
+    ea.grfAccessPermissions = SPECIFIC_RIGHTS_ALL | STANDARD_RIGHTS_ALL;
+    ea.grfAccessMode = SET_ACCESS;
+    ea.grfInheritance = NO_INHERITANCE;
+    ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+    ea.Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+    ea.Trustee.ptstrName  = (LPSTR)everyone_sid;
+
+    PACL acl = NULL;
+    SetEntriesInAcl(1, &ea, NULL, &acl);
+
+    PSECURITY_DESCRIPTOR sd = (PSECURITY_DESCRIPTOR)LocalAlloc(LPTR, 
+                                       SECURITY_DESCRIPTOR_MIN_LENGTH);
+    InitializeSecurityDescriptor(sd, SECURITY_DESCRIPTOR_REVISION);
+    SetSecurityDescriptorDacl(sd, TRUE, acl, FALSE);
+
+    SECURITY_ATTRIBUTES sa;
+    sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+    sa.lpSecurityDescriptor = sd;
+    sa.bInheritHandle = FALSE;
+
+
+
     SECURITY_ATTRIBUTES saAttr;
     HANDLE tmp_named_pipe_handle;
     HANDLE named_pipe_handle;
@@ -35,18 +76,20 @@ HANDLE util_create_named_pipe(const char *name, const std_pipe_t &pipe_type) {
     saAttr.lpSecurityDescriptor = NULL;
 
     DWORD open_mode = (pipe_type == PIPE_INPUT)?PIPE_ACCESS_OUTBOUND:PIPE_ACCESS_INBOUND;// | FILE_FLAG_OVERLAPPED;
-
-    tmp_named_pipe_handle = CreateNamedPipe(name,
-									  open_mode,
-                                      PIPE_TYPE_BYTE | PIPE_READMODE_BYTE |PIPE_WAIT,
+    DWORD pipe_mode = PIPE_TYPE_BYTE | PIPE_WAIT;
+    if (pipe_type == PIPE_OUTPUT)
+        pipe_mode |= PIPE_READMODE_BYTE;
+    
+    tmp_named_pipe_handle = CreateNamedPipe(TEXT(name),
+                                      open_mode,
+                                      pipe_mode,
                                       //PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
-                                      1,    // Number of pipes
+                                      PIPE_UNLIMITED_INSTANCES,    // Number of pipes
                                       0,    // Out buffer size
                                       0,    // In buffer size
-                                      0,    // Timeout in ms
-                                      &saAttr);
-
-    if (!tmp_named_pipe_handle) {
+                                      1024*1000,    // Timeout in ms
+                                      &sa);//NULL);//&saAttr);
+    if (!tmp_named_pipe_handle || tmp_named_pipe_handle == handle_default_value) {
         return tmp_named_pipe_handle;
     }
 
@@ -69,11 +112,16 @@ handle_t util_open_named_pipe(const char *name, const std_pipe_t &pipe_type) {
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES); 
     saAttr.bInheritHandle = TRUE; 
     saAttr.lpSecurityDescriptor = NULL;
+
+    if (!WaitNamedPipe(TEXT(name), NMPWAIT_WAIT_FOREVER)) {
+        dwError = GetLastError();
+        std::cout << "!!" << dwError << std::endl;
+    }
     
     connected_pipe_handle = CreateFile(
-                        name,
-                        (pipe_type == PIPE_INPUT?FILE_READ_DATA:FILE_WRITE_DATA),// | SYNCHRONIZE,
-                        NULL,
+                        TEXT(name),
+                        (pipe_type == PIPE_INPUT)?GENERIC_READ:FILE_WRITE_DATA,//FILE_READ_DATA:FILE_WRITE_DATA),// | SYNCHRONIZE,
+                        /*0,///*(pipe_type == PIPE_INPUT)?(*/FILE_SHARE_READ | FILE_SHARE_WRITE,//):0,
                         &saAttr,
                         OPEN_EXISTING,
                         FILE_ATTRIBUTE_NORMAL,//FILE_FLAG_OVERLAPPED
@@ -82,21 +130,23 @@ handle_t util_open_named_pipe(const char *name, const std_pipe_t &pipe_type) {
 
     if (INVALID_HANDLE_VALUE == connected_pipe_handle) {
         dwError = GetLastError();
+        std::cout << name << dwError << std::endl;
         CloseHandle( connected_pipe_handle );
         SetLastError(dwError);
     }
+
     return connected_pipe_handle;
 }
 
 pipe_t pipe_class::input_pipe() { 
-    if (!readPipe) {
+    if (!readPipe || readPipe == handle_default_value) {
         readPipe = util_open_named_pipe(name.c_str(), pipe_type);
     }
     return readPipe;
 }
 
 pipe_t pipe_class::output_pipe() {
-    if (!writePipe) {
+    if (!writePipe || writePipe == handle_default_value) {
         writePipe = util_open_named_pipe(name.c_str(), pipe_type);
     }
     return writePipe;
@@ -156,6 +206,8 @@ size_t pipe_class::write( void *data, size_t size )
 size_t pipe_class::read(void *data, size_t size)
 {
     DWORD dwRead;
+    /*if (WAIT_OBJECT_0 != WaitForSingleObject( readPipe, 0))
+        return 0;*/
     if (!ReadFile(readPipe, data, size, &dwRead, NULL))
     {
         raise_error(*this, "ReadFile");
@@ -226,26 +278,57 @@ thread_return_t input_pipe_class::writing_buffer(thread_param_t param) {
 
     char buffer[BUFFER_SIZE + 1];
     size_t read_count;
-    if (!self->input_buffer->readable())
+    if (self->writePipe == INVALID_HANDLE_VALUE) {
         return 0;
-    while (read_count = self->input_buffer->read(buffer, BUFFER_SIZE)) {
-        if (!self->write(buffer, read_count))
-            break;
+    }
+    //if (!WaitNamedPipe(TEXT(self->name.c_str()), NMPWAIT_WAIT_FOREVER))
+    //    return 0;
+    ConnectNamedPipe(self->writePipe, 0);
+    //some debug message
+    //std::cout << "connected in" << std::endl;
+    for (int i = 0; i < self->input_buffers.size(); ++i) {
+        if (!self->input_buffers[i]->readable()) {
+            return 0;
+        }
+    }
+    size_t can_continue = 1;
+    while (can_continue) {
+        can_continue = 0;
+        for (int i = 0; i < self->input_buffers.size(); ++i) {
+            read_count = self->input_buffers[i]->read(buffer, BUFFER_SIZE);
+            if (!self->write(buffer, read_count)) {
+                return 0;
+            }
+            can_continue += read_count!=0;
+        }
+
         /*if (!self->input_buffer->readable())
             return 0;*/
     }
     return 0;
 }
 
-input_pipe_class::input_pipe_class(): pipe_class(PIPE_INPUT), input_buffer(&dummy_input_buffer){
+input_pipe_class::input_pipe_class(): pipe_class(PIPE_INPUT) {
 }
 
 input_pipe_class::input_pipe_class(input_buffer_class *input_buffer_param): 
-    pipe_class(PIPE_INPUT), input_buffer(input_buffer_param){
+    pipe_class(PIPE_INPUT) {
+    input_buffers.push_back(input_buffer_param);
+}
+
+input_pipe_class::input_pipe_class(const std::string &session, const std::string &pipe_name): 
+    pipe_class(session, pipe_name, PIPE_INPUT, false) {
 }
 
 input_pipe_class::input_pipe_class(const session_class &session, const std::string &pipe_name, input_buffer_class *input_buffer_param, const bool &create): 
-    pipe_class(session, pipe_name, PIPE_INPUT, create), input_buffer(input_buffer_param){
+    pipe_class(session, pipe_name, PIPE_INPUT, create) {
+    if (input_buffer_param) {
+        input_buffers.push_back(input_buffer_param);
+    }
+}
+
+input_pipe_class::input_pipe_class(const session_class &session, const std::string &pipe_name, std::vector<input_buffer_class *> input_buffer_param, const bool &create): 
+    pipe_class(session, pipe_name, PIPE_INPUT, create), input_buffers(input_buffer_param) {
 }
 
 bool input_pipe_class::bufferize()
@@ -270,11 +353,13 @@ pipe_t input_pipe_class::get_pipe()
 thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
 {
     output_pipe_class *self = (output_pipe_class*)param;
-    ConnectNamedPipe(self->readPipe, 0);
-	if (!self->output_buffers.size()) {
+	if (self->readPipe == INVALID_HANDLE_VALUE) {
 		return 0;
 	}
-	for (int i = 0; i < self->output_buffers.size(); ++i) {
+    ConnectNamedPipe(self->readPipe, 0);
+    //if debug show some message
+    //std::cout << "connected out" << std::endl;
+    for (int i = 0; i < self->output_buffers.size(); ++i) {
 	    if (!self->output_buffers[i]->writeable()) {
 			return 0;
 		}
@@ -282,22 +367,9 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
     for (;;)
     {
         DWORD	nAvailableRead =1024;
-		//DWORD	dwRead;
-		//char	cCheckChar; 	
-		bool bSuccess = true;//false;
-
-		/* Check if there's available data in the pipe */
-		/*bSuccess = PeekNamedPipe( self->readPipe,
-								  &cCheckChar,
-								  sizeof(char),
-								  &dwRead,
-								  &nAvailableRead,
-								  NULL );*/
-		if (!bSuccess || !nAvailableRead) {
-			continue;
-		}
+		DWORD	dwRead;
         char data[BUFFER_SIZE];
-        size_t bytes_count = self->read(data, nAvailableRead);//BUFFER_SIZE);
+        size_t bytes_count = self->read(data, BUFFER_SIZE);
         if (bytes_count == 0)
             break;
         WaitForSingleObject(self->reading_mutex, INFINITE);
@@ -321,10 +393,14 @@ output_pipe_class::output_pipe_class(output_buffer_class *output_buffer_param):
 	output_buffers.push_back(output_buffer_param);
 }
 
+output_pipe_class::output_pipe_class(const std::string &session, const std::string &pipe_name): 
+    pipe_class(session, pipe_name, PIPE_OUTPUT, false) {//, output_buffer(output_buffer_param)
+}
 output_pipe_class::output_pipe_class(const session_class &session, const std::string &pipe_name, output_buffer_class *output_buffer_param, const bool &create): 
-    pipe_class(session, pipe_name, PIPE_OUTPUT, create)//, output_buffer(output_buffer_param)
-{
-	output_buffers.push_back(output_buffer_param);
+    pipe_class(session, pipe_name, PIPE_OUTPUT, create) {//, output_buffer(output_buffer_param) {
+    if (output_buffer_param) {
+	    output_buffers.push_back(output_buffer_param);
+    }
 }
 
 output_pipe_class::output_pipe_class(const session_class &session, const std::string &pipe_name, std::vector<output_buffer_class *> output_buffer_param, const bool &create): 

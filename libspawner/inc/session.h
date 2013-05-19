@@ -14,6 +14,7 @@ public:
     session_class(const session_class &session);
     static session_class base_session;
     std::string hash() const;
+    operator std::string() const {return hash();}
     template<typename T>
     session_class& operator<< (const T &val) {
         std::ostringstream stringstream_tmp;

@@ -147,9 +147,11 @@ public:
 };
 
 class output_stdout_buffer_class: public output_buffer_class, protected handle_buffer_class {
+protected:
+    unsigned int color;
 public:
     output_stdout_buffer_class();
-    output_stdout_buffer_class(const size_t &buffer_size_param);
+    output_stdout_buffer_class(const size_t &buffer_size_param = BUFFER_SIZE, const unsigned int &color_param = 0);
     virtual bool writeable();
     virtual size_t write(void *data, size_t size);
 };
