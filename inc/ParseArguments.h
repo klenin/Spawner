@@ -27,6 +27,7 @@ typedef enum
     SP_LOAD_RATIO,
     SP_WORKING_DIRECTORY,
     SP_SILENT,
+    SP_DEBUG,
     SP_HIDE_GUI,
     SP_CMD,
     SP_DELEGATED,

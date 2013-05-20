@@ -37,6 +37,9 @@ void init_options_from_arguments(options_class &options, CArguments &arguments) 
     if (arguments.ArgumentExists(SP_HIDE_REPORT)) {
         options.hide_report = true;
     }
+    if (arguments.ArgumentExists(SP_DEBUG)) {
+        options.debug = true;
+    }
     options.hide_gui = true;
 }
 
@@ -121,18 +124,6 @@ int main(int argc, char *argv[])
 	std::vector<output_buffer_class *> error_buffers;
     std::vector<input_buffer_class *> input_buffers;
 
-    if (!options.session_id.length()) {
-        for (int i = 0; i < options.stdoutput.size(); ++i) {
-            output_buffers.push_back(create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE));
-		}
-        for (int i = 0; i < options.stderror.size(); ++i) {
-            error_buffers.push_back(create_output_buffer(options.stderror[i], STD_ERROR_PIPE));
-		}
-        for (int i = 0; i < options.stdinput.size(); ++i) {
-            input_buffers.push_back(create_input_buffer(options.stdinput[i]));
-		}
-    }
-
     secure_runner *secure_runner_instance;
     if (options.delegated) {
         secure_runner_instance = new delegate_runner(arguments.get_program(), options, restrictions);
@@ -143,6 +134,15 @@ int main(int argc, char *argv[])
     }
 
     if (!options.session_id.length()) {
+        for (int i = 0; i < options.stdoutput.size(); ++i) {
+            output_buffers.push_back(create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE));
+		}
+        for (int i = 0; i < options.stderror.size(); ++i) {
+            error_buffers.push_back(create_output_buffer(options.stderror[i], STD_ERROR_PIPE));
+		}
+        for (int i = 0; i < options.stdinput.size(); ++i) {
+            input_buffers.push_back(create_input_buffer(options.stdinput[i]));
+		}
         secure_runner_instance->set_pipe(STD_OUTPUT_PIPE, new output_pipe_class(options.session, "stdout", output_buffers));
         secure_runner_instance->set_pipe(STD_ERROR_PIPE, new output_pipe_class(options.session, "stderr", error_buffers));
         secure_runner_instance->set_pipe(STD_INPUT_PIPE, new input_pipe_class(options.session, "stdin", input_buffers));

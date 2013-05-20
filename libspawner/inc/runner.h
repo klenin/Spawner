@@ -14,6 +14,7 @@ class runner
 protected:
     DWORD process_creation_flags;
     startupinfo_t si;
+    bool running_async;
     options_class options;
     std::string program;
     std::string force_program;
@@ -29,6 +30,7 @@ protected:
     virtual void create_process();
     virtual void free();
     virtual void wait();
+    virtual void debug();
     virtual void requisites();
     static thread_return_t async_body(thread_param_t param);
 public:

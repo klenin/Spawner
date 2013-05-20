@@ -4,121 +4,6 @@
 #include <iostream>
 const size_t MAX_USER_NAME = 1024;
 
-/*thread_return_t CProcess::debug_thread_proc(thread_param_t param)
-{
-    CProcess *self = (CProcess *)param;
-    ZeroMemory(&self->si, sizeof(self->si));
-
-    self->si.cb = sizeof(self->si);
-    self->si.dwFlags = STARTF_USESTDHANDLES;
-    self->si.hStdInput = self->std_input.ReadPipe();
-    self->si.hStdOutput = self->std_output.WritePipe();
-    self->si.hStdError = self->std_error.WritePipe();
-    DWORD process_creation_flags = PROCESS_CREATION_FLAGS;
-    self->si.lpDesktop = "";
-
-    if (self->options.hide_gui)
-    {
-        self->si.dwFlags |= STARTF_USESHOWWINDOW;
-        self->si.wShowWindow = SW_HIDE;
-    }
-
-    // Extracting program name and generating cmd line
-    char *cmd;
-    const char *wd = (self->options.working_directory != "")?self->options.working_directory.c_str():NULL;
-    string command_line;
-    size_t  index_win = self->application.find_last_of('\\'),
-        index_nix = self->application.find_last_of('/');
-
-    if (index_win != string::npos)
-        command_line = self->application.substr(index_win + 1);
-    else if (index_nix != string::npos)
-        command_line = self->application.substr(index_nix + 1);
-    else
-        command_line = self->application;
-
-    command_line = command_line + " " + (self->options.string_arguments==""?self->options.get_arguments():self->options.string_arguments);
-    cmd = new char [command_line.size()+1];
-    strcpy(cmd, command_line.c_str());
-
-    if (self->options.silent_errors)
-    {
-        SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
-        process_creation_flags |= DEBUG_PROCESS;
-    }
-
-    // check if program exists or smth like this
-    // if not exists try to execute full cmd
-    if ( !CreateProcess(self->application.c_str(),
-        cmd,
-        NULL, NULL,
-        TRUE,
-        process_creation_flags,
-        NULL, wd,
-        &self->si, &self->process_info) )
-    {
-        if ( !CreateProcess(NULL,
-            cmd,
-            NULL, NULL,
-            TRUE,
-            process_creation_flags,
-            NULL, wd,
-            &self->si, &self->process_info) )
-        {
-            DWORD le = GetLastError();
-            delete[] cmd;
-            throw("!!!");
-        }
-    }
-    delete[] cmd;
-    DEBUG_EVENT debug_event;
-    WaitForSingleObject(self->process_initiated, 0);
-    while (WaitForDebugEvent(&debug_event, INFINITE))
-    {
-        ContinueDebugEvent(debug_event.dwProcessId,
-            debug_event.dwThreadId,
-            DBG_CONTINUE);
-        if (debug_event.dwDebugEventCode == EXCEPTION_DEBUG_EVENT)
-        {
-            debug_event.dwProcessId = 0;
-        }
-        //std::cout << debug_event.u.DebugString.lpDebugStringData;
-    }
-
-    return 0;
-}
-
-bool CProcess::set_terminate_reason(const terminate_reason_t &reason)
-{
-    terminate_reason_t current_reason = get_terminate_reason();
-    if (current_reason != terminate_reason_not_terminated || reason == current_reason)
-        return false;
-
-    return true;
-}
-
-process_id CProcess::get_process_id()
-{
-    if (get_process_status() == process_not_started)
-        return 0;//error
-    return process_info.dwProcessId;
-}
-
-istringstream & CProcess::stdoutput()
-{
-    return std_output.stream();
-}
-
-istringstream & CProcess::stderror()
-{
-    return std_error.stream();
-}
-
-bool CProcess::Wait(const unsigned long &ms_time)
-{
-    return WaitForSingleObject(completition, ms_time) != 0;
-}
-*/
 
 bool runner::init_process(char *cmd, const char *wd)
 {
@@ -200,7 +85,6 @@ bool runner::init_process_with_logon(char *cmd, const char *wd)
 
 void runner::create_process()
 {
-    init_mutex = CreateMutex(NULL, FALSE, NULL);
     WaitForSingleObject(init_mutex, INFINITE);
 
     if (process_status == process_spawner_crash)
@@ -299,6 +183,21 @@ void runner::wait()
     WaitForSingleObject(process_info.hProcess, INFINITE);
 }
 
+void runner::debug() {
+    DEBUG_EVENT debug_event;
+    while (WaitForDebugEvent(&debug_event, INFINITE))
+    {
+        ContinueDebugEvent(debug_event.dwProcessId,
+            debug_event.dwThreadId,
+            DBG_CONTINUE);
+        if (debug_event.dwDebugEventCode == EXCEPTION_DEBUG_EVENT)
+        {
+            debug_event.dwProcessId = 0;
+        }
+        //std::cout << debug_event.u.DebugString.lpDebugStringData << std::endl;
+    }
+}
+
 void runner::requisites() {
     if (ResumeThread(process_info.hThread) == (DWORD)-1)
     {
@@ -312,6 +211,9 @@ void runner::requisites() {
             return;
         }
     }
+    if (options.debug) {
+        debug();
+    }
 }
 
 thread_return_t runner::async_body(thread_param_t param) {
@@ -321,8 +223,9 @@ thread_return_t runner::async_body(thread_param_t param) {
 }
 
 runner::runner(const std::string &program, const options_class &options):
-        program(program), options(options), process_status(process_not_started),
-        running_thread(handle_default_value), running(false), init_mutex(handle_default_value) {
+    program(program), options(options), process_status(process_not_started), running_async(false),
+    running_thread(handle_default_value), running(false), init_mutex(handle_default_value) {
+    init_mutex = CreateMutex(NULL, FALSE, NULL);
 }
 
 runner::~runner()
@@ -390,6 +293,13 @@ report_class runner::get_report()
 
 void runner::run_process()
 {
+    if (options.debug && !running_async) {
+        run_process_async();
+        WaitForSingleObject(running_thread, 100);//may stuck here
+        WaitForSingleObject(init_mutex, INFINITE);//may stuck here
+        WaitForSingleObject(process_info.hProcess, INFINITE);//may stuck here
+        return;
+    }
     create_process();
     if (get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal)
         return;
@@ -399,6 +309,7 @@ void runner::run_process()
 }
 
 void runner::run_process_async() {
+    running_async = true;
     running_thread = CreateThread(NULL, 0, async_body, this, 0, NULL);
 }
 

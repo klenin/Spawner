@@ -35,15 +35,13 @@ CSimpleOpt::SOption Options[] =
     {SP_WRITE_LIMIT,        "-wl",      SO_REQ_CMB},
     {SP_LOGIN,              "-u" ,      SO_REQ_CMB},
     {SP_DELEGATED,          "--delegated",SO_NONE},
-    {SP_DELEGATED,          "-runas",   SO_REQ_CMB},
     {SP_DELEGATED_SESSION,  "--session",SO_REQ_CMB},
+    {SP_DEBUG,              "--debug",  SO_NONE},
     {SP_PASSWORD,	        "-p" ,      SO_REQ_CMB},
     {SP_LOAD_RATIO,	        "-lr" ,     SO_REQ_CMB},
 //	{SP_RUNAS,
     {SP_SECURITY_LEVEL,     "-s" ,      SO_REQ_CMB},
     {SP_HIDE_REPORT,        "-hr",      SO_NONE},
-    {SP_SHOW_OUTPUT,        "-ho",      SO_REQ_CMB},
-    {SP_SHOW_STDERR,        "-se",      SO_NONE},
     {SP_HIDE_GUI,           "-hg" ,     SO_NONE},
     {SP_HIDE_GUI,           "-sw" ,     SO_REQ_CMB},
     {SP_SILENT,             "--silent", SO_NONE},
@@ -55,6 +53,10 @@ CSimpleOpt::SOption Options[] =
     {SP_INPUT_FILE,         "-i" ,      SO_REQ_CMB},
     {SP_ERROR_FILE,         "--err" ,   SO_REQ_CMB},
     {SP_WORKING_DIRECTORY,  "-wd" ,     SO_REQ_CMB},
+
+    {SP_DELEGATED,          "-runas",   SO_REQ_CMB},
+    {SP_SHOW_OUTPUT,        "-ho",      SO_REQ_CMB},
+    {SP_SHOW_STDERR,        "-se",      SO_NONE},
     SO_END_OF_OPTIONS
 };
 
