@@ -199,17 +199,17 @@ void runner::debug() {
 }
 
 void runner::requisites() {
-    if (ResumeThread(process_info.hThread) == (DWORD)-1)
-    {
-        raise_error(*this, "ResumeThread");
-        return;
-    }
     for (std::map<pipes_t, pipe_class*>::iterator it = pipes.begin(); it != pipes.end(); ++it) {
         pipe_class *pipe = it->second;
         if (!pipe->bufferize()) {
             raise_error(*this, LAST);
             return;
         }
+    }
+    if (ResumeThread(process_info.hThread) == (DWORD)-1)
+    {
+        raise_error(*this, "ResumeThread");
+        return;
     }
     if (options.debug) {
         debug();

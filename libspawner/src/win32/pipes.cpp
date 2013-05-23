@@ -35,10 +35,10 @@ pipe_class::pipe_class(const std::string &session, const std::string &pipe_name,
     }
 }
 // http://summerpinn.wordpress.com/2011/03/13/child-process-output-redirection-asynchronous-named-pipe/
-
-    //grants all security rights, which is not as good as it seems <------ fail, need to be created before entering in the job object - i.e. before running programs
-    HANDLE util_create_named_pipe(const char *name, const std_pipe_t &pipe_type) {
-        SID_IDENTIFIER_AUTHORITY SIDAuthWorld = SECURITY_WORLD_SID_AUTHORITY;
+// http://stackoverflow.com/questions/690780/how-to-create-directory-with-all-rights-granted-to-everyone
+//grants all security rights, which is not as good as it seems <------ fail, need to be created before entering in the job object - i.e. before running programs
+HANDLE util_create_named_pipe(const char *name, const std_pipe_t &pipe_type) {
+    SID_IDENTIFIER_AUTHORITY SIDAuthWorld = SECURITY_WORLD_SID_AUTHORITY;
     PSID everyone_sid = NULL;
     AllocateAndInitializeSid(&SIDAuthWorld, 1, SECURITY_WORLD_RID, 
        0, 0, 0, 0, 0, 0, 0, &everyone_sid);
@@ -122,7 +122,7 @@ handle_t util_open_named_pipe(const char *name, const std_pipe_t &pipe_type) {
                         TEXT(name),
                         (pipe_type == PIPE_INPUT)?GENERIC_READ:FILE_WRITE_DATA,//FILE_READ_DATA:FILE_WRITE_DATA),// | SYNCHRONIZE,
                         /*0,///*(pipe_type == PIPE_INPUT)?(*/FILE_SHARE_READ | FILE_SHARE_WRITE,//):0,
-                        &saAttr,
+                        NULL,//&saAttr,
                         OPEN_EXISTING,
                         FILE_ATTRIBUTE_NORMAL,//FILE_FLAG_OVERLAPPED
                         NULL                      
@@ -375,7 +375,9 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
         WaitForSingleObject(self->reading_mutex, INFINITE);
         if (bytes_count != 0)
         {
-            data[bytes_count] = 0;
+            if (bytes_count < BUFFER_SIZE) {
+                data[bytes_count] = 0;
+            }
 			for (int i = 0; i < self->output_buffers.size(); ++i) {
 				self->output_buffers[i]->write(data, bytes_count);
 			}

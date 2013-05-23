@@ -272,6 +272,8 @@ void secure_runner::wait()
             terminate_reason = terminate_reason_load_ratio_limit;
             process_status = process_finished_terminated;
             break;
+        default:
+            break;
         };
     } while (!message);
 

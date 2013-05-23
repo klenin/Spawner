@@ -46,6 +46,7 @@ CSimpleOpt::SOption Options[] =
     {SP_HIDE_GUI,           "-sw" ,     SO_REQ_CMB},
     {SP_SILENT,             "--silent", SO_NONE},
     {SP_CMD,                "--cmd",    SO_NONE},
+    {SP_CMD,                "--systempath",SO_NONE},
     {SP_REPORT_FILE,        "-sr",      SO_REQ_CMB},
     {SP_OUTPUT_FILE,        "--out",    SO_REQ_CMB},
     {SP_INPUT_FILE,         "--in" ,    SO_REQ_CMB},
@@ -56,7 +57,7 @@ CSimpleOpt::SOption Options[] =
 
     {SP_DELEGATED,          "-runas",   SO_REQ_CMB},
     {SP_SHOW_OUTPUT,        "-ho",      SO_REQ_CMB},
-    {SP_SHOW_STDERR,        "-se",      SO_NONE},
+    {SP_ERROR_FILE,         "-se",      SO_NONE},
     SO_END_OF_OPTIONS
 };
 
