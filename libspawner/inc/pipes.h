@@ -5,7 +5,6 @@
 #include <inc/buffer.h>
 #include <inc/session.h>
 #include <sstream>
-#include <fstream>
 #include <string>
 
 enum pipes_t/*rename*/ {

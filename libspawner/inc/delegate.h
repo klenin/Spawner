@@ -1,7 +1,9 @@
 #ifndef _SPAWNER_DELEGATE_H_
 #define _SPAWNER_DELEGATE_H_
 
+#include <fstream>
 #include <inc/securerunner.h>
+
 
 class delegate_runner: public secure_runner
 {

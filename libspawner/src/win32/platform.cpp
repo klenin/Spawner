@@ -1,4 +1,17 @@
 #include "platform.h"
+//#include <Windows.h>
+
+#ifdef OPEN_JOB_OBJECT_DYNAMIC_LOAD
+void load_open_job_object() {
+    HINSTANCE hDLL = LoadLibrary("kernel32.dll");
+    if (!hDLL) {
+        //everything failed
+    }
+    OpenJobObjectA = (OPEN_JOB_OBJECT)GetProcAddress(hDLL, "OpenJobObjectA");
+    FreeLibrary(hDLL);
+}
+#endif//OPEN_JOB_OBJECT_DYNAMIC_LOAD
+
 
 void CloseHandleSafe(HANDLE &handle)
 {

@@ -48,10 +48,10 @@ output_buffer_class *create_output_buffer(const std::string &name, const pipes_t
 	if (name == "std") {
         unsigned int color = FOREGROUND_BLUE | FOREGROUND_GREEN;
         if (pipe_type == STD_ERROR_PIPE) {
-            color = FOREGROUND_RED;
+            color = FOREGROUND_RED | FOREGROUND_INTENSITY;
         }
 		output_buffer = new output_stdout_buffer_class(4096, color);
-	} else {
+	} else if (name.length()) {
 		output_buffer = new output_file_buffer_class(name, 4096);
 	}
     return output_buffer;
@@ -61,7 +61,7 @@ input_buffer_class *create_input_buffer(const std::string &name, const size_t bu
     input_buffer_class *input_buffer = NULL;
     if (name == "std") {
         input_buffer = new input_buffer_class(4096);
-    } else {
+    } else if (name.length()) {
         input_buffer = new input_file_buffer_class(name, 4096);
     }
     return input_buffer;
@@ -73,6 +73,7 @@ int main(int argc, char *argv[])
 {
 	//SetConsoleCP(1251);
 	//SetConsoleOutputCP(1251);
+
 
 	CArguments arguments(argc, argv);
     if (!arguments.valid())
@@ -135,13 +136,22 @@ int main(int argc, char *argv[])
 
     if (!options.session_id.length()) {
         for (int i = 0; i < options.stdoutput.size(); ++i) {
-            output_buffers.push_back(create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE));
+            output_buffer_class *buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
+            if (buffer) {
+                output_buffers.push_back(buffer);
+            }
 		}
         for (int i = 0; i < options.stderror.size(); ++i) {
-            error_buffers.push_back(create_output_buffer(options.stderror[i], STD_ERROR_PIPE));
+            output_buffer_class *buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
+            if (buffer) {
+                error_buffers.push_back(buffer);
+            }
 		}
         for (int i = 0; i < options.stdinput.size(); ++i) {
-            input_buffers.push_back(create_input_buffer(options.stdinput[i]));
+            input_buffer_class *buffer = create_input_buffer(options.stdinput[i]);
+            if (buffer) {
+                input_buffers.push_back(buffer);
+            }
 		}
         secure_runner_instance->set_pipe(STD_OUTPUT_PIPE, new output_pipe_class(options.session, "stdout", output_buffers));
         secure_runner_instance->set_pipe(STD_ERROR_PIPE, new output_pipe_class(options.session, "stderr", error_buffers));
@@ -155,7 +165,7 @@ int main(int argc, char *argv[])
         std::cout << GenerateSpawnerReport(rep, options, restrictions);
     if (options.report_file.length())
     {
-        std::ofstream fo(options.report_file);
+        std::ofstream fo(options.report_file.c_str());
         fo << GenerateSpawnerReport(rep, options, restrictions);
         fo.close();
     }

@@ -40,7 +40,6 @@ bool runner::init_process_with_logon(char *cmd, const char *wd)
     ZeroMemory(&siw, sizeof(siw));
     siw.cb = sizeof(si);
     siw.dwFlags = si.dwFlags;
-    //siw.dwFlags = STARTF_USESTDHANDLES;
     siw.hStdInput = si.hStdInput;
     siw.hStdOutput = si.hStdOutput;
     siw.hStdError = si.hStdError;
@@ -109,10 +108,12 @@ void runner::create_process()
         si.dwFlags |= STARTF_USESHOWWINDOW;
         si.wShowWindow = SW_HIDE;
     }
-    if (options.silent_errors)
+    if (options.silent_errors) {
         SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
-    if (options.debug)
+    }
+    if (options.debug) {
         process_creation_flags |= DEBUG_PROCESS;
+    }
 
     // Extracting program name and generating cmd line
     char *cmd;
@@ -199,17 +200,17 @@ void runner::debug() {
 }
 
 void runner::requisites() {
+    if (ResumeThread(process_info.hThread) == (DWORD)-1)
+    {
+        raise_error(*this, "ResumeThread");
+        return;
+    }
     for (std::map<pipes_t, pipe_class*>::iterator it = pipes.begin(); it != pipes.end(); ++it) {
         pipe_class *pipe = it->second;
         if (!pipe->bufferize()) {
             raise_error(*this, LAST);
             return;
         }
-    }
-    if (ResumeThread(process_info.hThread) == (DWORD)-1)
-    {
-        raise_error(*this, "ResumeThread");
-        return;
     }
     if (options.debug) {
         debug();

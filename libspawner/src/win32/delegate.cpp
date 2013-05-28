@@ -53,7 +53,7 @@ void delegate_runner::create_process() {
 
 
 delegate_instance_runner::delegate_instance_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions):
-    secure_runner(program, options, restrictions) {
+    secure_runner(program, options, restrictions){
     set_pipe(STD_INPUT_PIPE, new input_pipe_class(options.session_id, "stdin"));
     set_pipe(STD_OUTPUT_PIPE, new output_pipe_class(options.session_id, "stdout"));
     set_pipe(STD_ERROR_PIPE, new output_pipe_class(options.session_id, "stderr"));
@@ -62,6 +62,12 @@ delegate_instance_runner::delegate_instance_runner(const std::string &program, c
 bool delegate_instance_runner::create_restrictions() {
     std::string name = "Local\\";
     name += options.session_id;
+#ifdef OPEN_JOB_OBJECT_DYNAMIC_LOAD
+    HINSTANCE hDLL_1 = LoadLibrary("kernel32.dll");
+    OpenJobObjectA = (OPEN_JOB_OBJECT)GetProcAddress(hDLL_1, "OpenJobObjectA");
+    FreeLibrary(hDLL_1);
+    //load_open_job_object();
+#endif
     hJob = OpenJobObject(JOB_OBJECT_ASSIGN_PROCESS, FALSE, name.c_str());
     //raise_error
     return true;

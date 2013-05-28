@@ -1,7 +1,6 @@
 #include "pipes.h"
 #include <error.h>
 #include <iostream>
-#include <fstream>
 #include <AccCtrl.h>
 #include <Aclapi.h>//advapi32.lib
 
@@ -72,7 +71,7 @@ HANDLE util_create_named_pipe(const char *name, const std_pipe_t &pipe_type) {
     HANDLE named_pipe_handle;
 
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES); 
-    saAttr.bInheritHandle = TRUE; 
+    saAttr.bInheritHandle = FALSE; 
     saAttr.lpSecurityDescriptor = NULL;
 
     DWORD open_mode = (pipe_type == PIPE_INPUT)?PIPE_ACCESS_OUTBOUND:PIPE_ACCESS_INBOUND;// | FILE_FLAG_OVERLAPPED;
@@ -92,6 +91,7 @@ HANDLE util_create_named_pipe(const char *name, const std_pipe_t &pipe_type) {
     if (!tmp_named_pipe_handle || tmp_named_pipe_handle == handle_default_value) {
         return tmp_named_pipe_handle;
     }
+    //return named_pipe_handle;
 
     DuplicateHandle(
         GetCurrentProcess(), tmp_named_pipe_handle,
@@ -106,28 +106,35 @@ HANDLE util_create_named_pipe(const char *name, const std_pipe_t &pipe_type) {
 
 handle_t util_open_named_pipe(const char *name, const std_pipe_t &pipe_type) {
     SECURITY_ATTRIBUTES saAttr;
-    HANDLE connected_pipe_handle;
+    //HANDLE connected_pipe_handle;
     DWORD dwError;
 
+
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES); 
-    saAttr.bInheritHandle = TRUE; 
+    saAttr.bInheritHandle = FALSE; 
     saAttr.lpSecurityDescriptor = NULL;
 
     if (!WaitNamedPipe(TEXT(name), NMPWAIT_WAIT_FOREVER)) {
         dwError = GetLastError();
-        std::cout << "!!" << dwError << std::endl;
     }
     
-    connected_pipe_handle = CreateFile(
+    HANDLE tmp_connected_pipe_handle = CreateFile(
                         TEXT(name),
                         (pipe_type == PIPE_INPUT)?GENERIC_READ:FILE_WRITE_DATA,//FILE_READ_DATA:FILE_WRITE_DATA),// | SYNCHRONIZE,
                         /*0,///*(pipe_type == PIPE_INPUT)?(*/FILE_SHARE_READ | FILE_SHARE_WRITE,//):0,
-                        NULL,//&saAttr,
+                        NULL,
                         OPEN_EXISTING,
                         FILE_ATTRIBUTE_NORMAL,//FILE_FLAG_OVERLAPPED
                         NULL                      
                       );
-
+    HANDLE connected_pipe_handle = tmp_connected_pipe_handle;
+    //*
+    DuplicateHandle(GetCurrentProcess(), tmp_connected_pipe_handle,
+                    GetCurrentProcess(), &connected_pipe_handle, 0,
+                    TRUE, // not inherited
+                    DUPLICATE_SAME_ACCESS);
+    CloseHandle(tmp_connected_pipe_handle);
+    //*/
     if (INVALID_HANDLE_VALUE == connected_pipe_handle) {
         dwError = GetLastError();
         std::cout << name << dwError << std::endl;
@@ -206,8 +213,6 @@ size_t pipe_class::write( void *data, size_t size )
 size_t pipe_class::read(void *data, size_t size)
 {
     DWORD dwRead;
-    /*if (WAIT_OBJECT_0 != WaitForSingleObject( readPipe, 0))
-        return 0;*/
     if (!ReadFile(readPipe, data, size, &dwRead, NULL))
     {
         raise_error(*this, "ReadFile");
@@ -281,11 +286,9 @@ thread_return_t input_pipe_class::writing_buffer(thread_param_t param) {
     if (self->writePipe == INVALID_HANDLE_VALUE) {
         return 0;
     }
-    //if (!WaitNamedPipe(TEXT(self->name.c_str()), NMPWAIT_WAIT_FOREVER))
-    //    return 0;
     ConnectNamedPipe(self->writePipe, 0);
     //some debug message
-    //std::cout << "connected in" << std::endl;
+
     for (int i = 0; i < self->input_buffers.size(); ++i) {
         if (!self->input_buffers[i]->readable()) {
             return 0;
@@ -358,7 +361,7 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
 	}
     ConnectNamedPipe(self->readPipe, 0);
     //if debug show some message
-    //std::cout << "connected out" << std::endl;
+
     for (int i = 0; i < self->output_buffers.size(); ++i) {
 	    if (!self->output_buffers[i]->writeable()) {
 			return 0;
@@ -370,8 +373,9 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
 		DWORD	dwRead;
         char data[BUFFER_SIZE];
         size_t bytes_count = self->read(data, BUFFER_SIZE);
-        if (bytes_count == 0)
+        if (bytes_count == 0) {
             break;
+        }
         WaitForSingleObject(self->reading_mutex, INFINITE);
         if (bytes_count != 0)
         {

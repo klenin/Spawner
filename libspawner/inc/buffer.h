@@ -6,9 +6,13 @@
 #include <sstream>
 #include <queue>
 #include <time.h>
-
+#include <math.h>
 const unsigned int BUFFER_SIZE = 4096;//provide this in to constructor
 
+//dirty hack
+#ifndef min
+#define min(a, b) (a) > (b) ? (b) : (a)
+#endif
 
 class input_buffer_class {
 protected:
