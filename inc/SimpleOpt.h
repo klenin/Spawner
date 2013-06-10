@@ -425,6 +425,9 @@ public:
         return (m_nFlags & a_nFlag) == a_nFlag; 
     }
 
+    unsigned CurrentPos();
+    unsigned LastErrorPos();
+    void ResetErrorPos();
     /*! @brief Advance to the next option if available.
 
         When all options have been processed it will return false. When true
@@ -534,7 +537,9 @@ private:
     int             m_nOptionIdx;    //!< current argv option index
     int             m_nOptionId;     //!< id of current option (-1 = invalid)
     int             m_nNextOption;   //!< index of next option 
+    unsigned        m_nLastErrorIndex;
     int             m_nLastArg;      //!< last argument, after this are files
+    unsigned        m_nCurrent;
     int             m_argc;          //!< argc to process
     SOCHAR **       m_argv;          //!< argv
     SOCHAR *        m_pszOptionText; //!< curr option text, e.g. "-f"
@@ -564,7 +569,9 @@ CSimpleOptTempl<SOCHAR>::Init(
     m_rgOptions      = a_rgOptions;
     m_nLastError     = SO_SUCCESS;
     m_nOptionIdx     = 0;
+    m_nCurrent       = 0;
     m_nOptionId      = -1;
+    m_nLastErrorIndex= -1;
     m_pszOptionText  = NULL;
     m_pszOptionArg   = NULL;
     m_nNextOption    = (a_nFlags & SO_O_USEALL) ? 0 : 1;
@@ -592,6 +599,28 @@ CSimpleOptTempl<SOCHAR>::Init(
 #endif
 
     return true;
+}
+
+
+template<class SOCHAR>
+unsigned
+CSimpleOptTempl<SOCHAR>::CurrentPos()
+{
+    return m_nCurrent;
+}
+
+template<class SOCHAR>
+unsigned
+CSimpleOptTempl<SOCHAR>::LastErrorPos()
+{
+    return m_nLastErrorIndex;
+}
+
+template<class SOCHAR>
+void
+CSimpleOptTempl<SOCHAR>::ResetErrorPos()
+{
+    m_nLastErrorIndex = -1;
 }
 
 template<class SOCHAR>
@@ -695,6 +724,10 @@ CSimpleOptTempl<SOCHAR>::Next()
             if (m_pszOptionArg) {
                 *(--m_pszOptionArg) = (SOCHAR)'=';
             }
+            if (m_nCurrent < m_nLastErrorIndex) {
+                m_nLastErrorIndex = m_nCurrent;
+            }
+
         }
     }
 
@@ -706,11 +739,15 @@ CSimpleOptTempl<SOCHAR>::Next()
         return false;
     }
     ++m_nNextOption;
+    ++m_nCurrent;
 
     // get the option id
     ESOArgType nArgType = SO_NONE;
     if (nTableIdx < 0) {
         m_nLastError = (ESOError) nTableIdx; // error code
+        if (m_nCurrent < m_nLastErrorIndex) {
+            m_nLastErrorIndex = m_nCurrent;
+        }
     }
     else {
         m_nOptionId     = m_rgOptions[nTableIdx].nId;
@@ -868,6 +905,8 @@ CSimpleOptTempl<SOCHAR>::ShuffleArg(
 
     // update the index of the last unshuffled arg
     m_nLastArg -= a_nCount;
+
+    m_nCurrent += a_nCount;
 }
 
 // match on the long format strings. partial matches will be

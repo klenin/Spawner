@@ -19,6 +19,7 @@ public:
         hide_gui(false), silent_errors(false), debug(false), secure_token(false), use_cmd(false), session(session_param), 
         delegated(false), hide_report(false) {}
     void add_argument(std::string argument);
+    void add_arguments(const std::vector<std::string> &arguments_a);
     void push_argument_front(std::string argument);
     void add_stdinput(const std::string &name);
     void add_stdoutput(const std::string &name);

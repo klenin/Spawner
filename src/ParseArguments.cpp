@@ -58,94 +58,143 @@ CSimpleOpt::SOption Options[] =
     {SP_DELEGATED,          "-runas",   SO_REQ_CMB},
     {SP_SHOW_OUTPUT,        "-ho",      SO_REQ_CMB},
     {SP_ERROR_FILE,         "-se",      SO_NONE},
+    {SP_SEPARATOR,          "--separator", SO_REQ_CMB},
+    {SP_PROGRAM_ID,         "--program", SO_REQ_CMB},
     SO_END_OF_OPTIONS
 };
 
+
+bool argument_set_c::argument_exists(const spawner_arguments &key) const {
+    return arguments.find(key) != arguments.end();
+} 
+void argument_set_c::add_argument(const spawner_arguments &key, const std::string &value){
+    arguments[key].push_back(value);
+}
+void argument_set_c::add_program_argument(const std::string &argument) {
+    program_arguments.push_back(argument);
+}
+void argument_set_c::set_program(const std::string &program_arg) {
+    program = program_arg;
+}
+std::string argument_set_c::get_argument(const spawner_arguments &key, const unsigned &index) const {
+    if (!argument_exists(key) || index >= arguments.at(key).size()) {
+        return "";
+    }
+    return arguments.at(key)[index];
+}
+size_t argument_set_c::get_argument_count(const spawner_arguments &key) const {
+    if (!argument_exists(key)) {
+        return 0;
+    }
+    return arguments.at(key).size();
+}
+std::string argument_set_c::get_program() const {
+    return program;
+}
+
+const std::vector<std::string> &argument_set_c::get_program_arguments() const {
+    return program_arguments;
+}
+
+
+void arguments_c::init_program(argument_set_c &argument_set, const int &start, const int &end) {
+    argument_set.set_program(arguments[start]);
+    for (int i = start + 1; i < end; ++i) {
+        argument_set.add_program_argument(arguments[i]);
+    }
+}
+
+
 // Extracting program to execute and it's arguments
 // Getting spawner options
-CArguments::CArguments(int argc, char *argv[])
+arguments_c::arguments_c(int argc, char *argv[])
 {
-    int i = 1;
-    for (i = 1 ; i < argc; i++)
-        if (*argv[i] != '-' && *argv[i] != '/') // please do not run programs which name starts with '-' or '/'
-            break;
-    v = false;
-
-    if (i >= argc)
-        return;
-
-	CSimpleOpt args(i, argv, Options);
+	CSimpleOpt args(argc, argv, Options);
+    for (int i = 0; i < argc; ++i) {
+        arguments.push_back(argv[i]);
+    }
+    std::string separator;
+    state = arguments_state_ok;
+    argument_sets.push_back(argument_set_c());
+    std::vector<argument_set_c>::iterator argument_set = argument_sets.begin();
 
     while (args.Next()) {
-        if (args.LastError() == SO_SUCCESS) {
-            if (args.OptionId() == SP_HELP) {
-                ShowUsage();
-            }
-            /*
-            printf("Option, ID: %d, Text: '%s', Argument: '%s'\n",
-                args.OptionId(), args.OptionText(),
-                args.OptionArg() ? args.OptionArg() : "");
-                //*/
-			//spawner_arhuments sp_arguments = (spawner_arguments)args.OptionId();
-			//if (arguments.find(sp_arguments) == arguments.end()) 
-            arguments[(spawner_arguments)args.OptionId()].push_back(args.OptionArg() ? args.OptionArg() : "");// = args.OptionArg() ? args.OptionArg() : "";
+        if (separator == args.OptionText()) {
+            init_program(*argument_set, args.LastErrorPos() + 1, args.CurrentPos());
+            args.ResetErrorPos();
+            argument_sets.push_back(argument_set_c());
+            argument_set = argument_sets.end();
+            argument_set--;
+            continue;
         }
-        else {
+        if (args.LastError() == SO_SUCCESS && args.CurrentPos() < args.LastErrorPos()) {
+            if (args.OptionId() == SP_HELP) {
+                state = arguments_state_help;
+                return;
+            }
+            if (args.OptionId() == SP_SEPARATOR) {
+                separator = std::string("--") + args.OptionArg();
+            } else {
+                /*
+                printf("Option, ID: %d, Text: '%s', Argument: '%s'\n",
+                    args.OptionId(), args.OptionText(),
+                    args.OptionArg() ? args.OptionArg() : "");
+                    //*/
+                argument_set->add_argument((spawner_arguments)args.OptionId(), args.OptionArg() ? args.OptionArg() : "");
+            }
+        } else {
+            //
+            //program_detected = true;
+            //argument_set->set_program(args.OptionText());
+        }
+        /*else {
             printf("Invalid argument: %s\nUse spawner --help for details\n", args.OptionText());
             return;
-        }
+        }*/
     }
-    v = true;
+    init_program(*argument_set, args.LastErrorPos() + 1, args.CurrentPos() + 1);
+
+    //v = true;
 
     // retrieving program, it's name and arguments
 
-    program = argv[i];
-    arguments_index = i+1; // not always
+    //program = argv[i];
+    //arguments_index = i+1; // not always
+    return;
 }
 
-CArguments::~CArguments()
+arguments_c::~arguments_c()
 {
 
 }
 
-bool CArguments::valid()
+bool arguments_c::valid()
 {
     return v;
 }
 
-int CArguments::get_arguments_index()
-{
+int arguments_c::get_arguments_index() const {
     return arguments_index;
 }
 
-std::string CArguments::get_program()
-{
+std::string arguments_c::get_program() const {
     return program;
 }
 
-void CArguments::ShowUsage()
-{
+void arguments_c::ShowUsage() {
     //writing usage
     std::cout << "Usage: \tspawner [options] program [program options]" << std::endl;
     std::cout << "\tspawner --help   to get this message" << std::endl;
 }
 
-std::string CArguments::GetArgument(const spawner_arguments &key, const int &index)
-{
-	if (arguments.find(key) == arguments.end()) {
-		return "";
-	}
-    return arguments[key][index];
+const argument_set_c &arguments_c::get_argument_set(const int &index) const {
+    return argument_sets[index];
 }
 
-bool CArguments::ArgumentExists(const spawner_arguments &key)
-{
-    return arguments.find(key) != arguments.end();
+arguments_state_e arguments_c::get_state() const {
+    return state;
 }
 
-size_t CArguments::ArgumentCount(const spawner_arguments &key) {
-	if (arguments.find(key) == arguments.end()) {
-		return 0;
-	}
-	return arguments[key].size();
+size_t arguments_c::get_argument_set_count() const {
+	return argument_sets.size();
 }

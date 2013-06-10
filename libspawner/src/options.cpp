@@ -1,12 +1,16 @@
 #include "options.h"
 #include <algorithm>
-void options_class::add_argument(std::string argument)
-{
+void options_class::add_argument(std::string argument) {
     arguments.push_back(argument);
 }
 
-void options_class::push_argument_front(std::string argument)
-{
+void options_class::add_arguments(const std::vector<std::string> &arguments_a) {
+    for (int i = 0; i < arguments_a.size(); ++i) {
+        arguments.push_back(arguments_a[i]);
+    }
+}
+
+void options_class::push_argument_front(std::string argument) {
     arguments.push_front(argument);
 }
 

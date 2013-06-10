@@ -215,7 +215,7 @@ size_t pipe_class::read(void *data, size_t size)
     DWORD dwRead;
     if (!ReadFile(readPipe, data, size, &dwRead, NULL))
     {
-        raise_error(*this, "ReadFile");
+        //raise_error(*this, "ReadFile");
         return 0;
     }
     return dwRead;

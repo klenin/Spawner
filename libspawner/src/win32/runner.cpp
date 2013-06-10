@@ -84,10 +84,12 @@ bool runner::init_process_with_logon(char *cmd, const char *wd)
 
 void runner::create_process()
 {
-    WaitForSingleObject(init_mutex, INFINITE);
+    //WaitForSingleObject(init_semaphore, INFINITE);
 
-    if (process_status == process_spawner_crash)
+    if (process_status == process_spawner_crash) {
+        ReleaseSemaphore(init_semaphore, 10, NULL);
         return;
+    }
     ZeroMemory(&si, sizeof(si));
 
     si.cb = sizeof(si);
@@ -152,7 +154,7 @@ void runner::create_process()
     if (options.login != "" && init_process_with_logon(cmd, wd))
     {
         report.login = options.login;
-        ReleaseMutex(init_mutex);
+        ReleaseSemaphore(init_semaphore, 10, NULL);
         delete[] cmd;
         return;
     }
@@ -166,7 +168,7 @@ void runner::create_process()
     //std::cout << cmd;
     running = init_process(cmd, wd);
 
-    ReleaseMutex(init_mutex);
+    ReleaseSemaphore(init_semaphore, 10, NULL);
     delete[] cmd;
 }
 
@@ -225,8 +227,9 @@ thread_return_t runner::async_body(thread_param_t param) {
 
 runner::runner(const std::string &program, const options_class &options):
     program(program), options(options), process_status(process_not_started), running_async(false),
-    running_thread(handle_default_value), running(false), init_mutex(handle_default_value) {
-    init_mutex = CreateMutex(NULL, FALSE, NULL);
+    running_thread(handle_default_value), running(false), init_semaphore(handle_default_value)
+{
+    init_semaphore = CreateSemaphore(NULL, 0, 10, NULL);
 }
 
 runner::~runner()
@@ -247,7 +250,7 @@ unsigned long runner::get_exit_code()
 process_status_t runner::get_process_status()
 {
     //renew process status
-    if (process_status & process_finished_normal || process_status == process_suspended)
+    if (process_status & process_finished_normal || process_status == process_suspended || process_status == process_not_started)
         return process_status;
     unsigned long exitcode = get_exit_code();
     if (process_status == process_spawner_crash)
@@ -297,7 +300,7 @@ void runner::run_process()
     if (options.debug && !running_async) {
         run_process_async();
         WaitForSingleObject(running_thread, 100);//may stuck here
-        WaitForSingleObject(init_mutex, INFINITE);//may stuck here
+        WaitForSingleObject(init_semaphore, INFINITE);//may stuck here
         WaitForSingleObject(process_info.hProcess, INFINITE);//may stuck here
         return;
     }
@@ -318,6 +321,8 @@ bool runner::wait_for(const unsigned long &interval)
 {
     if (get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal)
         return true;
+    wait_for_init(INFINITE);
+
     return WaitForSingleObject(process_info.hProcess, interval) == WAIT_OBJECT_0;// TODO: get rid of this
     //std_output.wait_for_pipe(100);
     //std_error.wait_for_pipe(100);
@@ -325,10 +330,10 @@ bool runner::wait_for(const unsigned long &interval)
 }
 
 bool runner::wait_for_init(const unsigned long &interval) {
-    while (init_mutex == handle_default_value) {//not very good, made for synchro with async(mutex belongs to creator thread)
+    while (init_semaphore == handle_default_value) {//not very good, made for synchro with async(mutex belongs to creator thread)
         Sleep(5);
     }
-    return WaitForSingleObject(init_mutex, interval) == WAIT_OBJECT_0;// TODO: get rid of this
+    return WaitForSingleObject(init_semaphore, interval) == WAIT_OBJECT_0;// TODO: get rid of this
 }
 
 void runner::safe_release()

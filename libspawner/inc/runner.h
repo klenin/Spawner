@@ -24,7 +24,7 @@ protected:
     bool running;
     report_class report;
     thread_t running_thread;
-    handle_t init_mutex;//rename to mutex_init_signal
+    handle_t init_semaphore;//rename to mutex_init_signal
     bool init_process(char *cmd, const char *wd);
     bool init_process_with_logon(char *cmd, const char *wd);
     virtual void create_process();
@@ -46,7 +46,7 @@ public:
 
     virtual void run_process();
     virtual void run_process_async();
-    bool wait_for(const unsigned long &interval);
+    bool wait_for(const unsigned long &interval = INFINITE);
     bool wait_for_init(const unsigned long &interval);
     virtual void safe_release();
     void set_pipe(const pipes_t &pipe_type, pipe_class *pipe_object);
