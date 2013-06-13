@@ -3,8 +3,10 @@
 
 const char *SPAWNER_PROGRAM = "sp.exe";
 
+
 delegate_runner::delegate_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions):
-    secure_runner(program, options, restrictions) {
+    secure_runner(program, options, restrictions)
+{
     force_program = SPAWNER_PROGRAM;
 }
 
@@ -16,6 +18,9 @@ delegate_runner::delegate_runner(const std::string &program, const options_class
     }
     check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
 }*/
+
+void delegate_runner::set_allow_breakaway(bool allow) {
+}
 
 bool delegate_runner::apply_restrictions() {
     return true;
@@ -35,18 +40,18 @@ void delegate_runner::create_process() {
     }
     //piped redirect in fact is not required(//guess in child process)
 //    create_restrictions();
-    HANDLE job_object = CreateJobObject(NULL, NULL);
+    /*HANDLE job_object = CreateJobObject(NULL, NULL);
     AssignProcessToJobObject(job_object, GetCurrentProcess());
-    DWORD le = GetLastError();
+    DWORD le = GetLastError();*/
 
     secure_runner::create_process();
 
-    JOBOBJECT_EXTENDED_LIMIT_INFORMATION extended_limit_information;
+    /*JOBOBJECT_EXTENDED_LIMIT_INFORMATION extended_limit_information;
     memset(&extended_limit_information, 0, sizeof(extended_limit_information));
     extended_limit_information.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_BREAKAWAY_OK | JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK;
 
     if (!SetInformationJobObject(job_object, JobObjectExtendedLimitInformation, &extended_limit_information, sizeof(extended_limit_information)))
-        le = GetLastError();
+        le = GetLastError();*/
     
 }
 

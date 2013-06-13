@@ -282,7 +282,7 @@ void secure_runner::wait()
 
     GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
 
-    runner::wait_for(INFINITE); // delete this
+    //runner::wait_for(INFINITE); // delete this
     running = false;
 }
 

@@ -25,6 +25,10 @@ protected:
     report_class report;
     thread_t running_thread;
     handle_t init_semaphore;//rename to mutex_init_signal
+    static handle_t main_job_object;
+    static handle_t main_job_object_access_mutex;
+    static bool allow_breakaway;
+    void set_allow_breakaway(bool allow);
     bool init_process(char *cmd, const char *wd);
     bool init_process_with_logon(char *cmd, const char *wd);
     virtual void create_process();

@@ -10,6 +10,9 @@ class delegate_runner: public secure_runner
 protected:
     virtual void create_process();
     virtual bool apply_restrictions();
+    static handle_t job_object;
+    static handle_t job_object_access_mutex;
+    static void set_allow_breakaway(bool allow);
     //virtual void requisites();
 public:
     delegate_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions);

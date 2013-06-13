@@ -1,5 +1,5 @@
-#ifndef _SPAWNER_H_
-#define _SPAWNER_H_
+#ifndef _SP_H_
+#define _SP_H_
 
 #include <inc/platform.h>
 #include <inc/runner.h>

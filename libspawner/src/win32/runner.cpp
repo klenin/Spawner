@@ -4,9 +4,36 @@
 #include <iostream>
 const size_t MAX_USER_NAME = 1024;
 
+handle_t runner::main_job_object = handle_default_value;
+handle_t runner::main_job_object_access_mutex = CreateMutex(NULL, 0, NULL);
+bool runner::allow_breakaway = true;
+
+void runner::set_allow_breakaway(bool allow) {
+    if (allow_breakaway == allow) {
+        return;
+    }
+    if (main_job_object == handle_default_value) {
+        main_job_object = CreateJobObject(NULL, NULL);
+        AssignProcessToJobObject(main_job_object, GetCurrentProcess());
+    }
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION extended_limit_information;
+    memset(&extended_limit_information, 0, sizeof(extended_limit_information));
+    if (allow) {
+        extended_limit_information.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_BREAKAWAY_OK | JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK;
+    }
+
+    if (!SetInformationJobObject(main_job_object, JobObjectExtendedLimitInformation, &extended_limit_information, sizeof(extended_limit_information))) {
+        DWORD le = GetLastError();
+        return;
+    }
+    allow_breakaway = allow;
+}
 
 bool runner::init_process(char *cmd, const char *wd)
 {
+    WaitForSingleObject(main_job_object_access_mutex, infinite);
+    set_allow_breakaway(true);
+
     std::string run_program = program;
     if (force_program.length())
         run_program = force_program;
@@ -25,16 +52,21 @@ bool runner::init_process(char *cmd, const char *wd)
                 process_creation_flags,
                 NULL, wd,
                 &si, &process_info) )
-            {
+        {
+                ReleaseMutex(main_job_object_access_mutex);
                 raise_error(*this, "CreateProcess");
                 return false;
-            }
+        }
     }
+    ReleaseMutex(main_job_object_access_mutex);
     return true;
 }
 
 bool runner::init_process_with_logon(char *cmd, const char *wd)
 {
+    WaitForSingleObject(main_job_object_access_mutex, infinite);
+    set_allow_breakaway(false);
+
     STARTUPINFOW siw;
     //USES_CONVERSION;
     ZeroMemory(&siw, sizeof(siw));
@@ -65,6 +97,7 @@ bool runner::init_process_with_logon(char *cmd, const char *wd)
             NULL, wcmd, creation_flags,
             NULL, wwd, &siw, &process_info) )
         {
+            ReleaseMutex(main_job_object_access_mutex);
             raise_error(*this, "CreateProcessWithLogonW");
             delete[] login;
             delete[] password;
@@ -74,6 +107,8 @@ bool runner::init_process_with_logon(char *cmd, const char *wd)
             return false;
         }
     }
+    set_allow_breakaway(true);
+    ReleaseMutex(main_job_object_access_mutex);
     delete[] login;
     delete[] password;
     delete[] wprogram;
@@ -321,12 +356,10 @@ bool runner::wait_for(const unsigned long &interval)
 {
     if (get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal)
         return true;
-    wait_for_init(INFINITE);
-
-    return WaitForSingleObject(process_info.hProcess, interval) == WAIT_OBJECT_0;// TODO: get rid of this
-    //std_output.wait_for_pipe(100);
-    //std_error.wait_for_pipe(100);
-    //std_input.wait_for_pipe(100);
+    if (!running_async)
+        return false;
+    wait_for_init(interval);
+    return WaitForSingleObject(process_info.hProcess, interval) == WAIT_OBJECT_0;
 }
 
 bool runner::wait_for_init(const unsigned long &interval) {
