@@ -113,10 +113,6 @@ runner *spawner_c::create_runner(session_class &session, const argument_set_c &a
         options.add_stdinput(argument_set.get_argument(SP_INPUT_FILE, i));
 	}
 
-	std::vector<output_buffer_class *> output_buffers;
-	std::vector<output_buffer_class *> error_buffers;
-    std::vector<input_buffer_class *> input_buffers;
-
     secure_runner *secure_runner_instance;
     if (options.delegated) {
         secure_runner_instance = new delegate_runner(argument_set.get_program(), options, restrictions);
@@ -127,27 +123,30 @@ runner *spawner_c::create_runner(session_class &session, const argument_set_c &a
     }
 
     if (!options.session_id.length()) {
+        output_pipe_class *output = new output_pipe_class();
+        output_pipe_class *error = new output_pipe_class();
+        input_pipe_class *input = new input_pipe_class();
         for (uint i = 0; i < options.stdoutput.size(); ++i) {
             output_buffer_class *buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
             if (buffer) {
-                output_buffers.push_back(buffer);
+                output->add_output_buffer(buffer);
             }
 		}
         for (uint i = 0; i < options.stderror.size(); ++i) {
             output_buffer_class *buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
             if (buffer) {
-                error_buffers.push_back(buffer);
+                error->add_output_buffer(buffer);
             }
 		}
         for (uint i = 0; i < options.stdinput.size(); ++i) {
             input_buffer_class *buffer = create_input_buffer(options.stdinput[i]);
             if (buffer) {
-                input_buffers.push_back(buffer);
+                input->add_input_buffer(buffer);
             }
 		}
-        secure_runner_instance->set_pipe(STD_OUTPUT_PIPE, new output_pipe_class(options.session, "stdout", output_buffers));
-        secure_runner_instance->set_pipe(STD_ERROR_PIPE, new output_pipe_class(options.session, "stderr", error_buffers));
-        secure_runner_instance->set_pipe(STD_INPUT_PIPE, new input_pipe_class(options.session, "stdin", input_buffers));
+        secure_runner_instance->set_pipe(STD_OUTPUT_PIPE, output);
+        secure_runner_instance->set_pipe(STD_ERROR_PIPE, error);
+        secure_runner_instance->set_pipe(STD_INPUT_PIPE, input);
     }
     return secure_runner_instance;
 }
@@ -158,7 +157,12 @@ void spawner_c::init() {
         session << i;
         runners.push_back(create_runner(session, arguments.get_argument_set(i)));
     }
-
+    duplex_buffer_class *buffer = new duplex_buffer_class();
+    /*/
+    ((input_pipe_class*)runners[0]->get_pipe(STD_INPUT_PIPE))->add_input_buffer(buffer);
+    //
+    ((output_pipe_class*)runners[1]->get_pipe(STD_OUTPUT_PIPE))->add_output_buffer(buffer);
+    //*/
     for (uint i = 0; i < runners.size(); ++i) {
         runners[i]->run_process_async();
     }

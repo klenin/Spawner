@@ -99,4 +99,11 @@ const handle_t handle_default_value = INVALID_HANDLE_VALUE;
 
 wchar_t *a2w(const char *str);
 
+
+
+#ifndef uint
+typedef unsigned int uint_32;
+typedef uint_32 uint;
+#endif//uint
+
 #endif//_SPAWNER_PLATFORM_H_

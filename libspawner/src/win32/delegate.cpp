@@ -38,6 +38,9 @@ void delegate_runner::create_process() {
     if (options.use_cmd) {
         options.push_argument_front("--cmd");
     }
+    options.push_argument_front("--out=std");
+    options.push_argument_front("--err=std");
+    options.push_argument_front("--in=std");
     //piped redirect in fact is not required(//guess in child process)
 //    create_restrictions();
     /*HANDLE job_object = CreateJobObject(NULL, NULL);
@@ -59,9 +62,9 @@ void delegate_runner::create_process() {
 
 delegate_instance_runner::delegate_instance_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions):
     secure_runner(program, options, restrictions){
-    set_pipe(STD_INPUT_PIPE, new input_pipe_class(options.session_id, "stdin"));
-    set_pipe(STD_OUTPUT_PIPE, new output_pipe_class(options.session_id, "stdout"));
-    set_pipe(STD_ERROR_PIPE, new output_pipe_class(options.session_id, "stderr"));
+    set_pipe(STD_INPUT_PIPE, new input_pipe_class());
+    set_pipe(STD_OUTPUT_PIPE, new output_pipe_class());
+    set_pipe(STD_ERROR_PIPE, new output_pipe_class());
 }
 
 bool delegate_instance_runner::create_restrictions() {

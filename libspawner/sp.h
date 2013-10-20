@@ -11,9 +11,5 @@
 #include <inc/session.h>
 #include <inc/delegate.h>
 
-#ifndef uint
-typedef unsigned int uint_32;
-typedef uint_32 uint;
-#endif//uint
 
 #endif//_SPAWNER_H_

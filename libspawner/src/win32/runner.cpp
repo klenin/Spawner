@@ -369,13 +369,18 @@ bool runner::wait_for_init(const unsigned long &interval) {
     return WaitForSingleObject(init_semaphore, interval) == WAIT_OBJECT_0;// TODO: get rid of this
 }
 
-void runner::safe_release()
-{
+void runner::safe_release() {
     process_status = process_spawner_crash;
     free();// make it safe!!!
 }
 
-void runner::set_pipe(const pipes_t &pipe_type, pipe_class *pipe_object)
-{
+void runner::set_pipe(const pipes_t &pipe_type, pipe_class *pipe_object) {
     pipes[pipe_type] = pipe_object;
+}
+
+pipe_class *runner::get_pipe(const pipes_t &pipe_type) {
+    if (pipes.find(pipe_type) == pipes.end()) {
+        return 0;
+    }
+    return pipes[pipe_type];
 }

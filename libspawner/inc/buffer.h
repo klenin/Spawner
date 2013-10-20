@@ -14,9 +14,18 @@ const unsigned int BUFFER_SIZE = 4096;//provide this in to constructor
 #define min(a, b) (a) > (b) ? (b) : (a)
 #endif
 
-class input_buffer_class {
+class buffer_class {
 protected:
     size_t buffer_size;
+public:
+    buffer_class();
+    buffer_class(const size_t &buffer_size_param);
+    virtual size_t get_buffer_size() {
+        return buffer_size;
+    }
+};
+
+class input_buffer_class: public virtual buffer_class {
 public:
     input_buffer_class();
     input_buffer_class(const size_t &buffer_size_param);
@@ -26,13 +35,8 @@ public:
     virtual size_t read(void *data, size_t size) {
         return 0;
     }
-    virtual size_t get_buffer_size() {
-        return buffer_size;
-    }
 };
-class output_buffer_class {
-protected:
-    size_t buffer_size;
+class output_buffer_class: public virtual buffer_class {
 public:
     output_buffer_class();
     output_buffer_class(const size_t &buffer_size_param);
@@ -42,8 +46,42 @@ public:
     virtual size_t write(void *data, size_t size) {
         return 0;
     }
-    virtual size_t get_buffer_size() {
-        return buffer_size;
+};
+
+class duplex_buffer_class: public input_buffer_class, public output_buffer_class {
+protected:
+    std::ostringstream buffer;
+    handle_t mutex;
+public:
+    duplex_buffer_class(): input_buffer_class(), output_buffer_class() {
+        mutex = CreateMutex(NULL, FALSE, NULL);
+    }
+    virtual bool readable() {
+        return true;
+    }
+    virtual bool writeable() {
+        return true;
+    }
+    virtual size_t read(void *data, size_t size) {
+        WaitForSingleObject(mutex, infinite);
+        while (!buffer.str().length()) {
+            ReleaseMutex(mutex);
+            WaitForSingleObject(mutex, infinite);
+        }
+        std::string str = buffer.str();
+        size = min(size, (size_t)str.length());
+        memcpy(data, str.c_str(), size);
+        buffer.str(str.substr(str.length() - size));
+        ReleaseMutex(mutex);
+
+        return size;
+    }
+    virtual size_t write(void *data, size_t size) {
+        WaitForSingleObject(mutex, infinite);
+        buffer.write((char*)data, size);
+        ReleaseMutex(mutex);
+        
+        return size;
     }
 };
 

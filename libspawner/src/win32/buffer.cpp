@@ -1,16 +1,22 @@
 #include <buffer.h>
 
-input_buffer_class::input_buffer_class(): buffer_size(BUFFER_SIZE) {
+buffer_class::buffer_class(): buffer_size(BUFFER_SIZE) {
 }
 
-input_buffer_class::input_buffer_class(const size_t &buffer_size_param): buffer_size(buffer_size_param) {
+buffer_class::buffer_class(const size_t &buffer_size_param): buffer_size(buffer_size_param) {
+}
+
+input_buffer_class::input_buffer_class(): buffer_class(BUFFER_SIZE) {
+}
+
+input_buffer_class::input_buffer_class(const size_t &buffer_size_param): buffer_class(buffer_size_param) {
 }
 
 
-output_buffer_class::output_buffer_class(): buffer_size(BUFFER_SIZE) {
+output_buffer_class::output_buffer_class(): buffer_class(BUFFER_SIZE) {
 }
 
-output_buffer_class::output_buffer_class(const size_t &buffer_size_param): buffer_size(buffer_size_param) {
+output_buffer_class::output_buffer_class(const size_t &buffer_size_param): buffer_class(buffer_size_param) {
 }
 
 handle_buffer_class::handle_buffer_class(): stream(handle_default_value) {

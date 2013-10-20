@@ -111,7 +111,7 @@ void ReadEnvironmentVariables(options_class &options, restrictions_class &restri
 
     if (GetEnvironmentVariable("SP_HIDE_REPORT", buffer, sizeof(buffer)))
     {
-        options.hide_report = atoi(buffer);
+        options.hide_report = atoi(buffer)!=0;
     }
 
     //if (GetEnvironmentVariable("SP_HIDE_OUTPUT", buffer, sizeof(buffer)))

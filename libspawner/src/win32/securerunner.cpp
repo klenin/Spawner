@@ -212,7 +212,11 @@ void secure_runner::free()
 {
     CloseHandleSafe(hIOCP);
     CloseHandleSafe(hJob);
-    CloseHandleSafe(check_thread);
+    //CloseHandleSafe(check_thread);
+    if (check_thread && check_thread != INVALID_HANDLE_VALUE) {
+        TerminateThread(check_thread, 0);
+        check_thread = INVALID_HANDLE_VALUE;
+    }
 }
 
 void secure_runner::wait()

@@ -54,6 +54,7 @@ public:
     bool wait_for_init(const unsigned long &interval);
     virtual void safe_release();
     void set_pipe(const pipes_t &pipe_type, pipe_class *pipe_object);
+    pipe_class *get_pipe(const pipes_t &pipe_type);
 };
 
 #endif//_SPAWNER_RUNNER_H_

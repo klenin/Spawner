@@ -23,20 +23,17 @@ enum std_pipe_t {
 class pipe_class
 {
 protected:
-    bool create_named_pipe();
+    bool create_pipe();
     handle_t buffer_thread;
     handle_t reading_mutex;
     pipe_t readPipe, writePipe;
     std_pipe_t pipe_type;
-    std::string name;
     bool state;
     pipe_t input_pipe();
     pipe_t output_pipe();
 public:
     pipe_class();
     pipe_class(const std_pipe_t &pipe_type);
-	pipe_class(const std::string &session, const std::string &pipe_name, const std_pipe_t &pipe_type, const bool &create = true);
-	pipe_class(const session_class &session, const std::string &pipe_name, const std_pipe_t &pipe_type, const bool &create = true);
     void close_pipe();
     ~pipe_class();
     size_t write(void *data, size_t size);
@@ -59,9 +56,8 @@ protected:
 public:
     input_pipe_class();
     input_pipe_class(input_buffer_class *input_buffer_param);
-    input_pipe_class(const std::string &session, const std::string &pipe_name);
-    input_pipe_class(const session_class &session, const std::string &pipe_name, input_buffer_class *input_buffer_param, const bool &create = true);
-    input_pipe_class(const session_class &session, const std::string &pipe_name, std::vector<input_buffer_class *> input_buffer_param, const bool &create = true);
+    input_pipe_class(std::vector<input_buffer_class *> input_buffer_param);
+    virtual void add_input_buffer(input_buffer_class *input_buffer_param);
     virtual bool bufferize();
     virtual pipe_t get_pipe();
 };
@@ -74,9 +70,8 @@ protected:
 public:
     output_pipe_class();
     output_pipe_class(output_buffer_class *output_buffer_param);
-    output_pipe_class(const std::string &session, const std::string &pipe_name);
-    output_pipe_class(const session_class &session, const std::string &pipe_name, output_buffer_class *output_buffer_param, const bool &create = true);
-    output_pipe_class(const session_class &session, const std::string &pipe_name, std::vector<output_buffer_class *> output_buffer_param, const bool &create = true);
+    output_pipe_class(std::vector<output_buffer_class *> output_buffer_param);
+    virtual void add_output_buffer(output_buffer_class *output_buffer_param);
     virtual bool bufferize();
     virtual pipe_t get_pipe();
 };
