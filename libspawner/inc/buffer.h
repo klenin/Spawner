@@ -199,4 +199,14 @@ public:
 };
 
 
+class input_stdin_buffer_class: public input_buffer_class, protected handle_buffer_class {
+protected:
+    unsigned int color;
+public:
+    input_stdin_buffer_class();
+    input_stdin_buffer_class(const size_t &buffer_size_param = BUFFER_SIZE);
+    virtual bool readable();
+    virtual size_t read(void *data, size_t size);
+};
+
 #endif//_SPAWNER_BUFFER_H_

@@ -100,3 +100,23 @@ size_t output_stdout_buffer_class::write(void *data, size_t size) {
     }
     return result;
 }
+
+
+input_stdin_buffer_class::input_stdin_buffer_class(): input_buffer_class(), handle_buffer_class() {
+}
+input_stdin_buffer_class::input_stdin_buffer_class(const size_t &buffer_size_param): 
+    input_buffer_class(buffer_size_param), handle_buffer_class() {
+    handle_t handle = GetStdHandle(STD_INPUT_HANDLE);
+    if (true){}
+    init_handle(handle);
+}
+bool input_stdin_buffer_class::readable() {
+    return (stream != handle_default_value);
+}
+#include <iostream>
+size_t input_stdin_buffer_class::read(void *data, size_t size) {
+    size_t result = protected_read(data, size);
+    std::cout.write((char*)data, result);
+    std::cout << std::endl << result;
+    return result;
+}

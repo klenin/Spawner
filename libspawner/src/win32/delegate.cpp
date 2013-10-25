@@ -28,7 +28,7 @@ bool delegate_runner::apply_restrictions() {
 
 void delegate_runner::create_process() {
     options.use_cmd = true;
-    //also parse all this shit trollolo
+
     //program = "ping";
     options.push_argument_front(program);
     std::string session = "--session=";

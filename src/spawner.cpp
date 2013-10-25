@@ -67,7 +67,7 @@ output_buffer_class *spawner_c::create_output_buffer(const std::string &name, co
 input_buffer_class *spawner_c::create_input_buffer(const std::string &name, const size_t buffer_size) {
     input_buffer_class *input_buffer = NULL;
     if (name == "std") {
-        input_buffer = new input_buffer_class(4096);
+        input_buffer = new input_stdin_buffer_class(4096);
     } else if (name.length()) {
         input_buffer = new input_file_buffer_class(name, 4096);
     }
