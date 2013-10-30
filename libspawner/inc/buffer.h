@@ -47,42 +47,20 @@ public:
         return 0;
     }
 };
-
+#include <iostream>
 class duplex_buffer_class: public input_buffer_class, public output_buffer_class {
 protected:
     std::ostringstream buffer;
+    std::queue<std::string> _buffer;
+    std::string __buffer;
     handle_t mutex;
+    handle_t semaphore;
 public:
-    duplex_buffer_class(): input_buffer_class(), output_buffer_class() {
-        mutex = CreateMutex(NULL, FALSE, NULL);
-    }
-    virtual bool readable() {
-        return true;
-    }
-    virtual bool writeable() {
-        return true;
-    }
-    virtual size_t read(void *data, size_t size) {
-        WaitForSingleObject(mutex, infinite);
-        while (!buffer.str().length()) {
-            ReleaseMutex(mutex);
-            WaitForSingleObject(mutex, infinite);
-        }
-        std::string str = buffer.str();
-        size = min(size, (size_t)str.length());
-        memcpy(data, str.c_str(), size);
-        buffer.str(str.substr(str.length() - size));
-        ReleaseMutex(mutex);
-
-        return size;
-    }
-    virtual size_t write(void *data, size_t size) {
-        WaitForSingleObject(mutex, infinite);
-        buffer.write((char*)data, size);
-        ReleaseMutex(mutex);
-        
-        return size;
-    }
+    duplex_buffer_class();
+    virtual bool readable();
+    virtual bool writeable();
+    virtual size_t read(void *data, size_t size);
+    virtual size_t write(void *data, size_t size);
 };
 
 class output_stream_buffer_class: public output_buffer_class {

@@ -1,5 +1,6 @@
 #include "spawner.h"
 #include <iostream>
+#include <regex>
 
 spawner_c::spawner_c(int argc, char *argv[]): arguments(argc, argv), state(spawner_state_ok) {
     if (arguments.get_state() != arguments_state_ok)
@@ -58,6 +59,7 @@ output_buffer_class *spawner_c::create_output_buffer(const std::string &name, co
             color = FOREGROUND_RED | FOREGROUND_INTENSITY;
         }
 		output_buffer = new output_stdout_buffer_class(4096, color);
+    } else if (name[0] == '*') {
 	} else if (name.length()) {
 		output_buffer = new output_file_buffer_class(name, 4096);
 	}
@@ -68,6 +70,7 @@ input_buffer_class *spawner_c::create_input_buffer(const std::string &name, cons
     input_buffer_class *input_buffer = NULL;
     if (name == "std") {
         input_buffer = new input_stdin_buffer_class(4096);
+    } else if (name[0] == '*') {
     } else if (name.length()) {
         input_buffer = new input_file_buffer_class(name, 4096);
     }
@@ -156,6 +159,57 @@ void spawner_c::init() {
         session_class session(session_class::base_session);
         session << i;
         runners.push_back(create_runner(session, arguments.get_argument_set(i)));
+    }
+    for (uint i = 0; i < runners.size(); ++i) {
+        runner *r = runners[i];
+        options_class options = r->get_options();
+        std::regex stdin_regex("^\\*([[:digit:]]+)\\.(stdout|stderr)$");
+        std::regex stdout_regex("^\\*([[:digit:]]+)\\.stdin$");
+        for (uint j = 0; j < options.stdinput.size(); ++j) {
+            std::cmatch result;
+            if (regex_search(options.stdinput[j].c_str(), result, stdin_regex)) {
+                uint id = atoi(result[1].str().c_str());
+                if (id >= runners.size()) {
+                    //fail with error
+                    throw;
+                }
+                pipes_t output_pipe = result[2].str() == "stdout" ? STD_OUTPUT_PIPE : STD_ERROR_PIPE;
+                runner *target_runner = runners[id];
+
+                duplex_buffer_class *buffer = new duplex_buffer_class();
+                static_cast<input_pipe_class*>(r->get_pipe(STD_INPUT_PIPE))->add_input_buffer(buffer);
+                static_cast<output_pipe_class*>(target_runner->get_pipe(output_pipe))->add_output_buffer(buffer);
+                
+            }
+        }
+        for (uint j = 0; j < options.stdoutput.size(); ++j) {
+            std::cmatch result;
+            if (regex_search(options.stdoutput[j].c_str(), result, stdout_regex)) {
+                uint id = atoi(result[1].str().c_str());
+                if (id >= runners.size()) {
+                    //fail with error
+                    throw;
+                }
+                duplex_buffer_class *buffer = new duplex_buffer_class();
+                static_cast<input_pipe_class*>(runners[id]->get_pipe(STD_INPUT_PIPE))->add_input_buffer(buffer);
+                static_cast<output_pipe_class*>(r->get_pipe(STD_OUTPUT_PIPE))->add_output_buffer(buffer);
+                
+            }
+        }
+        for (uint j = 0; j < options.stderror.size(); ++j) {
+            std::cmatch result;
+            if (regex_search(options.stderror[j].c_str(), result, stdout_regex)) {
+                uint id = atoi(result[1].str().c_str());
+                if (id >= runners.size()) {
+                    //fail with error
+                    throw;
+                }
+                duplex_buffer_class *buffer = new duplex_buffer_class();
+                static_cast<input_pipe_class*>(runners[id]->get_pipe(STD_INPUT_PIPE))->add_input_buffer(buffer);
+                static_cast<output_pipe_class*>(r->get_pipe(STD_ERROR_PIPE))->add_output_buffer(buffer);
+                
+            }
+        }
     }
     duplex_buffer_class *buffer = new duplex_buffer_class();
     /*/

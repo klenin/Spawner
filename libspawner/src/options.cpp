@@ -35,6 +35,7 @@ std::string options_class::format_arguments() const
     return arguments_string;
 }
 
+//TODO! rethink this
 void options_class::add_stdinput(const std::string &name) {
     if (std::find(stdinput.begin(), stdinput.end(), name) != stdinput.end()) {
         return;

@@ -19,6 +19,65 @@ output_buffer_class::output_buffer_class(): buffer_class(BUFFER_SIZE) {
 output_buffer_class::output_buffer_class(const size_t &buffer_size_param): buffer_class(buffer_size_param) {
 }
 
+
+duplex_buffer_class::duplex_buffer_class(): input_buffer_class(), output_buffer_class() {
+    mutex = CreateMutex(NULL, FALSE, NULL);
+    semaphore = CreateSemaphore(NULL, 0, 1, NULL);
+}
+
+bool duplex_buffer_class::readable() {
+    return true;
+}
+
+bool duplex_buffer_class::writeable() {
+    return true;
+}
+
+size_t duplex_buffer_class::read(void *data, size_t size) {
+    WaitForSingleObject(semaphore, 0);
+
+    //*
+    while (true) {
+        WaitForSingleObject(mutex, infinite);
+        if (__buffer.length())
+            break;
+        ReleaseMutex(mutex);
+    }
+    //*/
+    //std::cout << "locked " << (unsigned int)__buffer.length() << std::endl;
+    uint len = 0;
+    uint sz = min(__buffer.length(), size);
+    memcpy(data, __buffer.c_str(), sz);
+    __buffer = __buffer.substr(sz);
+
+    if (__buffer.length()) {
+        LONG cnt;
+        ReleaseSemaphore(semaphore, 1, &cnt);
+    }
+    ReleaseMutex(mutex);
+
+    return sz;
+}
+
+size_t duplex_buffer_class::write(void *data, size_t size) {
+    WaitForSingleObject(mutex, infinite);
+    __buffer += (char*)data;
+    if (__buffer.length() > 0) {
+        LONG cnt;
+        DWORD error;
+        WaitForSingleObject(semaphore, 0);
+        ReleaseSemaphore(semaphore, 1, &cnt);
+
+        error = GetLastError();
+    }
+    ReleaseMutex(mutex);
+        
+    return size;
+}
+
+
+
+
 handle_buffer_class::handle_buffer_class(): stream(handle_default_value) {
 }
 
