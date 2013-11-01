@@ -1,6 +1,7 @@
 #include "platform.h"
+#include <fstream>
+#include <string>
 //#include <Windows.h>
-
 #ifdef OPEN_JOB_OBJECT_DYNAMIC_LOAD
 void load_open_job_object() {
     HINSTANCE hDLL = LoadLibrary("kernel32.dll");
@@ -13,12 +14,25 @@ void load_open_job_object() {
 #endif//OPEN_JOB_OBJECT_DYNAMIC_LOAD
 
 
-void CloseHandleSafe(HANDLE &handle)
+void CloseHandleSafe_debug(HANDLE &handle, char *file, unsigned int line)
 {
-    if (handle == handle_default_value || handle == NULL)
-        return;
-    CloseHandle(handle);
-    handle = handle_default_value;
+	try {
+		if (handle == handle_default_value || handle == NULL)
+			return;
+		CloseHandle(handle);
+	} catch (...) {
+		std::ofstream log_file("C:\\CATS\\cats-judge\\log.log", std::ofstream::app);
+		log_file << file << ":" << line << " " << handle << std::endl;
+	}
+	handle = handle_default_value;
+}
+
+void CloseHandleSafe_real(HANDLE &handle)
+{
+	if (handle == handle_default_value || handle == NULL)
+		return;
+	CloseHandle(handle);
+	handle = handle_default_value;
 }
 
 wchar_t *a2w(const char *str)

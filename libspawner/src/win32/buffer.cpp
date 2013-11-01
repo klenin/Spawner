@@ -175,7 +175,7 @@ bool input_stdin_buffer_class::readable() {
 #include <iostream>
 size_t input_stdin_buffer_class::read(void *data, size_t size) {
     size_t result = protected_read(data, size);
-    std::cout.write((char*)data, result);
-    std::cout << std::endl << result;
+    //std::cout.write((char*)data, result);
+    //std::cout << std::endl << result;
     return result;
 }

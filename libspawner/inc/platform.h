@@ -82,7 +82,11 @@ typedef DWORD process_id;
 
 const DWORD PROCESS_CREATION_FLAGS = (CREATE_SUSPENDED | /*CREATE_PRESERVE_CODE_AUTHZ_LEVEL | */CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB);
 
-void CloseHandleSafe(HANDLE &handle);
+
+
+#define CloseHandleSafe(handle) (CloseHandleSafe_debug(handle, __FILE__, __LINE__))
+void CloseHandleSafe_debug(HANDLE &handle, char *file, unsigned int line);
+void CloseHandleSafe_real(HANDLE &handle);
 
 
 const unsigned long exit_code_ok = 0;
