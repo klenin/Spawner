@@ -17,7 +17,7 @@ enum spawner_arguments {
     SP_RUNAS,
     SP_SECURITY_LEVEL,
     SP_HIDE_REPORT,
-    SP_SHOW_OUTPUT,
+    SP_HIDE_OUTPUT,
     SP_SHOW_STDERR,
     SP_REPORT_FILE,
     SP_OUTPUT_FILE,

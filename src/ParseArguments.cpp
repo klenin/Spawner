@@ -56,7 +56,7 @@ CSimpleOpt::SOption Options[] =
     {SP_WORKING_DIRECTORY,  "-wd" ,     SO_REQ_CMB},
 
     {SP_DELEGATED,          "-runas",   SO_REQ_CMB},
-    {SP_SHOW_OUTPUT,        "-ho",      SO_REQ_CMB},
+    {SP_HIDE_OUTPUT,        "-ho",      SO_NONE},
     {SP_ERROR_FILE,         "-se",      SO_NONE},
     {SP_SEPARATOR,          "--separator", SO_REQ_CMB},
     {SP_PROGRAM_ID,         "--program", SO_REQ_CMB},

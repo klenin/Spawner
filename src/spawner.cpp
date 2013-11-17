@@ -45,6 +45,9 @@ void spawner_c::init_options_from_arguments(options_class &options, const argume
     if (argument_set.argument_exists(SP_HIDE_REPORT)) {
         options.hide_report = true;
     }
+    if (argument_set.argument_exists(SP_HIDE_OUTPUT)) {
+        options.hide_output = true;
+    }
     if (argument_set.argument_exists(SP_DEBUG)) {
         options.debug = true;
     }
@@ -106,9 +109,16 @@ runner *spawner_c::create_runner(session_class &session, const argument_set_c &a
     }
     init_options_from_arguments(options, argument_set);
 
+    bool met_stdout = false;
     for (uint i = 0; i < argument_set.get_argument_count(SP_OUTPUT_FILE); ++i) {
         options.add_stdoutput(argument_set.get_argument(SP_OUTPUT_FILE, i));
+        if (argument_set.get_argument(SP_OUTPUT_FILE, i) == "std") {
+            met_stdout = true;
+        }
 	}
+    if (!options.hide_output && !met_stdout) {
+        options.add_stdoutput("std");
+    }
     for (uint i = 0; i < argument_set.get_argument_count(SP_ERROR_FILE); ++i) {
         options.add_stderror(argument_set.get_argument(SP_ERROR_FILE, i));
 	}
@@ -211,12 +221,6 @@ void spawner_c::init() {
             }
         }
     }
-    duplex_buffer_class *buffer = new duplex_buffer_class();
-    /*/
-    ((input_pipe_class*)runners[0]->get_pipe(STD_INPUT_PIPE))->add_input_buffer(buffer);
-    //
-    ((output_pipe_class*)runners[1]->get_pipe(STD_OUTPUT_PIPE))->add_output_buffer(buffer);
-    //*/
     for (uint i = 0; i < runners.size(); ++i) {
         runners[i]->run_process_async();
     }

@@ -17,7 +17,7 @@ public:
     session_class session;
     options_class(const session_class &session_param): 
         hide_gui(true), silent_errors(true), debug(false), secure_token(false), use_cmd(false), session(session_param), 
-        delegated(false), hide_report(false) {}
+        delegated(false), hide_report(false), hide_output(false) {}
     void add_argument(std::string argument);
     void add_arguments(const std::vector<std::string> &arguments_a);
     void push_argument_front(std::string argument);
@@ -37,6 +37,7 @@ public:
     std::string report_file;//bad, need many values but this causes many outputs if environment variable and command line argument both present
     bool hide_gui;
     bool hide_report;
+    bool hide_output;
     bool debug;
     bool delegated;
 	bool secure_token;

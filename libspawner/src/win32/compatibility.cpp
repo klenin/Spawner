@@ -114,6 +114,9 @@ void ReadEnvironmentVariables(options_class &options, restrictions_class &restri
         options.hide_report = atoi(buffer)!=0;
     }
 
+    if (GetEnvironmentVariable("SP_HIDE_OUTPUT", buffer, sizeof(buffer))) {
+        options.hide_output = atoi(buffer)!=0;
+    }
     //if (GetEnvironmentVariable("SP_HIDE_OUTPUT", buffer, sizeof(buffer)))
     //{
     //	hideOutput = atoi(buffer);
@@ -134,6 +137,7 @@ void ReadEnvironmentVariables(options_class &options, restrictions_class &restri
     if (GetEnvironmentVariable("SP_REPORT_FILE", buffer, sizeof(buffer))) {
         options.report_file = buffer;
     }
+
 
     if (GetEnvironmentVariable("SP_OUTPUT_FILE", buffer, sizeof(buffer))) {
         options.stdoutput.push_back(buffer);
