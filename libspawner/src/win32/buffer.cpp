@@ -175,5 +175,6 @@ bool input_stdin_buffer_class::readable() {
 #include <iostream>
 size_t input_stdin_buffer_class::read(void *data, size_t size) {
     size_t result = protected_read(data, size);
+
     return result;
 }
