@@ -12,7 +12,8 @@ enum restriction_kind_t
     restriction_security_limit          = 0x3,
     restriction_write_limit             = 0x4,
     restriction_load_ratio              = 0x5,
-    restriction_max                     = 0x6
+    restriction_idle_time_limit         = 0x6,
+    restriction_max                     = 0x7
 };
 
 typedef unsigned int restriction_t;

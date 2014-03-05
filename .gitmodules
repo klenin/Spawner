@@ -1,0 +1,3 @@
+[submodule "lib/json-cpp/json-cpp"]
+	path = lib/json-cpp/json-cpp
+	url = https://github.com/mrtazz/json-cpp.git

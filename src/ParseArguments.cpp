@@ -27,7 +27,8 @@
 // <-- move this to some sort of header
 // check if long attributes can be applied 
 CSimpleOpt::SOption Options[] = 
-{   
+{
+    //old options
     {SP_HELP,               "--help",	SO_NONE},
     {SP_MEMORY_LIMIT,       "-ml",      SO_REQ_CMB},
     {SP_TIME_LIMIT,         "-tl",      SO_REQ_CMB},
@@ -38,7 +39,9 @@ CSimpleOpt::SOption Options[] =
     {SP_DELEGATED_SESSION,  "--session",SO_REQ_CMB},
     {SP_DEBUG,              "--debug",  SO_NONE},
     {SP_PASSWORD,	        "-p" ,      SO_REQ_CMB},
+    //new options
     {SP_LOAD_RATIO,	        "-lr" ,     SO_REQ_CMB},
+    {SP_IDLE_TIME_LIMIT,    "--idle" ,     SO_REQ_CMB},
 //	{SP_RUNAS,
     {SP_SECURITY_LEVEL,     "-s" ,      SO_REQ_CMB},
     {SP_HIDE_REPORT,        "-hr",      SO_NONE},

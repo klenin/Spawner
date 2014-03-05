@@ -98,6 +98,7 @@ runner *spawner_c::create_runner(session_class &session, const argument_set_c &a
         {SP_DEADLINE, restriction_user_time_limit},
         {SP_SECURITY_LEVEL, restriction_security_limit},
         {SP_LOAD_RATIO, restriction_load_ratio},
+        {SP_IDLE_TIME_LIMIT, restriction_idle_time_limit},
     };
     const uint restriction_bindings_count = 
         sizeof(restriction_bindings)/(sizeof(spawner_arguments) + sizeof(restriction_kind_t));

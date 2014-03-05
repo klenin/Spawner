@@ -29,8 +29,7 @@ void runner::set_allow_breakaway(bool allow) {
     allow_breakaway = allow;
 }
 
-bool runner::init_process(char *cmd, const char *wd)
-{
+bool runner::init_process(char *cmd, const char *wd) {
     WaitForSingleObject(main_job_object_access_mutex, infinite);
     set_allow_breakaway(true);
 
@@ -62,8 +61,7 @@ bool runner::init_process(char *cmd, const char *wd)
     return true;
 }
 
-bool runner::init_process_with_logon(char *cmd, const char *wd)
-{
+bool runner::init_process_with_logon(char *cmd, const char *wd) {
     WaitForSingleObject(main_job_object_access_mutex, infinite);
     set_allow_breakaway(false);
 

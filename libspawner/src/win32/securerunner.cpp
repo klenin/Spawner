@@ -111,6 +111,7 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
     int dt;
     double total_rate = 10000.0;
     LONGLONG last_quad_part = 0;
+    bool is_idle = false;
     self->report.load_ratio = 10000.0;
     std::vector<double> rates;
     static const double sec_clocks = (double)1000.0/CLOCKS_PER_SEC;
@@ -118,6 +119,7 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
 
     t = GetTickCount();
     dt = clock();
+
     while (1)
     {
         if (!QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL))
@@ -131,24 +133,20 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
         }
 
         if (restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit &&
-            (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart > SECOND_COEFF * restrictions.get_restriction(restriction_processor_time_limit))
-        {
+            (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart > SECOND_COEFF * restrictions.get_restriction(restriction_processor_time_limit)) {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);
             break;
         }
         if (restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit &&
-            (GetTickCount() - t) > restrictions.get_restriction(restriction_user_time_limit))
-        {
+            (GetTickCount() - t) > restrictions.get_restriction(restriction_user_time_limit)) {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);//freezed
             break;
         }
-        if ((clock() - dt)*sec_clocks > 100.0 && bai.BasicInfo.TotalUserTime.QuadPart)
-        {
+        if ((clock() - dt)*sec_clocks > 100.0 && bai.BasicInfo.TotalUserTime.QuadPart) {
             //change to time limit
             double load_ratio = (double)(bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part)/(sec_clocks*(clock() - dt));
             rates.push_back(load_ratio);// make everything integer
-            if (rates.size() >= MAX_RATE_COUNT)
-            {
+            if (rates.size() >= MAX_RATE_COUNT) {
                 total_rate -= rates[0];
                 rates.erase(rates.begin());
             }
@@ -158,12 +156,18 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             self->report.load_ratio = total_rate/rates.size();
             last_quad_part = bai.BasicInfo.TotalUserTime.QuadPart;
             dt = clock();
-            if (restrictions.get_restriction(restriction_load_ratio) != restriction_no_limit)
-            {
-                if (self->report.load_ratio < 0.01*self->restrictions.get_restriction(restriction_load_ratio))
-                {
-                    PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT, COMPLETION_KEY, NULL);//freezed
-                    break;
+            if (restrictions.get_restriction(restriction_load_ratio) != restriction_no_limit) {
+                if (self->report.load_ratio < 0.01*self->restrictions.get_restriction(restriction_load_ratio)) {
+                    if (!is_idle && restrictions.get_restriction(restriction_idle_time_limit) != restriction_no_limit) {
+                        is_idle = true;
+                        t = clock();
+                    }
+                    if (sec_clocks*(clock() - t) > restrictions.get_restriction(restriction_idle_time_limit)) {
+                        PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT, COMPLETION_KEY, NULL);//freezed
+                        break;
+                    }
+                } else {
+                    is_idle = false;
                 }
             }
         }

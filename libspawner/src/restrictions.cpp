@@ -14,6 +14,7 @@ const restriction_cell restriction_identifiers[] = {
     {restriction_security_limit      , "RESTRICTION_SECURITY_LIMIT"      , ""},
     {restriction_write_limit         , "RESTRICTION_WRITE_LIMIT"         , ""},
     {restriction_load_ratio          , "RESTRICTION_LOAD_RATIO"          , ""},
+    {restriction_idle_time_limit     , "RESTRICTION_IDLE_TIME_LIMIT"     , ""},
     {restriction_max                 , "RESTRICTION_MAX"                 , ""}
 };
 

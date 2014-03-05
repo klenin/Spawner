@@ -83,6 +83,9 @@ void SetRestriction(restrictions_class &restrictions, const restriction_kind_t &
         case restriction_load_ratio:
             restriction_value = convert(value_t(unit_no_unit, degree_m4), value, restriction_no_limit);
             break;
+        case restriction_idle_time_limit:
+            restriction_value = convert(value_t(unit_time_second, degree_milli), value, restriction_no_limit);
+            break;
         default:
             return;
 	}
@@ -100,27 +103,24 @@ void ReadEnvironmentVariables(options_class &options, restrictions_class &restri
         {"SP_TIME_LIMIT", restriction_processor_time_limit},
         {"SP_MEMORY_LIMIT", restriction_memory_limit},
         {"SP_WRITE_LIMIT", restriction_write_limit},
-        {"SP_DEADLINE", restriction_user_time_limit}
+        {"SP_DEADLINE", restriction_user_time_limit},
+        {"SP_LOAD_RATIO", restriction_load_ratio},
+        {"SP_IDLE_TIME_LIMIT", restriction_idle_time_limit}
     };
-    const int restriction_bindings_count = 5;//hardcoded - bad
+    const int restriction_bindings_count =
+        sizeof(restriction_bindings)/(sizeof(char*) + sizeof(restriction_kind_t));
 
-    if (GetEnvironmentVariable("SP_RUNAS", buffer, sizeof(buffer)))
-    {
+    if (GetEnvironmentVariable("SP_RUNAS", buffer, sizeof(buffer))) {
         options.delegated = true;
     }
 
-    if (GetEnvironmentVariable("SP_HIDE_REPORT", buffer, sizeof(buffer)))
-    {
+    if (GetEnvironmentVariable("SP_HIDE_REPORT", buffer, sizeof(buffer))) {
         options.hide_report = atoi(buffer)!=0;
     }
 
     if (GetEnvironmentVariable("SP_HIDE_OUTPUT", buffer, sizeof(buffer))) {
         options.hide_output = atoi(buffer)!=0;
     }
-    //if (GetEnvironmentVariable("SP_HIDE_OUTPUT", buffer, sizeof(buffer)))
-    //{
-    //	hideOutput = atoi(buffer);
-    //}
     for (int i = 0; i < restriction_bindings_count; ++i) {
         if (GetEnvironmentVariable(restriction_bindings[i].name, buffer, sizeof(buffer))) {
             SetRestriction(restrictions, restriction_bindings[i].restriction, buffer);
