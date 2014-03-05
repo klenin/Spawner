@@ -116,7 +116,9 @@ runner *spawner_c::create_runner(session_class &session, const argument_set_c &a
 
     bool met_stdout = false;
     for (uint i = 0; i < argument_set.get_argument_count(SP_OUTPUT_FILE); ++i) {
-        options.add_stdoutput(argument_set.get_argument(SP_OUTPUT_FILE, i));
+        if (!options.hide_output || argument_set.get_argument(SP_OUTPUT_FILE, i) != "std") {
+            options.add_stdoutput(argument_set.get_argument(SP_OUTPUT_FILE, i));
+        }
         if (argument_set.get_argument(SP_OUTPUT_FILE, i) == "std") {
             met_stdout = true;
         }
@@ -125,7 +127,9 @@ runner *spawner_c::create_runner(session_class &session, const argument_set_c &a
         options.add_stdoutput("std");
     }
     for (uint i = 0; i < argument_set.get_argument_count(SP_ERROR_FILE); ++i) {
-        options.add_stderror(argument_set.get_argument(SP_ERROR_FILE, i));
+        if (!options.hide_output || argument_set.get_argument(SP_ERROR_FILE, i) != "std") {
+            options.add_stderror(argument_set.get_argument(SP_ERROR_FILE, i));
+        }
 	}
     for (uint i = 0; i < argument_set.get_argument_count(SP_INPUT_FILE); ++i) {
         options.add_stdinput(argument_set.get_argument(SP_INPUT_FILE, i));
