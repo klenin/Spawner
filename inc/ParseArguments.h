@@ -34,6 +34,7 @@ enum spawner_arguments {
     SP_DELEGATED_SESSION,
     SP_SEPARATOR,
     SP_PROGRAM_ID,
+    SP_JSON,
 };
 
 enum arguments_state_e {

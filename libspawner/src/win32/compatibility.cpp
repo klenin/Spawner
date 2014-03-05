@@ -114,12 +114,16 @@ void ReadEnvironmentVariables(options_class &options, restrictions_class &restri
         options.delegated = true;
     }
 
+    if (GetEnvironmentVariable("SP_JSON", buffer, sizeof(buffer))) {
+        options.json = atoi(buffer);
+    }
+
     if (GetEnvironmentVariable("SP_HIDE_REPORT", buffer, sizeof(buffer))) {
-        options.hide_report = atoi(buffer)!=0;
+        options.hide_report = atoi(buffer);
     }
 
     if (GetEnvironmentVariable("SP_HIDE_OUTPUT", buffer, sizeof(buffer))) {
-        options.hide_output = atoi(buffer)!=0;
+        options.hide_output = atoi(buffer);
     }
     for (int i = 0; i < restriction_bindings_count; ++i) {
         if (GetEnvironmentVariable(restriction_bindings[i].name, buffer, sizeof(buffer))) {

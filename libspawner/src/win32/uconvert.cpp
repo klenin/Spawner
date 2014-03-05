@@ -113,6 +113,22 @@ long double convert(const value_t &from, const value_t &to, const long double &v
     return v;
 }
 
+std::string unit_short_name(const unit_t &unit_type) {
+    return unit_descriptions[get_unit_index(unit_type)].short_name;
+}
+
+std::string unit_name(const unit_t &unit_type) {
+    return unit_descriptions[get_unit_index(unit_type)].name;
+}
+
+std::string degree_short_name(const degrees_enum &degree_type) {
+    return degree_descriptions[get_degree_index(degree_type)].short_name;
+}
+
+std::string degree_name(const degrees_enum &degree_type) {
+    return degree_descriptions[get_degree_index(degree_type)].name;
+}
+
 std::string convert(const value_t &from, const value_t &to, const long double &val, const char *format, const long double &inf_value)
 {
     if (val == inf_value)

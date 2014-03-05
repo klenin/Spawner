@@ -26,6 +26,7 @@ public:
     ~spawner_c();
     void init();
     bool run();
+    std::string json_report(runner *runner_instance);
 };
 
 

@@ -50,6 +50,10 @@ struct value_t
     unit_t unit_type;
     degrees_enum degree_type;
 };
+std::string unit_short_name(const unit_t &unit_type);
+std::string unit_name(const unit_t &unit_type);
+std::string degree_short_name(const degrees_enum &degree_type);
+std::string degree_name(const degrees_enum &degree_type);
 
 unsigned long convert(const value_t &from, const value_t &to, const unsigned long &val);
 long double convert(const value_t &from, const value_t &to, const long double &val);

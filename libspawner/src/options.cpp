@@ -25,6 +25,20 @@ std::string options_class::get_arguments() const
     return result;
 }
 
+std::string options_class::get_argument(const size_t &index) const {
+    if (index < arguments.size()) {
+        std::list<std::string>::const_iterator it = arguments.begin();
+        for (size_t i = 0; i < index; ++i) {
+            it++;
+        }
+        return *it;
+    }
+    return ""; // !TODO! raise an error
+}
+size_t options_class::get_arguments_count() const {
+    return arguments.size();
+}
+
 
 std::string options_class::format_arguments() const
 {

@@ -8,8 +8,7 @@
 
 
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     spawner_c spawner(argc, argv);
 
     spawner.init();

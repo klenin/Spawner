@@ -63,6 +63,7 @@ CSimpleOpt::SOption Options[] =
     {SP_ERROR_FILE,         "-se",      SO_NONE},
     {SP_SEPARATOR,          "--separator", SO_REQ_CMB},
     {SP_PROGRAM_ID,         "--program", SO_REQ_CMB},
+    {SP_JSON,               "--json",   SO_NONE},
     SO_END_OF_OPTIONS
 };
 
@@ -110,12 +111,16 @@ void arguments_c::init_program(argument_set_c &argument_set, const int &start, c
 
 // Extracting program to execute and it's arguments
 // Getting spawner options
-arguments_c::arguments_c(int argc, char *argv[])
-{
+arguments_c::arguments_c(int argc, char *argv[]) {
 	CSimpleOpt args(argc, argv, Options);
+    if (argc <= 1) {
+        state = arguments_state_error;
+        return;
+    }
     for (int i = 0; i < argc; ++i) {
         arguments.push_back(argv[i]);
     }
+
     std::string separator;
     state = arguments_state_ok;
     argument_sets.push_back(argument_set_c());
@@ -155,6 +160,11 @@ arguments_c::arguments_c(int argc, char *argv[])
             return;
         }*/
     }
+    if (args.LastErrorPos() == (unsigned)-1) {
+        state = arguments_state_error;
+        return;
+    }
+
     init_program(*argument_set, args.LastErrorPos() + 1, args.CurrentPos() + 1);
 
     //v = true;
