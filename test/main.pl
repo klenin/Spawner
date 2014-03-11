@@ -1,7 +1,9 @@
 use Test::More;
 use memory::memory;
-use file::file;
+use general::general;
 
-memory_run_tests();
+chdir "bin";
+
+general_run_tests();
 
 done_testing();
