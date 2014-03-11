@@ -1,0 +1,5 @@
+SET (BIN_PATH "../bin")
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${BIN_PATH}
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> ${BIN_PATH}
+)
