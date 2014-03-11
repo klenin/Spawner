@@ -3,6 +3,5 @@ use memory::memory;
 use file::file;
 
 memory_run_tests();
-file_run_tests();
 
 done_testing();
