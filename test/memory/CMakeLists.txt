@@ -1,10 +1,14 @@
-# Compatibility
 CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
 
-# Project name
-PROJECT (memory)
+INCLUDE("../cmake/gather.cmake")
 
-SET(PROJECT_PREFIX ${PROJECT_NAME} CACHE STRING "")
+GET_PROJECT_NAME(PROJECT_ID)
 
-ADD_SUBDIRECTORY("${PROJECT_SOURCE_DIR}/alloc" alloc)
+PROJECT (${PROJECT_ID})
 
+#Adding all subdirectories to build
+SUBDIRLIST(SUBDIRS ${CMAKE_CURRENT_LIST_DIR})
+
+FOREACH(subdir ${SUBDIRS})
+    ADD_SUBDIRECTORY(${subdir})
+ENDFOREACH()
