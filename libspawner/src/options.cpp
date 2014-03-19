@@ -69,3 +69,14 @@ void options_class::add_stderror(const std::string &name) {
     }
     stderror.push_back(name);
 }
+//TODO! rethink this
+void options_class::clear_stdinput() {
+    stdinput.clear();
+}
+
+void options_class::clear_stdoutput() {
+    stdoutput.clear();
+}
+void options_class::clear_stderror() {
+    stderror.clear();
+}

@@ -24,6 +24,9 @@ public:
     void add_stdinput(const std::string &name);
     void add_stdoutput(const std::string &name);
     void add_stderror(const std::string &name);
+    void clear_stdinput();
+    void clear_stdoutput();
+    void clear_stderror();
     std::string get_arguments() const;
     std::string get_argument(const size_t &index) const;
     size_t get_arguments_count() const;
