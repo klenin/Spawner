@@ -10,7 +10,7 @@
 
 
 int main(int argc, char *argv[]) {
-    argument_parser_c parser;
+    settings_parser_c parser;
     parser.parse(argc, argv);
     return 0;
     spawner_c spawner(argc, argv);

@@ -5,9 +5,91 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <inc/compatibility.h>
 
 #define min_def(x, y)((x)<(y)?(x):(y))
 #define max_def(x, y)((x)>(y)?(x):(y))
+
+typedef char *argument_type_t;
+
+
+//unique names for arguments
+const argument_type_t sp_output_stream          = "output_stream";
+const argument_type_t sp_input_stream           = "intput_stream";
+const argument_type_t sp_error_stream           = "error_stream";
+
+const argument_type_t sp_end                    = NULL;
+const argument_type_t sp_reserved               = NULL;
+
+enum on_error_behavior_e {
+    on_error_skip,
+    on_error_die
+};
+
+enum on_repeat_behavior_e {
+    on_repeat_stack,
+    on_repeat_replace,
+    on_repeat_die
+};
+
+class compact_list_c {
+protected:
+    std::vector<std::string> items;
+public:
+    compact_list_c(int dummy_value, ...) {
+        va_list vl;
+        char *value;
+        va_start(vl, dummy_value);
+        do {
+            value = va_arg(vl, char*);
+            if (value) {
+                items.push_back(value);
+            }
+        } while (value);
+    }
+};
+
+#define c_lst(...) compact_list_c(0, ##__VA_ARGS__, NULL)
+
+class abstract_settings_parser_c {
+public:
+    virtual char *get_next_argument() = 0;
+};
+
+class abstract_parser_c {
+public:
+    //abstract_parser_c(const parser_t &parser){}
+    virtual bool invoke_initialization(abstract_settings_parser_c &parser_object){return false;} //init settings for parser object
+    virtual bool parse(abstract_settings_parser_c &parser_object) {return false;}
+    virtual void invoke(abstract_settings_parser_c &parser_object) {}
+    virtual std::string help() { return ""; }
+};
+
+struct parser_t {
+    char *name;
+    void *settings;
+    void *items;
+    abstract_parser_c *(*callback)(const parser_t&);
+};
+
+struct console_parser_settings_t {
+    compact_list_c dividers;
+};
+
+struct console_argument_c {
+    argument_type_t type;
+    compact_list_c arguments;
+    on_error_behavior_e on_error_behavior;
+    on_repeat_behavior_e on_repeat_behavior;
+};
+
+#define default_behavior on_error_die, on_repeat_replace
+#define short_arg(x) ((std::string("-")+x).c_str())
+#define long_arg(x) ((std::string("--")+x).c_str())
+
+
+
+
 class argument_value_c {
 public:
     static argument_value_c *create_argument(const std::string &value) {
@@ -31,17 +113,6 @@ public:
     void add_value(const std::string &key, temp_name &value);
 };
 
-enum on_error_behavior_e {
-    on_error_skip,
-    on_error_die
-};
-
-enum on_repeat_behavior_e {
-    on_repeat_stack,
-    on_repeat_replace,
-    on_repeat_die
-};
-
 struct temp_name {
     char *short_name;
     char *long_name;
@@ -61,18 +132,7 @@ enum behavior_type_e {
     variable_behavior
 };
 
-class abstract_settings_parser_c {
-public:
-    virtual char *get_next_argument() = 0;
-};
 
-class abstract_parser_c {
-public:
-    virtual bool invoke_initialization(abstract_settings_parser_c &parser_object){return false;} //init settings for parser object
-    virtual bool parse(abstract_settings_parser_c &parser_object) {return false;}
-    virtual void invoke(abstract_settings_parser_c &parser_object) {}
-    virtual std::string help() { return ""; }
-};
 
 //configuration_manager
 class settings_parser_c: public abstract_settings_parser_c {
@@ -87,7 +147,7 @@ private:
     //std::vector<int> system_parsers;
 public:
     settings_parser_c() {}
-    template<typename T> static argument_value_c *create_value(const std::string &value) {
+    template<typename T> static abstract_parser_c *create_parser(const parser_t &value) {
         return new T(value);
     }
     int current_position();
@@ -110,10 +170,9 @@ struct argument_t {
     char *help;
 };
 
-#define VALUE_CONSTRUCTOR(X) &settings_parser_c::create_value<X>
-typedef char *argument_type_t;
+#define PARSER_CONSTRUCTOR(X) &settings_parser_c::create_parser<X>
 
-argument_t base_dictionary[] = {
+/*argument_t base_dictionary[] = {
     {
         "output_stream",
         VALUE_CONSTRUCTOR(argument_value_c),
@@ -121,7 +180,7 @@ argument_t base_dictionary[] = {
         array_behavior,
         "help"
     }
-};
+};*/
     //&argument_parser::set_value<output_stream_value_c>,
 
 
@@ -136,10 +195,11 @@ private:
         argument_error_state,
     };
     std::string argument;
-    std::vector<std::string> values;
+    std::string value;
     char *argument_name;
     parsing_state_e last_state;
 public:
+    console_argument_parser_c(const parser_t &parser){}
     virtual bool parse(abstract_settings_parser_c &parser_object) {
         if (process_argument(parser_object.get_next_argument()) == argument_error_state) {
             return false;
@@ -189,16 +249,33 @@ public:
     virtual std::string help() { return ""; }
 };
 
+struct environment_desc_t {
+    char *name;
+    argument_type_t type;
+};
 class environment_variable_parser_c : public abstract_parser_c {
 protected:
     std::map<argument_type_t, std::string> values;
+    std::string last_variable_name;
+    static char buffer[4096];
 public:
-    environment_variable_parser_c(dictionary) {
-        foreach (item in dictionary) {
-            if (exists_environment_variable(item.name)) {
-                values[item.type] = get_environment_variable(item.name);
+    environment_variable_parser_c(const parser_t &parser){}
+    environment_variable_parser_c(std::vector<environment_desc_t> dictionary) {
+        for (auto item = dictionary.begin(); item != dictionary.end(); item++) {
+            if (exists_environment_variable((*item).name)) {
+                values[(*item).type] = get_environment_variable((*item).name);
             }
         }
+    }
+    bool exists_environment_variable(char *variable) {
+        last_variable_name = variable;
+        return GetEnvironmentVariable(variable, buffer, sizeof(buffer));
+    }
+    std::string get_environment_variable(char *variable) {
+        if (last_variable_name != variable) {
+            GetEnvironmentVariable(variable, buffer, sizeof(buffer));
+        }
+        return buffer;
     }
     virtual bool invoke_initialization(abstract_settings_parser_c &parser_object){
         return true;
@@ -206,6 +283,49 @@ public:
 };
 
 
+
+
+
+
+
+
+
+
+
+const console_parser_settings_t default_console_parser_settings = {
+    c_lst("=")
+};
+const console_parser_settings_t spawner_console_parser_settings = {
+    c_lst(":")
+};
+const console_argument_c system_arguments[] = {
+    {
+        sp_output_stream,
+        c_lst(short_arg("o"), long_arg("out")),
+        default_behavior
+    }
+};
+
+const parser_t parsers[] = {
+    {
+        "system",
+        (void*)&default_console_parser_settings,
+        (void*)&system_arguments,
+        PARSER_CONSTRUCTOR(console_argument_parser_c)
+    },
+    {
+        "system_environment",
+        NULL
+    },
+    {
+        "system_json",
+        NULL
+    },
+    {
+        NULL,
+        NULL
+    }
+};
 
 
 
