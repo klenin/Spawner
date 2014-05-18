@@ -62,18 +62,15 @@ abstract_parser_c *settings_parser_c::pop_saved_parser() {
 void settings_parser_c::parse(int argc, char *argv[]) {
     arg_c = argc;
     arg_v = argv;
+    position = 1;
     for (auto parser = parsers.begin(); parser != parsers.end(); parser++) {
-        (*parser).invoke_initialization(*this);
+        (*parser)->invoke_initialization(*this);
     }
     while (current_position() < argc) {
-        fetch_current_position();
-        if (system_parse()) {
-            //save_current_position(&system_parser);
-        }
         for (auto parser = parsers.begin(); parser != parsers.end(); parser++) {
             fetch_current_position();
-            if ((*parser).parse(*this)) {
-                save_current_position(&(*parser));
+            if ((*parser)->parse(*this)) {
+                save_current_position((*parser));
             }
             restore_position();
         }

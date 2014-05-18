@@ -36,6 +36,7 @@ class compact_list_c {
 protected:
     std::vector<std::string> items;
 public:
+    compact_list_c(){}
     compact_list_c(int dummy_value, ...) {
         va_list vl;
         char *value;
@@ -46,6 +47,12 @@ public:
                 items.push_back(value);
             }
         } while (value);
+    }
+    size_t size() const {
+        return items.size();
+    }
+    std::string operator[] (size_t index) {
+        return items[index];
     }
 };
 
@@ -132,6 +139,11 @@ enum behavior_type_e {
     variable_behavior
 };
 
+struct dictionary_t {
+    char *name;
+    char *description;
+    compact_list_c parsers;
+};
 
 
 //configuration_manager
@@ -140,15 +152,57 @@ private:
     int position;
     int fetched_position;
     void *system_parser;
+    std::map<std::string, dictionary_t> registered_dictionaries;
+    std::map<std::string, parser_t> registered_parsers;
+    std::map<std::string, bool> enabled_dictionaries;
     std::vector<std::pair<int, abstract_parser_c*> > saved_positions;
-    std::vector<abstract_parser_c> parsers;
+    std::vector<abstract_parser_c*> parsers;
     int arg_c;
     char **arg_v;
     //std::vector<int> system_parsers;
+    void add_parser(const std::string &parser) {
+        if (registered_parsers[parser].callback) {
+            parsers.push_back((registered_parsers[parser].callback)(registered_parsers[parser]));
+        }
+    }
+    void rebuild_parsers() {
+        parsers.clear();//not good
+        for (auto i = enabled_dictionaries.begin(); i != enabled_dictionaries.end(); i++) {
+            if ((*i).second) {
+                dictionary_t dictionary = registered_dictionaries[(*i).first];
+                for (int k = 0; k < dictionary.parsers.size(); ++k) {
+                    add_parser(dictionary.parsers[k]);
+                }
+            }
+        }
+    }
 public:
-    settings_parser_c() {}
+    settings_parser_c() : position(0) {}
     template<typename T> static abstract_parser_c *create_parser(const parser_t &value) {
         return new T(value);
+    }
+    void register_dictionaries(dictionary_t *dictionaries) {
+        while (dictionaries && dictionaries->name) {
+            register_dictionary(*dictionaries);
+            dictionaries++;
+        }
+    }
+    void register_dictionary(const dictionary_t &dictionary) {
+        registered_dictionaries[dictionary.name] = dictionary;
+    }
+    void register_parsers(parser_t *parsers) {
+        while (parsers && parsers->name) {
+            registered_parsers[parsers->name] = *parsers;
+            parsers++;
+        }
+    }
+    void clear_dictionaries() {
+    }
+    void enable_dictionary(const std::string &name) {
+        if (registered_dictionaries.find(name) != registered_dictionaries.end()) {
+            enabled_dictionaries[name] = true;
+            rebuild_parsers();
+        }
     }
     int current_position();
     void fetch_current_position();
@@ -199,7 +253,7 @@ private:
     char *argument_name;
     parsing_state_e last_state;
 public:
-    console_argument_parser_c(const parser_t &parser){}
+    console_argument_parser_c(const parser_t &parser) {}
     virtual bool parse(abstract_settings_parser_c &parser_object) {
         if (process_argument(parser_object.get_next_argument()) == argument_error_state) {
             return false;
@@ -291,7 +345,6 @@ public:
 
 
 
-
 const console_parser_settings_t default_console_parser_settings = {
     c_lst("=")
 };
@@ -303,10 +356,23 @@ const console_argument_c system_arguments[] = {
         sp_output_stream,
         c_lst(short_arg("o"), long_arg("out")),
         default_behavior
+    },
+    {
+        sp_input_stream,
+        c_lst(short_arg("i"), long_arg("in")),
+        default_behavior
+    },
+    {
+        sp_error_stream,
+        c_lst(short_arg("e"), long_arg("err")),
+        default_behavior
+    },
+    {
+        NULL
     }
 };
 
-const parser_t parsers[] = {
+static parser_t c_parsers[] = {
     {
         "system",
         (void*)&default_console_parser_settings,
@@ -327,6 +393,16 @@ const parser_t parsers[] = {
     }
 };
 
+static dictionary_t c_dictionaries[] = {
+    {
+        "system",
+        "Default system commands",
+        c_lst("system", "system_environment", "system_json")
+    },
+    {
+        NULL
+    }
+};
 
 
 
