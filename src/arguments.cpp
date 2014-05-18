@@ -1,30 +1,71 @@
 #include "arguments.h"
 #include <iostream>
 
+compact_list_c::compact_list_c(){}
 
-void dictionary_c::add_value(const std::string &key, temp_name &value) {
-    if (!key.length()) {
-            return;
-    }
-    if (contents.find(key) != contents.end()) {
-        throw "";
-    }
-    contents[key] = value;
+compact_list_c::compact_list_c(int dummy_value, ...) {
+    va_list vl;
+    char *value;
+    va_start(vl, dummy_value);
+    do {
+        value = va_arg(vl, char*);
+        if (value) {
+            items.push_back(value);
+        }
+    } while (value);
+}
+size_t compact_list_c::size() const {
+    return items.size();
+}
+std::string compact_list_c::operator[] (size_t index) {
+    return items[index];
 }
 
 
-std::pair<std::string, std::string> extract_argument(const std::string &s) {
-    std::map<std::string, bool> dividers;
-    std::string left, right;
-    size_t i = 0;
-    dividers["="] = true;
-    dividers[":"] = true;
-    while (dividers.find(s.substr(i, 1)) == dividers.end() && i < s.length()) ++i;
-    left = s.substr(0, i);
-    if (s.length() > i) {
-        right = s.substr(i + 1, s.length() - i);
+void settings_parser_c::add_parser(const std::string &parser) {
+    if (registered_parser_constructors.find(registered_parsers[parser].type) != registered_parser_constructors.end()) {
+        parsers.push_back((registered_parser_constructors[registered_parsers[parser].type].constructor)(registered_parsers[parser]));
     }
-    return std::pair<std::string, std::string>(left, right);
+}
+void settings_parser_c::rebuild_parsers() {
+    parsers.clear();//not good
+    for (auto i = enabled_dictionaries.begin(); i != enabled_dictionaries.end(); i++) {
+        if ((*i).second) {
+            dictionary_t dictionary = registered_dictionaries[(*i).first];
+            for (int k = 0; k < dictionary.parsers.size(); ++k) {
+                add_parser(dictionary.parsers[k]);
+            }
+        }
+    }
+}
+
+settings_parser_c::settings_parser_c() : position(0) {}
+
+void settings_parser_c::register_dictionaries(dictionary_t *dictionaries) {
+    while (dictionaries && dictionaries->name) {
+        register_dictionary(*dictionaries);
+        dictionaries++;
+    }
+}
+void settings_parser_c::register_dictionary(const dictionary_t &dictionary) {
+    registered_dictionaries[dictionary.name] = dictionary;
+}
+void settings_parser_c::register_parsers(parser_t *parsers) {
+    while (parsers && parsers->name) {
+        registered_parsers[parsers->name] = *parsers;
+        parsers++;
+    }
+}
+void settings_parser_c::clear_dictionaries() {
+}
+void settings_parser_c::enable_dictionary(const std::string &name) {
+    if (registered_dictionaries.find(name) != registered_dictionaries.end()) {
+        enabled_dictionaries[name] = true;
+        rebuild_parsers();
+    }
+}
+void settings_parser_c::register_constructors(parser_constructor_t *parser_constructors) {
+
 }
 
 int settings_parser_c::current_position() {
@@ -88,4 +129,83 @@ void settings_parser_c::parse(int argc, char *argv[]) {
             }
         }
     }
+}
+
+
+
+
+
+
+
+console_argument_parser_c::console_argument_parser_c(const parser_t &parser) {}
+bool console_argument_parser_c::parse(abstract_settings_parser_c &parser_object) {
+    if (process_argument(parser_object.get_next_argument()) == argument_error_state) {
+        return false;
+    }
+    while (process_value(parser_object.get_next_argument()) == argument_started_state);
+    return last_state == argument_ok_state;
+}
+console_argument_parser_c::parsing_state_e console_argument_parser_c::process_argument(const char *argument) {
+    //check if in the dictionary
+    if (!argument) {
+        return last_state = argument_error_state;
+    }
+    std::vector<std::string> dividers;
+    std::string s = argument;
+    std::string left, right;
+    size_t length = s.length();
+    size_t divider_length = 0;
+    dividers.push_back("=");
+    dividers.push_back(":");
+    for (auto i = dividers.begin(); i != dividers.end(); i++) {
+        size_t pos = s.find(*i);
+        length = min_def(length, pos);
+        if (length == pos) {
+            divider_length = max_def(divider_length, (*i).length());
+        }
+    }
+    left = s.substr(0, length);
+    //check left
+    last_state = argument_started_state;
+    if (length < s.length()) {
+        right = s.substr(length + divider_length, s.length() - length - divider_length - 1);
+        return process_value(right.c_str());
+    }
+    return last_state;
+}
+console_argument_parser_c::parsing_state_e console_argument_parser_c::process_value(const char *argument) {
+    if (last_state == argument_ok_state) {
+        return last_state;
+    }
+    if (!argument) {
+        return last_state = argument_error_state;
+    }
+    return last_state;
+}
+void console_argument_parser_c::invoke(abstract_settings_parser_c &parser_object) {
+}
+std::string console_argument_parser_c::help() { return ""; }
+
+
+
+environment_variable_parser_c::environment_variable_parser_c(const parser_t &parser){}
+environment_variable_parser_c::environment_variable_parser_c(std::vector<environment_desc_t> dictionary) {
+    for (auto item = dictionary.begin(); item != dictionary.end(); item++) {
+        if (exists_environment_variable((*item).name)) {
+            values[(*item).type] = get_environment_variable((*item).name);
+        }
+    }
+}
+bool environment_variable_parser_c::exists_environment_variable(char *variable) {
+    last_variable_name = variable;
+    return GetEnvironmentVariable(variable, buffer, sizeof(buffer));
+}
+std::string environment_variable_parser_c::get_environment_variable(char *variable) {
+    if (last_variable_name != variable) {
+        GetEnvironmentVariable(variable, buffer, sizeof(buffer));
+    }
+    return buffer;
+}
+bool environment_variable_parser_c::invoke_initialization(abstract_settings_parser_c &parser_object){
+    return true;
 }
