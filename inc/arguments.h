@@ -44,6 +44,7 @@ public:
     compact_list_c();
     compact_list_c(int dummy_value, ...);
     size_t size() const;
+    std::vector<std::string> vector() const;
     std::string operator[] (size_t index);
 };
 
@@ -76,12 +77,19 @@ struct parser_constructor_t {
 };
 
 
-struct console_parser_settings_t {
+struct console_argument_parser_settings_t {
     compact_list_c dividers;
 };
 
-struct console_argument_c {
+enum console_argument_kind_t {
+    console_argument_none,
+    console_argument_required,
+    console_argument_optional,
+    console_argument_list,
+};
+struct console_argument_t {
     argument_type_t type;
+    console_argument_kind_t kind;
     compact_list_c arguments;
     on_error_behavior_e on_error_behavior;
     on_repeat_behavior_e on_repeat_behavior;
@@ -166,20 +174,28 @@ public:
     template<typename T> static abstract_parser_c *create_parser(const parser_t &value) {
         return new T(value);
     }
+
     void register_dictionaries(dictionary_t *dictionaries);
     void register_dictionary(const dictionary_t &dictionary);
     void register_parsers(parser_t *parsers);
+    void register_constructors(parser_constructor_t *parser_constructors);
+
+
     void clear_dictionaries();
     void enable_dictionary(const std::string &name);
-    void register_constructors(parser_constructor_t *parser_constructors);
+
     int current_position();
     void fetch_current_position();
     void restore_position();
-    bool system_parse();
     size_t saved_count();
-    char *get_next_argument();
+
     void save_current_position(abstract_parser_c *associated_parser);
     abstract_parser_c *pop_saved_parser();
+
+    void set_value(argument_type_t argument, const std::string &value);
+
+    char *get_next_argument();
+
     void parse(int argc, char *argv[]);
 };
 
@@ -218,8 +234,10 @@ private:
     };
     std::string argument;
     std::string value;
-    char *argument_name;
+    argument_type_t argument_name;
     parsing_state_e last_state;
+    std::vector<std::string> dividers;
+    std::map<std::string, console_argument_t> symbol_table;
 public:
     console_argument_parser_c(const parser_t &parser);
     virtual bool parse(abstract_settings_parser_c &parser_object);
@@ -238,7 +256,7 @@ class environment_variable_parser_c : public abstract_parser_c {
 protected:
     std::map<argument_type_t, std::string> values;
     std::string last_variable_name;
-    static char buffer[4096];
+    char buffer[4096];
 public:
     environment_variable_parser_c(const parser_t &parser);
     environment_variable_parser_c(std::vector<environment_desc_t> dictionary);
@@ -256,25 +274,28 @@ public:
 
 
 
-const console_parser_settings_t default_console_parser_settings = {
+const console_argument_parser_settings_t default_console_parser_settings = {
     c_lst("=")
 };
-const console_parser_settings_t spawner_console_parser_settings = {
+const console_argument_parser_settings_t spawner_console_parser_settings = {
     c_lst(":")
 };
-const console_argument_c system_arguments[] = {
+const console_argument_t system_arguments[] = {
     {
         sp_output_stream,
+        console_argument_required,
         c_lst(short_arg("o"), long_arg("out")),
         default_behavior
     },
     {
         sp_input_stream,
+        console_argument_required,
         c_lst(short_arg("i"), long_arg("in")),
         default_behavior
     },
     {
         sp_error_stream,
+        console_argument_required,
         c_lst(short_arg("e"), long_arg("err")),
         default_behavior
     },
@@ -315,7 +336,7 @@ static dictionary_t c_dictionaries[] = {
     }
 };
 
-const parser_constructor_t parser_constructors[] = {
+static parser_constructor_t c_parser_constructors[] = {
     {
         sp_console_parser,
         PARSER_CONSTRUCTOR(console_argument_parser_c)

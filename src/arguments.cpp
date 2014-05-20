@@ -17,13 +17,19 @@ compact_list_c::compact_list_c(int dummy_value, ...) {
 size_t compact_list_c::size() const {
     return items.size();
 }
+std::vector<std::string> compact_list_c::vector() const {
+    return items;
+}
 std::string compact_list_c::operator[] (size_t index) {
     return items[index];
 }
 
 
 void settings_parser_c::add_parser(const std::string &parser) {
-    if (registered_parser_constructors.find(registered_parsers[parser].type) != registered_parser_constructors.end()) {
+    if (registered_parsers[parser].type && 
+        registered_parser_constructors.find(registered_parsers[parser].type) != registered_parser_constructors.end() &&
+        registered_parser_constructors[registered_parsers[parser].type].constructor
+    ) {
         parsers.push_back((registered_parser_constructors[registered_parsers[parser].type].constructor)(registered_parsers[parser]));
     }
 }
@@ -39,7 +45,12 @@ void settings_parser_c::rebuild_parsers() {
     }
 }
 
-settings_parser_c::settings_parser_c() : position(0) {}
+settings_parser_c::settings_parser_c() : position(0) {
+    register_dictionaries(c_dictionaries);
+    register_parsers(c_parsers);
+    register_constructors(c_parser_constructors);
+    enable_dictionary("system");
+}
 
 void settings_parser_c::register_dictionaries(dictionary_t *dictionaries) {
     while (dictionaries && dictionaries->name) {
@@ -65,7 +76,10 @@ void settings_parser_c::enable_dictionary(const std::string &name) {
     }
 }
 void settings_parser_c::register_constructors(parser_constructor_t *parser_constructors) {
-
+    while (parser_constructors && parser_constructors->type) {
+        registered_parser_constructors[parser_constructors->type] = *parser_constructors;
+        parser_constructors++;
+    }
 }
 
 int settings_parser_c::current_position() {
@@ -77,9 +91,6 @@ void settings_parser_c::fetch_current_position() {
 void settings_parser_c::restore_position() {
     position = fetched_position;
 }
-bool settings_parser_c::system_parse() {
-    return false;
-}
 size_t settings_parser_c::saved_count() {
     return saved_positions.size();
 }
@@ -87,7 +98,7 @@ char *settings_parser_c::get_next_argument() {
     if (position >= arg_c) {
         return NULL;
     }
-    return arg_v[position];
+    return arg_v[position++];
 }
 void settings_parser_c::save_current_position(abstract_parser_c *associated_parser) {
     saved_positions.push_back(std::pair<int, abstract_parser_c*>(current_position(), associated_parser));
@@ -99,6 +110,9 @@ abstract_parser_c *settings_parser_c::pop_saved_parser() {
     return value.second;
 }
 
+void settings_parser_c::set_value(argument_type_t argument, const std::string &value) {
+    return;
+}
 
 void settings_parser_c::parse(int argc, char *argv[]) {
     arg_c = argc;
@@ -137,7 +151,17 @@ void settings_parser_c::parse(int argc, char *argv[]) {
 
 
 
-console_argument_parser_c::console_argument_parser_c(const parser_t &parser) {}
+console_argument_parser_c::console_argument_parser_c(const parser_t &parser) {
+    const console_argument_parser_settings_t *settings = (console_argument_parser_settings_t*)parser.settings;
+    dividers = settings->dividers.vector();
+    console_argument_t *items = (console_argument_t*)parser.items;
+    while (items && items->type) {
+        for (size_t i = 0; i < items->arguments.size(); ++i) {
+            symbol_table[items->arguments[i]] = *items;
+        }
+        items++;
+    }
+}
 bool console_argument_parser_c::parse(abstract_settings_parser_c &parser_object) {
     if (process_argument(parser_object.get_next_argument()) == argument_error_state) {
         return false;
@@ -150,13 +174,10 @@ console_argument_parser_c::parsing_state_e console_argument_parser_c::process_ar
     if (!argument) {
         return last_state = argument_error_state;
     }
-    std::vector<std::string> dividers;
     std::string s = argument;
     std::string left, right;
     size_t length = s.length();
     size_t divider_length = 0;
-    dividers.push_back("=");
-    dividers.push_back(":");
     for (auto i = dividers.begin(); i != dividers.end(); i++) {
         size_t pos = s.find(*i);
         length = min_def(length, pos);
@@ -166,9 +187,13 @@ console_argument_parser_c::parsing_state_e console_argument_parser_c::process_ar
     }
     left = s.substr(0, length);
     //check left
+    if (symbol_table.find(left) == symbol_table.end()) {
+        return argument_error_state;
+    }
+    argument_name = symbol_table[left].type;
     last_state = argument_started_state;
     if (length < s.length()) {
-        right = s.substr(length + divider_length, s.length() - length - divider_length - 1);
+        right = s.substr(length + divider_length, s.length() - length - divider_length);
         return process_value(right.c_str());
     }
     return last_state;
@@ -180,9 +205,12 @@ console_argument_parser_c::parsing_state_e console_argument_parser_c::process_va
     if (!argument) {
         return last_state = argument_error_state;
     }
+    value = argument;
+    last_state = argument_ok_state;
     return last_state;
 }
 void console_argument_parser_c::invoke(abstract_settings_parser_c &parser_object) {
+    ((settings_parser_c&)parser_object).set_value(argument_name, value);
 }
 std::string console_argument_parser_c::help() { return ""; }
 
