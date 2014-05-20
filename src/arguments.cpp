@@ -114,6 +114,10 @@ void settings_parser_c::set_value(argument_type_t argument, const std::string &v
     return;
 }
 
+void settings_parser_c::set_init_value(argument_type_t argument, const std::string &value) {
+    return;
+}
+
 void settings_parser_c::parse(int argc, char *argv[]) {
     arg_c = argc;
     arg_v = argv;
@@ -216,24 +220,31 @@ std::string console_argument_parser_c::help() { return ""; }
 
 
 
-environment_variable_parser_c::environment_variable_parser_c(const parser_t &parser){}
-environment_variable_parser_c::environment_variable_parser_c(std::vector<environment_desc_t> dictionary) {
-    for (auto item = dictionary.begin(); item != dictionary.end(); item++) {
-        if (exists_environment_variable((*item).name)) {
-            values[(*item).type] = get_environment_variable((*item).name);
+environment_variable_parser_c::environment_variable_parser_c(const parser_t &parser) {
+    environment_argument_t *items = (environment_argument_t*)parser.items;
+    while (items && items->type) {
+        for (int i = 0; i < items->names.size(); ++i) {
+            if (exists_environment_variable(items->names[i])) {
+                values[items->type] = get_environment_variable(items->names[i]);
+            }
         }
+        items++;
     }
 }
-bool environment_variable_parser_c::exists_environment_variable(char *variable) {
+
+bool environment_variable_parser_c::exists_environment_variable(const std::string &variable) {
     last_variable_name = variable;
-    return GetEnvironmentVariable(variable, buffer, sizeof(buffer));
+    return GetEnvironmentVariable(variable.c_str(), buffer, sizeof(buffer));
 }
-std::string environment_variable_parser_c::get_environment_variable(char *variable) {
+std::string environment_variable_parser_c::get_environment_variable(const std::string &variable) {
     if (last_variable_name != variable) {
-        GetEnvironmentVariable(variable, buffer, sizeof(buffer));
+        GetEnvironmentVariable(variable.c_str(), buffer, sizeof(buffer));
     }
     return buffer;
 }
-bool environment_variable_parser_c::invoke_initialization(abstract_settings_parser_c &parser_object){
+bool environment_variable_parser_c::invoke_initialization(abstract_settings_parser_c &parser_object) {
+    for (auto i = values.begin(); i != values.end(); i++) {
+        parser_object.set_init_value((*i).first, (*i).second);
+    }
     return true;
 }

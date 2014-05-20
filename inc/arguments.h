@@ -18,6 +18,8 @@ const argument_type_t sp_output_stream          = "output_stream";
 const argument_type_t sp_input_stream           = "intput_stream";
 const argument_type_t sp_error_stream           = "error_stream";
 
+const argument_type_t sp_test                   = "test";
+
 const argument_type_t sp_end                    = NULL;
 const argument_type_t sp_reserved               = NULL;
 
@@ -53,6 +55,8 @@ public:
 class abstract_settings_parser_c {
 public:
     virtual char *get_next_argument() = 0;
+    virtual void set_value(argument_type_t argument, const std::string &value) = 0;
+    virtual void set_init_value(argument_type_t argument, const std::string &value) = 0;
 };
 
 class abstract_parser_c {
@@ -93,6 +97,11 @@ struct console_argument_t {
     compact_list_c arguments;
     on_error_behavior_e on_error_behavior;
     on_repeat_behavior_e on_repeat_behavior;
+};
+
+struct environment_argument_t {
+    argument_type_t type;
+    compact_list_c names;
 };
 
 #define default_behavior on_error_die, on_repeat_replace
@@ -192,7 +201,8 @@ public:
     void save_current_position(abstract_parser_c *associated_parser);
     abstract_parser_c *pop_saved_parser();
 
-    void set_value(argument_type_t argument, const std::string &value);
+    virtual void set_value(argument_type_t argument, const std::string &value);
+    virtual void set_init_value(argument_type_t argument, const std::string &value);
 
     char *get_next_argument();
 
@@ -247,21 +257,15 @@ public:
     virtual std::string help();
 };
 
-struct environment_desc_t {
-    char *name;
-    argument_type_t type;
-};
-
 class environment_variable_parser_c : public abstract_parser_c {
 protected:
     std::map<argument_type_t, std::string> values;
     std::string last_variable_name;
     char buffer[4096];
+    bool exists_environment_variable(const std::string &variable);
+    std::string get_environment_variable(const std::string &variable);
 public:
     environment_variable_parser_c(const parser_t &parser);
-    environment_variable_parser_c(std::vector<environment_desc_t> dictionary);
-    bool exists_environment_variable(char *variable);
-    std::string get_environment_variable(char *variable);
     virtual bool invoke_initialization(abstract_settings_parser_c &parser_object);
 };
 
@@ -281,6 +285,12 @@ const console_argument_parser_settings_t spawner_console_parser_settings = {
     c_lst(":")
 };
 const console_argument_t system_arguments[] = {
+    {
+        sp_test,
+        console_argument_required,
+        c_lst(short_arg("t"), long_arg("test")),
+        default_behavior
+    },
     {
         sp_output_stream,
         console_argument_required,
@@ -304,6 +314,16 @@ const console_argument_t system_arguments[] = {
     }
 };
 
+static environment_argument_t system_environment[] = {
+    {
+        sp_test,
+        c_lst("SP_TEST")
+    },
+    {
+        NULL
+    }
+};
+
 static parser_t c_parsers[] = {
     {
         "system",
@@ -313,7 +333,9 @@ static parser_t c_parsers[] = {
     },
     {
         "system_environment",
-        NULL
+        NULL,
+        (void*)&system_environment,
+        sp_environment_parser
     },
     {
         "system_json",
