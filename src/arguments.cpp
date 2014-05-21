@@ -111,10 +111,15 @@ abstract_parser_c *settings_parser_c::pop_saved_parser() {
 }
 
 void settings_parser_c::set_value(argument_type_t argument, const std::string &value) {
+    if (!current_task && !object["tasks"].size()) {
+        current_task = &object["tasks"].append(Json::Value(Json::objectValue));
+    }
+    /**/object["tasks"][object["tasks"].size() - 1]/*/(*current_task)*/[(std::string)argument] = value;// use current task instead
     return;
 }
 
 void settings_parser_c::set_init_value(argument_type_t argument, const std::string &value) {
+    object["init_value"][(std::string)argument] = value;
     return;
 }
 
@@ -122,6 +127,10 @@ void settings_parser_c::parse(int argc, char *argv[]) {
     arg_c = argc;
     arg_v = argv;
     position = 1;
+    current_task = NULL;
+    object = Json::Value(Json::objectValue);
+    object["init_value"] = Json::Value(Json::objectValue);
+    object["tasks"] = Json::Value(Json::arrayValue);
     for (auto parser = parsers.begin(); parser != parsers.end(); parser++) {
         (*parser)->invoke_initialization(*this);
     }

@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <json/json.h>
 #include <inc/compatibility.h>
 
 #define min_def(x, y)((x)<(y)?(x):(y))
@@ -179,6 +180,7 @@ private:
     void add_parser(const std::string &parser);
     void rebuild_parsers();
 public:
+    Json::Value object, *current_task;
     settings_parser_c();
     template<typename T> static abstract_parser_c *create_parser(const parser_t &value) {
         return new T(value);
