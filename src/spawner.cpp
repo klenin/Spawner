@@ -50,7 +50,7 @@ void spawner_c::init_options_from_arguments(options_class &options, const argume
         options.hide_report = true;
     }
     if (argument_set.argument_exists(SP_HIDE_OUTPUT)) {
-        options.hide_output = true;
+        options.hide_output = argument_set.get_argument(SP_HIDE_OUTPUT) == std::string("1");
     }
     if (argument_set.argument_exists(SP_DEBUG)) {
         options.debug = true;
@@ -123,7 +123,7 @@ runner *spawner_c::create_runner(session_class &session, const argument_set_c &a
             met_stdout = true;
         }
         if (!argument_set.get_argument(SP_OUTPUT_FILE, i).length()) {
-            met_stdout = true;
+            met_stdout = false;
             options.clear_stdoutput();
         }
 	}
