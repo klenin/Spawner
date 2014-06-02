@@ -22,11 +22,9 @@ typedef unsigned int restriction_t;
 const restriction_t restriction_no_limit = 0xffffffff;
 const restriction_t restriction_limited  = 0x00000001;
 //TODO move source to platform independent .cpp
-class restrictions_class
+struct restrictions_class
 {
-private:
     restriction_t restrictions[restriction_max];
-public:
     restrictions_class();
     void set_restriction(const restriction_kind_t &kind, const restriction_t &value);
     void set_restriction(const std::string &kind, const restriction_t &value);

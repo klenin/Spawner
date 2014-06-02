@@ -115,7 +115,11 @@ runner *spawner_c::create_runner(session_class &session, const argument_set_c &a
     init_options_from_arguments(options, argument_set);
 
     bool met_stdout = false;
-    for (uint i = 0; i < argument_set.get_argument_count(SP_OUTPUT_FILE); ++i) {
+    size_t start = argument_set.get_argument_count(SP_OUTPUT_FILE)-1;
+    if (start > argument_set.get_argument_count(SP_OUTPUT_FILE)) {
+        start = 0;
+    }
+    for (uint i = start; i < argument_set.get_argument_count(SP_OUTPUT_FILE); ++i) {
         if (!options.hide_output || argument_set.get_argument(SP_OUTPUT_FILE, i) != "std") {
             options.add_stdoutput(argument_set.get_argument(SP_OUTPUT_FILE, i));
         }
