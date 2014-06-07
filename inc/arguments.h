@@ -247,6 +247,7 @@ protected:
         argument_ok_state,
         argument_error_state,
     };
+    std::map<std::string, bool> is_flag;
     std::string argument;
     std::string value;
     argument_type_t argument_name;
@@ -255,6 +256,7 @@ protected:
     abstract_settings_parser_c *parser_object;
 public:
     console_argument_parser_c();
+    void set_flag(std::vector<std::string> &v);
     virtual bool parse(abstract_settings_parser_c &parser_object);
     virtual parsing_state_e process_argument(const char *argument);
     virtual parsing_state_e process_value(const char *argument);

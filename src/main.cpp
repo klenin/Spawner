@@ -7,83 +7,6 @@
 
 #include "arguments.h"
 
-//#include <tclap\CmdLine.h>
-//
-//
-//
-//class lambda_visitor: public TCLAP::Visitor {
-//public:
-//    std::function<void()> lambda;
-////    default_visitor(){}
-//    virtual void visit() {
-//        lambda();
-//    }
-//};
-//
-//template<typename T>// typename K>
-//class another_visitor: public TCLAP::Visitor {
-//public:
-////    default_visitor(){}
-//    another_visitor(T& val): value(val){}
-//    T &value;
-//    //K *arg;
-//    virtual void visit() {
-//        //value = arg->value();
-//    }
-//};
-//std::string tmp;
-//
-//template<unit_t u, degrees_enum d>
-//struct restriction_value_s {
-//    restriction_value_s(const std::string &s) {} 
-//    typedef TCLAP::StringLike ValueCategory;
-//    unsigned long value;
-//    restriction_value_s& operator=(const std::string &str) {
-//        value = convert(value_t(u, d), str, restriction_no_limit);
-//        return *this;
-//    }
-//    operator restriction_t() const {
-//        return value;
-//    }
-//
-//};
-//
-//class program_argument_t: public TCLAP::UnlabeledMultiArg<std::string> {
-//};
-//
-//struct bool_value_s {
-//    bool_value_s(const std::string &s) {} 
-//    typedef TCLAP::StringLike ValueCategory;
-//    bool value;
-//    bool_value_s& operator=(const std::string &str) {
-//        value = str=="1";//convert(value_t(u, d), str, restriction_no_limit);
-//        return *this;
-//    }
-//    operator restriction_t() const {
-//        return value?restriction_limited:restriction_no_limit;
-//    }
-//
-//};
-//#define ARGUMENT_VALUE(SHORT_ARG, LONG_ARG, DESC, REQ, DEFAULT, TYPE_VAL, VALUE, ...) do {\
-//    auto *visitor = new lambda_visitor();\
-//    auto *test_arg = new TCLAP::ValueArg<TYPE_VAL>(SHORT_ARG, LONG_ARG, DESC, REQ, DEFAULT, DESC, cmd, visitor);\
-//    visitor->lambda = [test_arg, this, __VA_ARGS__]() {\
-//        try {\
-//            /**/VALUE = test_arg->getValue();/**/\
-//        } catch (...) {\
-//            /*exception in smth*/\
-//        }\
-//    };\
-//} while (0)
-//
-//#define ARGUMENT_VALUE1(SHORT_ARG, LONG_ARG, DESC, REQ, DEFAULT, VALUE) do {\
-//    auto *visitor = new another_visitor(VALUE);\
-//    auto *test_arg = new TCLAP::ValueArg<std::string>(SHORT_ARG, LONG_ARG, DESC, REQ, DEFAULT, DESC, cmd, visitor);\
-//} while (0)
-//
-//typedef restriction_value_s<unit_time_second, degree_milli> milli_second;
-//typedef restriction_value_s<unit_memory_byte, degree_default> byte_value;
-
 #define NEW_CONSOLE_PARSER(PARSER) console_argument_parser_c *console_parser_##PARSER = new console_argument_parser_c
 #define NEW_ENVIRONMENT_PARSER(PARSER) environment_variable_parser_c *environment_parser_##PARSER = new environment_variable_parser_c
 #define MILLISECOND_CONVERT convert<unit_time_second, degree_milli>
@@ -92,6 +15,10 @@
 #define STRING_CONVERT
 #define ADD_CONSOLE_ARGUMENT(PARSER, ARGUMENTS, VALUE, TYPE_CONVERTER, ...) (console_parser_##PARSER->\
     add_parameter((std::vector<std::string>)ARGUMENTS, [this](std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;}))
+#define ADD_FLAG_ARGUMENT(PARSER, ARGUMENTS, VALUE, TYPE_CONVERTER, ...) do {\
+console_parser_##PARSER->add_parameter((std::vector<std::string>)ARGUMENTS, [this](std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;});\
+console_parser_##PARSER->set_flag((std::vector<std::string>)ARGUMENTS);\
+} while (0)
 #define ADD_ENVIRONMENT_ARGUMENT(PARSER, ARGUMENTS, VALUE, TYPE_CONVERTER, ...) (environment_parser_##PARSER->\
     add_parameter((std::vector<std::string>)ARGUMENTS, [this](std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;}))
 
@@ -185,20 +112,20 @@ public:
     virtual std::string help() {
         return spawner_base_c::help() + "\
 Spawner oprions:\n\
-  Argument            Environment variable     Description\n\
-    -ml:[n]             SP_MEMORY_LIMIT     Максимальный объем виртуальной памяти, выделенный процессу (в Mb).\n\
-    -tl:[n]             SP_TIME_LIMIT       Максимальное время выполнения процесса в пользовательском режиме (в сек).\n\
-    -d:[n]              SP_DEADLINE         Лимит физического времени, выделенного процессу (в сек).\n\
-    -wl:[n]             SP_WRITE_LIMIT      Максимальный объем данных, который может быть записан процессом (в Mb).\n\
-    -u:[user@domain]    SP_USER             Имя пользователя в формате: User[@Domain]\n\
-    -p:[password]       SP_PASSWORD         Пароль.\n\
-    -runas:[0|1]        SP_RUNAS            Использовать сервис RunAs для запуска процесса.\n\
-    -s:[n]              SP_SECURITY_LEVEL   Уровень безопасности. Может принимать значения 0 или 1.\n\
-    -hr:[0|1]           SP_HIDE_REPORT      Не показывать отчет.\n\
-    -ho:[0|1]           SP_HIDE_OUTPUT      Не показывать выходной поток (STDOUT) приложения.\n\
-    -sr:[file]	        SP_REPORT_FILE      Сохранить отчет в файл.\n\
-    -so:[file]	        SP_OUTPUT_FILE      Сохранить выходной поток в файл.\n\
-    -i:[file]           SP_INPUT_FILE       Получить входной поток из файла. \n";
+\t Argument            Environment variable     Description\n\
+\t-ml:[n]             SP_MEMORY_LIMIT     Максимальный объем виртуальной памяти, выделенный процессу (в Mb).\n\
+\t-tl:[n]             SP_TIME_LIMIT       Максимальное время выполнения процесса в пользовательском режиме (в сек).\n\
+\t-d:[n]              SP_DEADLINE         Лимит физического времени, выделенного процессу (в сек).\n\
+\t-wl:[n]             SP_WRITE_LIMIT      Максимальный объем данных, который может быть записан процессом (в Mb).\n\
+\t-u:[user@domain]    SP_USER             Имя пользователя в формате: User[@Domain]\n\
+\t-p:[password]       SP_PASSWORD         Пароль.\n\
+\t-runas:[0|1]        SP_RUNAS            Использовать сервис RunAs для запуска процесса.\n\
+\t-s:[n]              SP_SECURITY_LEVEL   Уровень безопасности. Может принимать значения 0 или 1.\n\
+\t-hr:[0|1]           SP_HIDE_REPORT      Не показывать отчет.\n\
+\t-ho:[0|1]           SP_HIDE_OUTPUT      Не показывать выходной поток (STDOUT) приложения.\n\
+\t-sr:[file]          SP_REPORT_FILE      Сохранить отчет в файл.\n\
+\t-so:[file]          SP_OUTPUT_FILE      Сохранить выходной поток в файл.\n\
+\t-i:[file]           SP_INPUT_FILE       Получить входной поток из файла. \n";
     }
     void init_arguments() {
     
@@ -206,22 +133,22 @@ Spawner oprions:\n\
 
         NEW_CONSOLE_PARSER(old_spawner);
         NEW_ENVIRONMENT_PARSER(old_spawner);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("tl")),   c_lst("SP_TIME_LIMIT"),     this->restrictions[restriction_user_time_limit],  MILLISECOND_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("ml")),   c_lst("SP_MEMORY_LIMIT"),   this->restrictions[restriction_memory_limit],     BYTE_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("s")),    c_lst("SP_SECURITY_LEVEL"), this->restrictions[restriction_security_limit],   BOOL_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("d")),    c_lst("SP_DEADLINE"),       this->restrictions[restriction_processor_time_limit], MILLISECOND_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("wl")),   c_lst("SP_WRITE_LIMIT"),    this->restrictions[restriction_write_limit],      BYTE_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("tl")),   c_lst("SP_TIME_LIMIT"),     restrictions[restriction_user_time_limit],  MILLISECOND_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("ml")),   c_lst("SP_MEMORY_LIMIT"),   restrictions[restriction_memory_limit],     BYTE_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("s")),    c_lst("SP_SECURITY_LEVEL"), restrictions[restriction_security_limit],   BOOL_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("d")),    c_lst("SP_DEADLINE"),       restrictions[restriction_processor_time_limit], MILLISECOND_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("wl")),   c_lst("SP_WRITE_LIMIT"),    restrictions[restriction_write_limit],      BYTE_CONVERT);
 
 
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("u")),    c_lst("SP_USER"),           this->options.login,    STRING_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("p")),    c_lst("SP_PASSWORD"),       this->options.password, STRING_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("sr")),   c_lst("SP_REPORT_FILE"),    this->report_file,      STRING_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("so")),   c_lst("SP_OUTPUT_FILE"),    this->output_file,      STRING_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("i")),    c_lst("SP_INPUT_FILE"),     this->input_file,       STRING_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("u")),    c_lst("SP_USER"),           options.login,    STRING_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("p")),    c_lst("SP_PASSWORD"),       options.password, STRING_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("sr")),   c_lst("SP_REPORT_FILE"),    report_file,      STRING_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("so")),   c_lst("SP_OUTPUT_FILE"),    output_file,      STRING_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("i")),    c_lst("SP_INPUT_FILE"),     input_file,       STRING_CONVERT);
 
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("runas")), c_lst("SP_RUNAS"),         this->runas,        BOOL_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("ho")),    c_lst("SP_HIDE_OUTPUT"),   this->hide_output,  BOOL_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("hr")),    c_lst("SP_HIDE_REPORT"),   this->hide_report,  BOOL_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("runas")), c_lst("SP_RUNAS"),         runas,        BOOL_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("ho")),    c_lst("SP_HIDE_OUTPUT"),   hide_output,  BOOL_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("hr")),    c_lst("SP_HIDE_REPORT"),   hide_report,  BOOL_CONVERT);
 
         parser.add_parser(console_parser_old_spawner);
         parser.add_parser(environment_parser_old_spawner);
@@ -246,12 +173,12 @@ void command_handler_c::add_default_parser() {
             if (!tmp) return 0 ; 
             return 1;
     });*/
-    ADD_CONSOLE_ENVIRONMENT_ARGUMENT(default_parser, c_lst(long_arg("legacy")), c_lst("SP_LEGACY"), bool tmp, this->create_spawner, if (!tmp) return 0);
-    ADD_CONSOLE_ARGUMENT(default_parser, c_lst(short_arg("h"), long_arg("help")), show_help, 1; , parser.stop());
+    ADD_CONSOLE_ENVIRONMENT_ARGUMENT(default_parser, c_lst(long_arg("legacy")), c_lst("SP_LEGACY"), bool tmp, create_spawner, if (!tmp) return 0);
+    ADD_FLAG_ARGUMENT(default_parser, c_lst(short_arg("h"), long_arg("help")), show_help, 1; , std::cout << spawner->help(); parser.stop());
     parser.add_parser(console_parser_default_parser);
     parser.add_parser(environment_parser_default_parser);
 }
-command_handler_c::command_handler_c(): spawner(NULL) {
+command_handler_c::command_handler_c(): spawner(NULL), show_help(false) {
 //    reset();
     create_spawner("sp00");
 }
@@ -282,9 +209,6 @@ void command_handler_c::add_parser(abstract_parser_c *p) {
 bool command_handler_c::parse(int argc, char *argv[]) {
 //    reset();
     parser.parse(argc, argv);
-    if (show_help && spawner) {
-        std::cout << spawner->help();
-    }
     return true;
 }
 

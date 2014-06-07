@@ -176,7 +176,7 @@ void settings_parser_c::parse(int argc, char *argv[]) {
                 //parse_program//until separator detected
             } else {
                 //unknown_argument
-                //throw
+                throw "";
             }
         }
     }
@@ -189,14 +189,6 @@ void settings_parser_c::parse(int argc, char *argv[]) {
 
 
 console_argument_parser_c::console_argument_parser_c() {
-    /*const console_argument_parser_settings_t *settings = (console_argument_parser_settings_t*)parser.settings;
-    console_argument_t *items = (console_argument_t*)parser.items;
-    while (items && items->type) {
-        for (size_t i = 0; i < items->arguments.size(); ++i) {
-            symbol_table[items->arguments[i]] = *items;
-        }
-        items++;
-    }*/
 }
 bool console_argument_parser_c::parse(abstract_settings_parser_c &parser_object) {
     console_argument_parser_c::parser_object = &parser_object;
@@ -209,6 +201,11 @@ bool console_argument_parser_c::parse(abstract_settings_parser_c &parser_object)
     }
     return last_state == argument_ok_state;
 }
+void console_argument_parser_c::set_flag(std::vector<std::string> &v) {
+    for (auto i = v.begin(); i != v.end(); i++) {
+        is_flag[*i] = true;
+    }
+}
 console_argument_parser_c::parsing_state_e console_argument_parser_c::process_argument(const char *argument) {
     //check if in the dictionary
     if (!argument) {
@@ -216,6 +213,12 @@ console_argument_parser_c::parsing_state_e console_argument_parser_c::process_ar
     }
     std::string s = argument;
     std::string left, right;
+    if (is_flag.find(std::string(argument)) != is_flag.end()) {
+        value = "1";
+        callback = parameters[argument];
+        last_state = argument_ok_state;
+        return last_state;
+    }
     size_t length = s.length();
     size_t divider_length = 0;
     for (auto i = parser_object->dividers.begin(); i != parser_object->dividers.end(); i++) {
@@ -228,6 +231,8 @@ console_argument_parser_c::parsing_state_e console_argument_parser_c::process_ar
     left = s.substr(0, length);
     //check left
     if (parameters.find(left) == parameters.end()) {
+        return argument_error_state;
+    } else if (is_flag.find(left) != is_flag.end()) {
         return argument_error_state;
     }
     callback = parameters[left];
@@ -260,15 +265,6 @@ std::string console_argument_parser_c::help() { return ""; }
 
 
 environment_variable_parser_c::environment_variable_parser_c() {
-    /*environment_argument_t *items = (environment_argument_t*)parser.items;
-    while (items && items->type) {
-        for (int i = 0; i < items->names.size(); ++i) {
-            if (exists_environment_variable(items->names[i])) {
-                values[items->type] = get_environment_variable(items->names[i]);
-            }
-        }
-        items++;
-    }*/
 }
 
 bool environment_variable_parser_c::exists_environment_variable(const std::string &variable) {
