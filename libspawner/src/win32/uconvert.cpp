@@ -19,7 +19,7 @@ struct degree_description
 const degree_description degree_descriptions[] = {
     {degree_default,"",         ""},
     {degree_deca,   "deca",     "da"},
-    {degree_hecto,  "hecto",    "h"},
+    //{degree_hecto,  "hecto",    "h"},
     {degree_kilo,   "kilo",     "k"},
     {degree_mega,   "mega",     "M"},
     {degree_giga,   "giga",     "G"},
@@ -52,7 +52,7 @@ const unit_description unit_descriptions[] = {
     {unit_time_day,     "Day",      "d",    86400.0},
 };
 const unsigned int units_count = 7;
-const unsigned int degrees_count = 15;
+const unsigned int degrees_count = 14;
 
 value_t::value_t( const unit_t &unit_type, const degrees_enum &degree_type ) :unit_type(unit_type), degree_type(degree_type)
 {
@@ -219,13 +219,24 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
                 break;
             index = old_index;
         }
-        if (degree_index < degrees_count)
+        if (v.length() == 1) {
+            if (degree_index == degrees_count && unit_index != units_count) {
+                degree_index = 0;
+            } else if (degree_index != degrees_count && unit_index == units_count) {
+                from.unit_type = to.unit_type;
+                unit_index = get_unit_index(from.unit_type);
+            }
+        }
+        if (degree_index < degrees_count) {
             from.degree_type = degree_descriptions[degree_index].type;
-        if (unit_index < units_count)
+        }
+        if (unit_index < units_count) {
             from.unit_type = unit_descriptions[unit_index].type;
+        }
         if (!((to.unit_type & from.unit_type) & unit_memory || (to.unit_type & from.unit_type) & unit_time) ||
-            unit_index == units_count || degree_index == degrees_count)
+            unit_index == units_count || degree_index == degrees_count) {
             return default_value;
+        }
     }
 
 

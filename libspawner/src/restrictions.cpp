@@ -37,6 +37,10 @@ restriction_t restrictions_class::get_restriction(const restriction_kind_t &kind
     return restrictions[kind];
 }
 
+restriction_t &restrictions_class::operator[](const restriction_kind_t &kind) {
+    return restrictions[kind];
+}
+
 restriction_kind_t restrictions_class::restriction_by_name(const std::string &name) {
     std::string str = name;
     std::transform(str.begin(), str.end(),str.begin(), ::toupper);

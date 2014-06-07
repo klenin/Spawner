@@ -7,9 +7,11 @@
 #include <vector>
 #include <json/json.h>
 #include <inc/compatibility.h>
-
+#include <functional>
 #define min_def(x, y)((x)<(y)?(x):(y))
 #define max_def(x, y)((x)>(y)?(x):(y))
+
+#define ARGUMENT() 
 
 typedef char *argument_type_t;
 
@@ -49,21 +51,27 @@ public:
     size_t size() const;
     std::vector<std::string> vector() const;
     std::string operator[] (size_t index);
+    operator std::vector<std::string>() const;
 };
 
 #define c_lst(...) compact_list_c(0, ##__VA_ARGS__, NULL)
 
 class abstract_settings_parser_c {
 public:
+    std::vector<std::string> dividers;
     virtual char *get_next_argument() = 0;
-    virtual void set_value(argument_type_t argument, const std::string &value) = 0;
-    virtual void set_init_value(argument_type_t argument, const std::string &value) = 0;
+//    virtual void set_value(argument_type_t argument, const std::string &value) = 0;
+//    virtual void set_init_value(argument_type_t argument, const std::string &value) = 0;
 };
 
 class abstract_parser_c {
+protected:
+    std::map<std::string, std::function<bool(std::string&)> > parameters;
+    std::function<bool(std::string&)> callback;
 public:
     //abstract_parser_c(const parser_t &parser){}
     virtual bool invoke_initialization(abstract_settings_parser_c &parser_object){return false;} //init settings for parser object
+    virtual void add_parameter(std::vector<std::string> &params, std::function<bool(std::string)> callback);
     virtual bool parse(abstract_settings_parser_c &parser_object) {return false;}
     virtual void invoke(abstract_settings_parser_c &parser_object) {}
     virtual std::string help() { return ""; }
@@ -166,45 +174,40 @@ class settings_parser_c: public abstract_settings_parser_c {
 private:
     int position;
     int fetched_position;
-    std::map<std::string, parser_constructor_t> registered_parser_constructors;
-    std::map<std::string, dictionary_t> registered_dictionaries;
-    std::map<std::string, parser_t> registered_parsers;
+    bool stopped;
+    //std::map<std::string, parser_t> registered_parsers;
 
-    std::map<std::string, bool> enabled_dictionaries;
+    //std::map<std::string, bool> enabled_dictionaries;
 
     std::vector<std::pair<int, abstract_parser_c*> > saved_positions;
     std::vector<abstract_parser_c*> parsers;
     int arg_c;
     char **arg_v;
     //std::vector<int> system_parsers;
-    void add_parser(const std::string &parser);
-    void rebuild_parsers();
+    //void rebuild_parsers();
 public:
-    Json::Value object, *current_task;
+    //Json::Value object, *current_task;
     settings_parser_c();
-    template<typename T> static abstract_parser_c *create_parser(const parser_t &value) {
+    ~settings_parser_c();
+    /*template<typename T> static abstract_parser_c *create_parser(const parser_t &value) {
         return new T(value);
-    }
+    }*/
 
-    void register_dictionaries(dictionary_t *dictionaries);
-    void register_dictionary(const dictionary_t &dictionary);
-    void register_parsers(parser_t *parsers);
-    void register_constructors(parser_constructor_t *parser_constructors);
+    void add_parser(abstract_parser_c *parser);
+    void set_dividers(std::vector<std::string> &d);
 
+    void clear_parsers();
 
-    void clear_dictionaries();
-    void enable_dictionary(const std::string &name);
+    //void register_constructors(parser_constructor_t *parser_constructors);
 
     int current_position();
     void fetch_current_position();
     void restore_position();
     size_t saved_count();
+    void stop();
 
     void save_current_position(abstract_parser_c *associated_parser);
     abstract_parser_c *pop_saved_parser();
-
-    virtual void set_value(argument_type_t argument, const std::string &value);
-    virtual void set_init_value(argument_type_t argument, const std::string &value);
 
     char *get_next_argument();
 
@@ -234,11 +237,11 @@ struct argument_t {
     //&argument_parser::set_value<output_stream_value_c>,
 
 
-
+typedef 
 
 
 class console_argument_parser_c : public abstract_parser_c {
-private:
+protected:
     enum parsing_state_e {
         argument_started_state,
         argument_ok_state,
@@ -248,10 +251,10 @@ private:
     std::string value;
     argument_type_t argument_name;
     parsing_state_e last_state;
-    std::vector<std::string> dividers;
     std::map<std::string, console_argument_t> symbol_table;
+    abstract_settings_parser_c *parser_object;
 public:
-    console_argument_parser_c(const parser_t &parser);
+    console_argument_parser_c();
     virtual bool parse(abstract_settings_parser_c &parser_object);
     virtual parsing_state_e process_argument(const char *argument);
     virtual parsing_state_e process_value(const char *argument);
@@ -267,7 +270,7 @@ protected:
     bool exists_environment_variable(const std::string &variable);
     std::string get_environment_variable(const std::string &variable);
 public:
-    environment_variable_parser_c(const parser_t &parser);
+    environment_variable_parser_c();
     virtual bool invoke_initialization(abstract_settings_parser_c &parser_object);
 };
 
@@ -280,7 +283,7 @@ public:
 
 
 
-const console_argument_parser_settings_t default_console_parser_settings = {
+/* console_argument_parser_settings_t default_console_parser_settings = {
     c_lst("=")
 };
 const console_argument_parser_settings_t spawner_console_parser_settings = {
@@ -372,6 +375,6 @@ static parser_constructor_t c_parser_constructors[] = {
     {
         NULL
     }
-};
+*/
 
 #endif//_SPAWNER_ARGUMENTS_
