@@ -19,7 +19,7 @@ struct degree_description
 const degree_description degree_descriptions[] = {
     {degree_default,"",         ""},
     {degree_deca,   "deca",     "da"},
-    //{degree_hecto,  "hecto",    "h"},
+    {degree_hecto,  "percent",  "%"},
     {degree_kilo,   "kilo",     "k"},
     {degree_mega,   "mega",     "M"},
     {degree_giga,   "giga",     "G"},
@@ -52,7 +52,7 @@ const unit_description unit_descriptions[] = {
     {unit_time_day,     "Day",      "d",    86400.0},
 };
 const unsigned int units_count = 7;
-const unsigned int degrees_count = 14;
+const unsigned int degrees_count = 15;
 
 value_t::value_t( const unit_t &unit_type, const degrees_enum &degree_type ) :unit_type(unit_type), degree_type(degree_type)
 {

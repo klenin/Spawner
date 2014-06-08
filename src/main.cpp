@@ -11,6 +11,7 @@
 #define NEW_ENVIRONMENT_PARSER(PARSER) environment_variable_parser_c *environment_parser_##PARSER = new environment_variable_parser_c
 #define MILLISECOND_CONVERT convert<unit_time_second, degree_milli>
 #define BYTE_CONVERT convert<unit_memory_byte, degree_default>
+#define PERCENT_CONVERT convert<unit_no_unit, degree_m4>
 #define BOOL_CONVERT convert_bool
 #define STRING_CONVERT
 #define ADD_CONSOLE_ARGUMENT(PARSER, ARGUMENTS, VALUE, TYPE_CONVERTER, ...) (console_parser_##PARSER->\
@@ -29,12 +30,38 @@ console_parser_##PARSER->set_flag((std::vector<std::string>)ARGUMENTS);\
 
 
 class spawner_base_c {
+protected:
+    output_buffer_class *create_output_buffer(const std::string &name, const pipes_t &pipe_type, const size_t buffer_size) {
+	    output_buffer_class *output_buffer = NULL;
+	    if (name == "std") {
+            unsigned int color = FOREGROUND_BLUE | FOREGROUND_GREEN;
+            if (pipe_type == STD_ERROR_PIPE) {
+                color = FOREGROUND_RED | FOREGROUND_INTENSITY;
+            }
+		    output_buffer = new output_stdout_buffer_class(4096, color);
+        } else if (name[0] == '*') {
+	    } else if (name.length()) {
+		    output_buffer = new output_file_buffer_class(name, 4096);
+	    }
+        return output_buffer;
+    }
+    input_buffer_class *create_input_buffer(const std::string &name, const size_t buffer_size) {
+        input_buffer_class *input_buffer = NULL;
+        if (name == "std") {
+            input_buffer = new input_stdin_buffer_class(4096);
+        } else if (name[0] == '*') {
+        } else if (name.length()) {
+            input_buffer = new input_file_buffer_class(name, 4096);
+        }
+        return input_buffer;
+    }
 public:
     spawner_base_c(){}
     virtual void run(int argc, char *argv[]){}
     virtual std::string help() {
         return "Usage:\n\t--legacy=<sp99|sp00|pcms2>\n";
     }
+    virtual void init_arguments(){}
 };
 
 
@@ -67,6 +94,7 @@ restriction_t convert_bool(const std::string &str) {
 }
 
 class spawner_old_c: public spawner_base_c {
+protected:
     restrictions_class restrictions;
     options_class options;
     bool hide_report;
@@ -75,43 +103,19 @@ class spawner_old_c: public spawner_base_c {
     settings_parser_c &parser;
     std::string report_file;
     std::string output_file;
+    std::string error_file;
     std::string input_file;
     //std::string program;
 
-    output_buffer_class *create_output_buffer(const std::string &name, const pipes_t &pipe_type, const size_t buffer_size) {
-	    output_buffer_class *output_buffer = NULL;
-	    if (name == "std") {
-            unsigned int color = FOREGROUND_BLUE | FOREGROUND_GREEN;
-            if (pipe_type == STD_ERROR_PIPE) {
-                color = FOREGROUND_RED | FOREGROUND_INTENSITY;
-            }
-		    output_buffer = new output_stdout_buffer_class(4096, color);
-        } else if (name[0] == '*') {
-	    } else if (name.length()) {
-		    output_buffer = new output_file_buffer_class(name, 4096);
-	    }
-        return output_buffer;
-    }
-    input_buffer_class *create_input_buffer(const std::string &name, const size_t buffer_size) {
-        input_buffer_class *input_buffer = NULL;
-        if (name == "std") {
-            input_buffer = new input_stdin_buffer_class(4096);
-        } else if (name[0] == '*') {
-        } else if (name.length()) {
-            input_buffer = new input_file_buffer_class(name, 4096);
-        }
-        return input_buffer;
-    }
 public:
     spawner_old_c(settings_parser_c &parser): parser(parser), spawner_base_c(), options(session_class::base_session), hide_report(false), hide_output(false), runas(false) {
-        init_arguments();
     }
     virtual void run(int argc, char *argv[]) {
 
     }
     virtual std::string help() {
         return spawner_base_c::help() + "\
-Spawner oprions:\n\
+Spawner options:\n\
 \t Argument            Environment variable     Description\n\
 \t-ml:[n]             SP_MEMORY_LIMIT     Максимальный объем виртуальной памяти, выделенный процессу (в Mb).\n\
 \t-tl:[n]             SP_TIME_LIMIT       Максимальное время выполнения процесса в пользовательском режиме (в сек).\n\
@@ -127,7 +131,7 @@ Spawner oprions:\n\
 \t-so:[file]          SP_OUTPUT_FILE      Сохранить выходной поток в файл.\n\
 \t-i:[file]           SP_INPUT_FILE       Получить входной поток из файла. \n";
     }
-    void init_arguments() {
+    virtual void init_arguments() {
     
         parser.set_dividers(c_lst(":").vector());
 
@@ -155,6 +159,88 @@ Spawner oprions:\n\
     }
 };
 
+class spawner_pcms2_c: public spawner_old_c {
+public:
+    spawner_pcms2_c(settings_parser_c &parser): spawner_old_c(parser) {
+    }
+    virtual std::string help() {
+        return spawner_base_c::help() + "\
+\n\
+RUN for Windows NT, Version 3.0\n\
+Copyright(c) SPb IFMO CTD Development Team, 2000-2010, Written by Andrew Stankevich\n\
+\n\
+This program runs other program for given period of time with specified\n\
+  memory restrictions\n\
+  \n\
+Command line format:\n\
+  run [<options>] <program> [<parameters>]\n\
+Where options are:\n\
+  -h               - show this help\n\
+  -t <time-limit>  - time limit, terminate after <time-limit> seconds, you can\n\
+                     add \"ms\" (without quotes) after the number to specify\n\
+                     time limit in milliseconds\n\
+  -m <mem-limit>   - memory limit, terminate if working set of the process\n\
+                     exceeds <mem-limit> bytes, you can add K or M to specify\n\
+                     memory limit in kilo- or megabytes\n\
+  -r <req-load>    - required load of the processor for this process\n\
+                     not to be considered idle. You can add % sign to specify\n\
+                     required load in percent, default is 0.05 = 5%\n\
+  -y <idle-limit>  - ildeness limit, terminate process if it did not load\n\
+                     processor for at least <req-load> for <idleness-limit>\n\
+  -d <directory>   - make <directory> home directory for process #not implemented yet\n\
+  -l <login-name>  - create process under <login-name>\n\
+  -p <password>    - logins user using <password>\n\
+  -i <file>        - redirects standart input stream to the <file>\n\
+  -o <file>        - redirects standart output stream to the <file>\n\
+  -e <file>        - redirects standart error stream to the <file>\n\
+  -x               - return exit code of the application #not implemented yet\n\
+  -q               - do not display any information on the screen\n\
+  -w               - display program window on the screen #not implemented yet\n\
+  -1               - use single CPU/CPU core #not implemented yet\n\
+  -s <file>        - store statistics in then <file>\n\
+  -D var=value     - sets value of the environment variable, current environment\n\
+                     is completly ignored in this case #not implemented yet\n\
+Exteneded options:\n\
+  -Xacp, --allow-create-processes #not implemented yet\n\
+                   - allow the created process to create new processes\n\
+  -Xtfce, --terminate-on-first-chance-exceptions #not implemented yet\n\
+                   - do not ignore exceptions if they are marked as first-chance,\n\
+                     required for some old compilers as Borland Delphi\n\
+  -Xlegacy, -z #not implemented yet\n\
+                   - try to be compatible with old invoke.dll\n\
+Examples:\n\
+  run -t 10s -m 32M -i 10s a.exe\n\
+  run -d \"C:\My Directory\" a.exe\n\
+  run -l invoker -p password a.exe\n\
+  run -i input.txt -o output.txt -e error.txt a.exe\n";
+}
+    virtual void init_arguments() {
+    
+        parser.set_dividers(c_lst().vector());
+        hide_output = true;
+
+        NEW_CONSOLE_PARSER(old_spawner);
+        NEW_ENVIRONMENT_PARSER(old_spawner);
+        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("t")),    restrictions[restriction_user_time_limit],  MILLISECOND_CONVERT);
+        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("m")),    restrictions[restriction_memory_limit],     BYTE_CONVERT);
+        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("r")),    restrictions[restriction_load_ratio],       PERCENT_CONVERT);
+        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("y")),    restrictions[restriction_idle_time_limit],  MILLISECOND_CONVERT);
+
+        
+        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("l")),    options.login,    STRING_CONVERT);
+        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("p")),    options.password, STRING_CONVERT);
+        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("s")),    report_file,      STRING_CONVERT);
+        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("o")),    output_file,      STRING_CONVERT);
+        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("e")),    error_file,      STRING_CONVERT);
+        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("i")),    input_file,       STRING_CONVERT);
+
+        ADD_FLAG_ARGUMENT(old_spawner, c_lst(short_arg("q")),    hide_report=hide_output,  BOOL_CONVERT);
+
+        parser.add_parser(console_parser_old_spawner);
+        parser.add_parser(environment_parser_old_spawner);
+    }
+};
+
 typedef std::function<void(std::string)> callback_t;
 
 template<typename T, typename T1>
@@ -167,12 +253,6 @@ void command_handler_c::add_default_parser() {
     NEW_ENVIRONMENT_PARSER(default_parser);
     command_handler_c *self = this;
 
-    /*console_parser_default_parser->add_parameter((std::vector<std::string>)c_lst(long_arg("legacy")), 
-        [self](std::string &s) -> bool {
-            bool tmp = self->create_spawner(s);
-            if (!tmp) return 0 ; 
-            return 1;
-    });*/
     ADD_CONSOLE_ENVIRONMENT_ARGUMENT(default_parser, c_lst(long_arg("legacy")), c_lst("SP_LEGACY"), bool tmp, create_spawner, if (!tmp) return 0);
     ADD_FLAG_ARGUMENT(default_parser, c_lst(short_arg("h"), long_arg("help")), show_help, 1; , std::cout << spawner->help(); parser.stop());
     parser.add_parser(console_parser_default_parser);
@@ -197,8 +277,13 @@ spawner_base_c *command_handler_c::create_spawner(const std::string &s) {
         spawner = new spawner_old_c(this->parser);
     } else if (s == "sp00") {
         spawner = new spawner_base_c();
-        //new spawner_old_c(this->parser);
+    } else if (s == "pcms2") {
+        spawner = new spawner_pcms2_c(this->parser);
     }
+    if (spawner) {
+        spawner->init_arguments();
+    }
+
     return spawner;
 }
 void command_handler_c::add_parser(abstract_parser_c *p) {

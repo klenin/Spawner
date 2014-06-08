@@ -73,7 +73,7 @@ public:
     virtual bool invoke_initialization(abstract_settings_parser_c &parser_object){return false;} //init settings for parser object
     virtual void add_parameter(std::vector<std::string> &params, std::function<bool(std::string)> callback);
     virtual bool parse(abstract_settings_parser_c &parser_object) {return false;}
-    virtual void invoke(abstract_settings_parser_c &parser_object) {}
+    virtual bool invoke(abstract_settings_parser_c &parser_object) {return false;}
     virtual std::string help() { return ""; }
 };
 
@@ -181,10 +181,15 @@ private:
 
     std::vector<std::pair<int, abstract_parser_c*> > saved_positions;
     std::vector<abstract_parser_c*> parsers;
+    std::string separator;
+    std::string program;
+    std::vector<std::string> program_arguments;
     int arg_c;
     char **arg_v;
     //std::vector<int> system_parsers;
     //void rebuild_parsers();
+    bool is_program();
+    void parse_program();
 public:
     //Json::Value object, *current_task;
     settings_parser_c();
@@ -210,6 +215,10 @@ public:
     abstract_parser_c *pop_saved_parser();
 
     char *get_next_argument();
+    std::string get_program();
+    std::vector<std::string> get_program_arguments();
+    void set_separator(const std::string &s);
+    void reset_program();
 
     void parse(int argc, char *argv[]);
 };
@@ -260,7 +269,7 @@ public:
     virtual bool parse(abstract_settings_parser_c &parser_object);
     virtual parsing_state_e process_argument(const char *argument);
     virtual parsing_state_e process_value(const char *argument);
-    virtual void invoke(abstract_settings_parser_c &parser_object);
+    virtual bool invoke(abstract_settings_parser_c &parser_object);
     virtual std::string help();
 };
 
