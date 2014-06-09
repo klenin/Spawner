@@ -142,7 +142,16 @@ void settings_parser_c::parse(int argc, char *argv[]) {
         }
     }
 }
+size_t settings_parser_c::parsers_count() {
+    return parsers.size();
+}
 
+void settings_parser_c::pop_back() {
+    if (!parsers_count()) {
+        return;
+    }
+    parsers.pop_back();
+}
 
 
 
@@ -239,10 +248,14 @@ std::string environment_variable_parser_c::get_environment_variable(const std::s
     return buffer;
 }
 bool environment_variable_parser_c::invoke_initialization(abstract_settings_parser_c &parser_object) {
+    std::map<std::string, std::function<bool(std::string&)> > m;
     for (auto i = parameters.begin(); i != parameters.end(); i++) {
         if (exists_environment_variable(i->first)) {
-            if (!i->second(get_environment_variable(i->first))) {
-            }
+            m[i->first] = i->second;
+        }
+    }
+    for (auto i = m.begin(); i != m.end(); i++) {
+        if (!i->second(get_environment_variable(i->first))) {
         }
     }
     return true;

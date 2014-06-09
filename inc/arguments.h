@@ -221,6 +221,9 @@ public:
     void reset_program();
 
     void parse(int argc, char *argv[]);
+
+    size_t parsers_count();
+    void pop_back();
 };
 
 
