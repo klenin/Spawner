@@ -57,6 +57,7 @@ protected:
     }
 public:
     spawner_base_c(){}
+    virtual void begin_report() {}
     virtual void run(int argc, char *argv[]){}
     virtual std::string help() {
         return "Usage:\n\t--legacy=<sp99|sp00|pcms2>\n";
@@ -176,7 +177,7 @@ public:
         return true;
     }
     virtual void run() {
-
+        begin_report();
         secure_runner_instance->run_process_async();
         secure_runner_instance->wait_for();
 
@@ -227,10 +228,10 @@ Spawner options:\n\
 
         NEW_CONSOLE_PARSER(old_spawner);
         NEW_ENVIRONMENT_PARSER(old_spawner);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("tl")),   c_lst("SP_TIME_LIMIT"),     restrictions[restriction_user_time_limit],  MILLISECOND_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("tl")),   c_lst("SP_TIME_LIMIT"),     restrictions[restriction_processor_time_limit],  MILLISECOND_CONVERT);
         ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("ml")),   c_lst("SP_MEMORY_LIMIT"),   restrictions[restriction_memory_limit],     BYTE_CONVERT);
         ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("s")),    c_lst("SP_SECURITY_LEVEL"), restrictions[restriction_security_limit],   BOOL_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("d")),    c_lst("SP_DEADLINE"),       restrictions[restriction_processor_time_limit], MILLISECOND_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("d")),    c_lst("SP_DEADLINE"),       restrictions[restriction_user_time_limit], MILLISECOND_CONVERT);
         ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("wl")),   c_lst("SP_WRITE_LIMIT"),    restrictions[restriction_write_limit],      BYTE_CONVERT);
 
 
@@ -252,6 +253,13 @@ Spawner options:\n\
 class spawner_pcms2_c: public spawner_old_c {
 public:
     spawner_pcms2_c(settings_parser_c &parser): spawner_old_c(parser) {
+    }
+    virtual void begin_report() {
+        std::cout << "Running \"" << parser.get_program();
+        if (options.get_arguments_count()) {
+            std::cout << " " << options.get_arguments();
+        }
+        std::cout << "\", press ESC to terminate...\n";
     }
     virtual std::string help() {
         return spawner_base_c::help() + "\
@@ -309,26 +317,26 @@ Examples:\n\
         parser.set_dividers(c_lst().vector());
         hide_output = true;
 
-        NEW_CONSOLE_PARSER(old_spawner);
-        NEW_ENVIRONMENT_PARSER(old_spawner);
-        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("t")),    restrictions[restriction_user_time_limit],  MILLISECOND_CONVERT);
-        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("m")),    restrictions[restriction_memory_limit],     BYTE_CONVERT);
-        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("r")),    restrictions[restriction_load_ratio],       PERCENT_CONVERT);
-        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("y")),    restrictions[restriction_idle_time_limit],  MILLISECOND_CONVERT);
+        NEW_CONSOLE_PARSER(pcms2);
+        NEW_ENVIRONMENT_PARSER(pcms2);
+        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("t")),    restrictions[restriction_processor_time_limit],  MILLISECOND_CONVERT);
+        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("m")),    restrictions[restriction_memory_limit],     BYTE_CONVERT);
+        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("r")),    restrictions[restriction_load_ratio],       PERCENT_CONVERT);
+        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("y")),    restrictions[restriction_idle_time_limit],  MILLISECOND_CONVERT);
 
         
-        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("l")),    options.login,    STRING_CONVERT);
-        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("d")),    options.working_directory,    STRING_CONVERT);
-        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("p")),    options.password, STRING_CONVERT);
-        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("s")),    options.report_file,      STRING_CONVERT);
-        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("o")),    output_file,      STRING_CONVERT);
-        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("e")),    error_file,      STRING_CONVERT);
-        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(short_arg("i")),    input_file,       STRING_CONVERT);
+        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("l")),    options.login,    STRING_CONVERT);
+        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("d")),    options.working_directory,    STRING_CONVERT);
+        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("p")),    options.password, STRING_CONVERT);
+        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("s")),    options.report_file,      STRING_CONVERT);
+        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("o")),    output_file,      STRING_CONVERT);
+        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("e")),    error_file,      STRING_CONVERT);
+        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("i")),    input_file,       STRING_CONVERT);
 
-        ADD_FLAG_ARGUMENT(old_spawner, c_lst(short_arg("q")),    hide_report=hide_output,  BOOL_CONVERT);
+        ADD_FLAG_ARGUMENT(pcms2, c_lst(short_arg("q")),    hide_report=hide_output,  BOOL_CONVERT);
 
-        parser.add_parser(console_parser_old_spawner);
-        parser.add_parser(environment_parser_old_spawner);
+        parser.add_parser(console_parser_pcms2);
+        parser.add_parser(environment_parser_pcms2);
     }
     virtual void init_std_streams() {
     }

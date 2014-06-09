@@ -101,10 +101,10 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
     restrictions_class restrictions = self->restrictions;
 
-    if (restrictions.get_restriction(restriction_processor_time_limit) == restriction_no_limit &&
-        restrictions.get_restriction(restriction_user_time_limit) == restriction_no_limit &&
-        restrictions.get_restriction(restriction_write_limit) == restriction_no_limit &&
-        restrictions.get_restriction(restriction_load_ratio) == restriction_no_limit)
+    if (restrictions[restriction_processor_time_limit] == restriction_no_limit &&
+        restrictions[restriction_user_time_limit] == restriction_no_limit &&
+        restrictions[restriction_write_limit] == restriction_no_limit &&
+        restrictions[restriction_idle_time_limit] == restriction_no_limit)
         return 0;//may be comment this
 
     DWORD t;
@@ -142,7 +142,7 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);//freezed
             break;
         }
-        if ((clock() - dt)*sec_clocks > 100.0 && bai.BasicInfo.TotalUserTime.QuadPart) {
+        if ((clock() - dt)*sec_clocks > 10.0 && bai.BasicInfo.TotalUserTime.QuadPart) {
             //change to time limit
             double load_ratio = (double)(bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part)/(sec_clocks*(clock() - dt));
             rates.push_back(load_ratio);// make everything integer

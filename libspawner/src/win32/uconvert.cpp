@@ -19,7 +19,7 @@ struct degree_description
 const degree_description degree_descriptions[] = {
     {degree_default,"",         ""},
     {degree_deca,   "deca",     "da"},
-    {degree_hecto,  "percent",  "%"},
+    {degree_centi,  "percent",  "%"},
     {degree_kilo,   "kilo",     "k"},
     {degree_mega,   "mega",     "M"},
     {degree_giga,   "giga",     "G"},
@@ -178,7 +178,7 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
     std::istringstream iss(val);
     iss >> value;
 
-    int current_index = iss.tellg();
+    size_t current_index = iss.tellg();
 
     if (current_index == -1 && value == 0.0)
         return default_value;
@@ -233,7 +233,7 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
         if (unit_index < units_count) {
             from.unit_type = unit_descriptions[unit_index].type;
         }
-        if (!((to.unit_type & from.unit_type) & unit_memory || (to.unit_type & from.unit_type) & unit_time) ||
+        if (!((to.unit_type & from.unit_type) & unit_memory || (to.unit_type & from.unit_type) & unit_time || (from.unit_type == to.unit_type && from.unit_type == unit_no_unit)) ||
             unit_index == units_count || degree_index == degrees_count) {
             return default_value;
         }

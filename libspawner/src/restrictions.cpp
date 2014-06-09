@@ -22,6 +22,7 @@ restrictions_class::restrictions_class()
 {
     for (int i = 0; i < restriction_max; i++)
         restrictions[i] = restriction_no_limit;
+    restrictions[restriction_load_ratio] = 500;
 }
 
 void restrictions_class::set_restriction(const restriction_kind_t &kind, const restriction_t &value){
