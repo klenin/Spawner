@@ -41,6 +41,7 @@ void delegate_runner::create_process() {
     options.push_argument_front("--out=std");
     options.push_argument_front("--err=std");
     options.push_argument_front("--in=std");
+    options.push_argument_front("--legacy=sp00");
     //piped redirect in fact is not required(//guess in child process)
 //    create_restrictions();
     /*HANDLE job_object = CreateJobObject(NULL, NULL);
@@ -62,9 +63,12 @@ void delegate_runner::create_process() {
 
 delegate_instance_runner::delegate_instance_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions):
     secure_runner(program, options, restrictions){
+    /*output_pipe_class *out = new output_pipe_class();
+    out->add_output_buffer(new output_file_buffer_class("output.file", 4096));
+    out->add_output_buffer(new output_stdout_buffer_class(4096));
     set_pipe(STD_INPUT_PIPE, new input_pipe_class());
-    set_pipe(STD_OUTPUT_PIPE, new output_pipe_class());
-    set_pipe(STD_ERROR_PIPE, new output_pipe_class());
+    set_pipe(STD_OUTPUT_PIPE, out);
+    set_pipe(STD_ERROR_PIPE, new output_pipe_class());*/
 }
 
 bool delegate_instance_runner::create_restrictions() {
@@ -81,7 +85,7 @@ bool delegate_instance_runner::create_restrictions() {
     return true;
 }
 
-void delegate_instance_runner::requisites() {
+void delegate_instance_runner::requisites_() {
     apply_restrictions();
     if (ResumeThread(process_info.hThread) == (DWORD)-1)
     {

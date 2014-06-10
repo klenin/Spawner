@@ -26,7 +26,7 @@ class delegate_instance_runner: public secure_runner {
 protected:
     virtual bool create_restrictions();
     virtual void wait();
-    virtual void requisites();
+    virtual void requisites_();
 public:
     delegate_instance_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions);
 };

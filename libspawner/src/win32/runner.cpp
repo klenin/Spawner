@@ -86,8 +86,25 @@ bool runner::init_process_with_logon(char *cmd, const char *wd) {
     wchar_t *wwd = a2w(wd);
 
     DWORD creation_flags = CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW;
-    //wchar_t *login = a2w(options.login.c_str());
-    if ( !CreateProcessWithLogonW(login, NULL, password, 0,
+
+    HANDLE token = NULL;
+    if (!LogonUserW(login, NULL, password, LOGON32_LOGON_SERVICE, LOGON32_PROVIDER_DEFAULT, &token)) {
+        return false;
+    }
+    if (!CreateProcessAsUserW(token, wprogram, wcmd, NULL, NULL, TRUE, creation_flags, NULL, wwd, &siw, &process_info)) {
+        if (!options.use_cmd || !CreateProcessAsUserW(token, NULL, wcmd, NULL, NULL, TRUE, creation_flags, NULL, wwd, &siw, &process_info)) {
+            ReleaseMutex(main_job_object_access_mutex);
+            raise_error(*this, "CreateProcessWithLogonW");
+            delete[] login;
+            delete[] password;
+            delete[] wprogram;
+            delete[] wcmd;
+            delete[] wwd;
+            return false;
+        }
+    }
+
+    /*if ( !CreateProcessWithLogonW(login, NULL, password, 0,
         wprogram, wcmd, creation_flags,
         NULL, wwd, &siw, &process_info) )
     {
@@ -104,7 +121,7 @@ bool runner::init_process_with_logon(char *cmd, const char *wd) {
             delete[] wwd;
             return false;
         }
-    }
+    }*/
     set_allow_breakaway(true);
     ReleaseMutex(main_job_object_access_mutex);
     delete[] login;
@@ -126,7 +143,7 @@ void runner::create_process()
     ZeroMemory(&si, sizeof(si));
 
     si.cb = sizeof(si);
-    if (!options.delegated) {//#TODO fix this
+    {//if (!options.delegated) {//#TODO fix this
         si.dwFlags = STARTF_USESTDHANDLES;
         if (pipes.find(STD_OUTPUT_PIPE) != pipes.end())
             si.hStdOutput = pipes[STD_OUTPUT_PIPE]->get_pipe();

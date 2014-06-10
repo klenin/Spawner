@@ -105,7 +105,7 @@ std::vector<std::string> settings_parser_c::get_program_arguments() {
     return program_arguments;
 }
 void settings_parser_c::set_separator(const std::string &s) {
-    separator = s;
+    separator = long_arg(s);
 }
 void settings_parser_c::reset_program() {
     program = "";
