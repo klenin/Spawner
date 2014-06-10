@@ -113,8 +113,6 @@ class spawner_old_c: public spawner_base_c {
 protected:
     restrictions_class restrictions;
     options_class options;
-    bool hide_report;
-    bool hide_output;
     bool runas;
     settings_parser_c &parser;
     std::string report_file;
@@ -125,7 +123,7 @@ protected:
     //std::string program;
 
 public:
-    spawner_old_c(settings_parser_c &parser): parser(parser), spawner_base_c(), options(session_class::base_session), hide_report(false), hide_output(false), runas(false) {
+    spawner_old_c(settings_parser_c &parser): parser(parser), spawner_base_c(), options(session_class::base_session), runas(false) {
     }
     virtual void init_std_streams() {
         if (!options.hide_output) {
@@ -325,7 +323,7 @@ Examples:\n\
     virtual void init_arguments() {
     
         parser.set_dividers(c_lst("=").vector());
-        hide_output = true;
+        options.hide_output = true;
 
         NEW_CONSOLE_PARSER(pcms2);
         NEW_ENVIRONMENT_PARSER(pcms2);
@@ -357,8 +355,6 @@ class spawner_new_c: public spawner_base_c {
 protected:
     restrictions_class restrictions;
     options_class options;
-    bool hide_report;
-    bool hide_output;
     bool runas;
     settings_parser_c &parser;
     std::string report_file;
@@ -369,14 +365,11 @@ protected:
     //std::string program;
 
 public:
-    spawner_new_c(settings_parser_c &parser): parser(parser), spawner_base_c(), options(session_class::base_session), hide_report(false), hide_output(false), runas(false) {
+    spawner_new_c(settings_parser_c &parser): parser(parser), spawner_base_c(), options(session_class::base_session), runas(false) {
     }
     virtual bool init() {
         if (!parser.get_program().length()) {
             return false;
-        }
-        if (options.login.length()) {
-            options.delegated = true;
         }
         options.add_arguments(parser.get_program_arguments());
         if (options.delegated) {
@@ -488,11 +481,11 @@ Spawner options:\n\
         ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("debug")),    c_lst("SP_DEBUG"),          options.debug,        BOOL_CONVERT);
 
         ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("cmd"), long_arg("systempath")),    c_lst("SP_SYSTEM_PATH"),          options.use_cmd,        BOOL_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("d")),   c_lst("SP_DIRECTORY"),       options.working_directory,    !BOOL_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("d")),   c_lst("SP_DIRECTORY"),       options.working_directory,    STRING_CONVERT);
 
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("ho")),   c_lst("SP_HIDE_OUTPUT"),   options.hide_output, BOOL_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("hr")),   c_lst("SP_HIDE_REPORT"),   options.hide_report, BOOL_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("sw")),   c_lst("SP_SHOW_WINDOW"),   options.hide_gui,    !BOOL_CONVERT);
+        ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("ho")),   c_lst("SP_HIDE_OUTPUT"),   options.hide_output, BOOL_CONVERT);
+        ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("hr")),   c_lst("SP_HIDE_REPORT"),   options.hide_report, BOOL_CONVERT);
+        ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("sw")),   c_lst("SP_SHOW_WINDOW"),   options.hide_gui,    !BOOL_CONVERT);
 
         ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(long_arg("session")), options.session_id, STRING_CONVERT);
         ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("separator")), c_lst("SP_SEPARATOR"),   bool tmp, 1; parser.set_separator);
