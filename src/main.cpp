@@ -263,12 +263,72 @@ public:
     spawner_pcms2_c(settings_parser_c &parser): spawner_old_c(parser) {
     }
     virtual void begin_report() {
-        std::cout << "Running \"" << parser.get_program();
-        if (options.get_arguments_count()) {
-            std::cout << " " << options.get_arguments();
+        if (!options.hide_report) {
+            std::cout << "Running \"" << parser.get_program();
+            if (options.get_arguments_count()) {
+                std::cout << " " << options.get_arguments();
+            }
+            std::cout << "\", press ESC to terminate...\n";
         }
-        std::cout << "\", press ESC to terminate...\n";
     }
+    virtual void print_report() {
+        report_class rep = secure_runner_instance->get_report();
+        options_class options = secure_runner_instance->get_options();
+        if (!options.hide_report) {
+            switch (rep.terminate_reason) {
+            case terminate_reason_memory_limit:
+                std::cout << "Memory limit exceeded" << std::endl;
+                std::cout << "Program tried to allocate more than " << restrictions[restriction_memory_limit] << " bytes" << std::endl;
+                break;
+            case terminate_reason_load_ratio_limit:
+                std::cout << "Program utilized less than " << convert(value_t(unit_no_unit, degree_m4), value_t(unit_no_unit, degree_centi), (long double)restrictions[restriction_load_ratio]) <<"% of processor time for more than " 
+                    << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), (long double)restrictions[restriction_idle_time_limit]) <<" sec" << std::endl;
+                std::cout << "Idleness limit exceeded" << std::endl;
+                break;
+            case terminate_reason_time_limit:
+                std::cout << "Time limit exceeded" << std::endl;
+                std::cout << "Program failed to terminate within " << 
+                    convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), (long double)restrictions[restriction_processor_time_limit]) << " sec" << std::endl;
+                break;
+            default:
+                std::cout << "Program successfully terminated" << std::endl;
+                break;
+            }
+            std::cout << "  time consumed: 0.03";
+            if (restrictions[restriction_processor_time_limit] != restriction_no_limit) {
+                std::cout << " of " << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), (long double)restrictions[restriction_processor_time_limit]);
+            }
+            std::cout << " sec" << std::endl;
+            std::cout << "  time passed:   " << rep.total_time << " sec" << std::endl;
+            std::cout << "  peak memory:   " << rep.peak_memory_used;
+            if (restrictions[restriction_memory_limit] != restriction_no_limit) {
+                std::cout << " of " << restrictions[restriction_memory_limit];
+            }
+            std::cout << " bytes" << std::endl;
+
+        }
+        if (options.report_file.length()) {
+            std::ofstream file(options.report_file);
+            file << "average.memoryConsumed=" << rep.peak_memory_used << std::endl;
+            file << "average.timeConsumed=" << rep.user_time << std::endl;
+            file << "average.timePassed=" << rep.processor_time << std::endl;
+            file << "invocations=1" << std::endl;
+            file << "last.memoryConsumed=" << rep.peak_memory_used << std::endl;
+            file << "last.timeConsumed=" << rep.user_time << std::endl;
+            file << "last.timePassed=" << rep.processor_time << std::endl;
+            file << "max.memoryConsumed=" << rep.peak_memory_used << std::endl;
+            file << "max.timeConsumed=" << rep.user_time << std::endl;
+            file << "max.timePassed=" << rep.processor_time << std::endl;
+            file << "min.memoryConsumed=" << rep.peak_memory_used << std::endl;
+            file << "min.timeConsumed=" << rep.user_time << std::endl;
+            file << "min.timePassed=" << rep.processor_time << std::endl;
+            file << "total.memoryConsumed=" << rep.peak_memory_used << std::endl;
+            file << "total.timeConsumed=" << rep.user_time << std::endl;
+            file << "total.timePassed=" << rep.processor_time << std::endl;
+            file.close();
+        }
+    }
+
     virtual std::string help() {
         return spawner_base_c::help() + "\
 \n\
