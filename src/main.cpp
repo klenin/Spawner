@@ -541,7 +541,7 @@ Spawner options:\n\
         ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("debug")),    c_lst("SP_DEBUG"),          options.debug,        BOOL_CONVERT);
 
         ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("cmd"), long_arg("systempath")),    c_lst("SP_SYSTEM_PATH"),          options.use_cmd,        BOOL_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("d")),   c_lst("SP_DIRECTORY"),       options.working_directory,    STRING_CONVERT);
+        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("wd")),   c_lst("SP_DIRECTORY"),       options.working_directory,    STRING_CONVERT);
 
         ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("ho")),   c_lst("SP_HIDE_OUTPUT"),   options.hide_output, BOOL_CONVERT);
         ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("hr")),   c_lst("SP_HIDE_REPORT"),   options.hide_report, BOOL_CONVERT);
