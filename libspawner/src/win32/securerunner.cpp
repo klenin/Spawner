@@ -226,7 +226,12 @@ void secure_runner::free()
 void secure_runner::wait()
 {
     clock_t program_run_time = clock();//TODO:make this global
-    DWORD dwNumBytes, dwKey;
+    DWORD dwNumBytes;
+#ifdef _WIN64
+    ULONG_PTR dwKey;
+#else
+    DWORD dwKey;
+#endif
     LPOVERLAPPED completedOverlapped;
     int message = 0;
     do
