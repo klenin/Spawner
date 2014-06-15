@@ -126,17 +126,20 @@ void settings_parser_c::parse(int argc, char *argv[]) {
         }
         if (saved_count() == 1) {
             if (!pop_saved_parser()->invoke(*this)) {
+                std::cerr << "some error " << arg_v[position - 1] << std::endl;
                 throw "";
             }
         } else if (saved_count() > 1) {
             //ambiguous arguments
             //throw
+            std::cerr << "ambiguous arguments" << std::endl;
         } else {
             if (is_program()) {
                 parse_program();
                 //parse_program//until separator detected
             } else {
                 //unknown_argument
+                std::cerr << "unknown argument " << arg_v[position] << std::endl;
                 throw "";
             }
         }
@@ -228,6 +231,7 @@ bool console_argument_parser_c::invoke(abstract_settings_parser_c &parser_object
     if (!callback(value)) {
         return false;//not good
     }
+    return true;
     //((settings_parser_c&)parser_object).set_value(argument_name, value);
 }
 std::string console_argument_parser_c::help() { return ""; }
