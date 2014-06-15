@@ -1,3 +1,4 @@
+#include "arguments.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -5,7 +6,6 @@
 #include <spawner.h>
 #include <functional>
 
-#include "arguments.h"
 
 #define NEW_CONSOLE_PARSER(PARSER) console_argument_parser_c *console_parser_##PARSER = new console_argument_parser_c
 #define NEW_ENVIRONMENT_PARSER(PARSER) environment_variable_parser_c *environment_parser_##PARSER = new environment_variable_parser_c
@@ -16,22 +16,23 @@
 #define BOOL_CONVERT convert_bool
 #define STRING_CONVERT
 #define ADD_CONSOLE_ARGUMENT(PARSER, ARGUMENTS, VALUE, TYPE_CONVERTER, ...) (console_parser_##PARSER->\
-    add_parameter((std::vector<std::string>)ARGUMENTS, [this](std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;}))
+    add_parameter((std::vector<std::string>)ARGUMENTS, [this](const std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;}))
 #define ADD_FLAG_ARGUMENT(PARSER, ARGUMENTS, VALUE, TYPE_CONVERTER, ...) do {\
-console_parser_##PARSER->add_parameter((std::vector<std::string>)ARGUMENTS, [this](std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;});\
-console_parser_##PARSER->set_flag((std::vector<std::string>)ARGUMENTS);\
-} while (0)
+    console_parser_##PARSER->add_parameter((std::vector<std::string>)ARGUMENTS, [this](const std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;});\
+    console_parser_##PARSER->set_flag((std::vector<std::string>)ARGUMENTS);\
+    } while (0)
 #define ADD_ENVIRONMENT_ARGUMENT(PARSER, ARGUMENTS, VALUE, TYPE_CONVERTER, ...) (environment_parser_##PARSER->\
-    add_parameter((std::vector<std::string>)ARGUMENTS, [this](std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;}))
+    add_parameter((std::vector<std::string>)ARGUMENTS, [this](const std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;}))
 
 #define ADD_CONSOLE_ENVIRONMENT_ARGUMENT(PARSER, CONSOLE_ARGUMENTS, ENVIRONMENT_ARGUMENTS, VALUE, TYPE_CONVERTER, ...) do {\
-    ADD_CONSOLE_ARGUMENT(PARSER, CONSOLE_ARGUMENTS, VALUE, TYPE_CONVERTER, __VA_ARGS__);\
-    ADD_ENVIRONMENT_ARGUMENT(PARSER, ENVIRONMENT_ARGUMENTS, VALUE, TYPE_CONVERTER, __VA_ARGS__);\
+    console_parser_##PARSER->add_parameter((std::vector<std::string>)CONSOLE_ARGUMENTS, [this](const std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;});\
+    environment_parser_##PARSER->add_parameter((std::vector<std::string>)ENVIRONMENT_ARGUMENTS, [this](const std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;});\
     } while (0)
 
 #define ADD_FLAG_ENVIRONMENT_ARGUMENT(PARSER, CONSOLE_ARGUMENTS, ENVIRONMENT_ARGUMENTS, VALUE, TYPE_CONVERTER, ...) do {\
-    ADD_FLAG_ARGUMENT(PARSER, CONSOLE_ARGUMENTS, VALUE, TYPE_CONVERTER, __VA_ARGS__);\
-    ADD_ENVIRONMENT_ARGUMENT(PARSER, ENVIRONMENT_ARGUMENTS, VALUE, TYPE_CONVERTER, __VA_ARGS__);\
+    console_parser_##PARSER->add_parameter((std::vector<std::string>)CONSOLE_ARGUMENTS, [this](const std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;});\
+    console_parser_##PARSER->set_flag((std::vector<std::string>)CONSOLE_ARGUMENTS);\
+    environment_parser_##PARSER->add_parameter((std::vector<std::string>)ENVIRONMENT_ARGUMENTS, [this](const std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;});\
     } while (0)
 
 

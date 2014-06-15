@@ -56,10 +56,9 @@ std::string ExitCodeToString(const unsigned int &code) {
             return "StackOverflow";
     }
 
-    char result[12];
-    itoa(code, result, 10);
-
-    return result;
+    std::ostringstream s;
+    s << code;
+    return s.str();
 }
 
 void SetRestriction(restrictions_class &restrictions, const restriction_kind_t &restriction_kind, const std::string &value) {

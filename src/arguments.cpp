@@ -28,7 +28,7 @@ compact_list_c::operator std::vector<std::string>() const {
 }
 
 
-void abstract_parser_c::add_parameter(std::vector<std::string> &params, std::function<bool(std::string)> callback) {
+void abstract_parser_c::add_parameter(const std::vector<std::string> &params, std::function<bool(const std::string)> callback) {
     for (auto i = params.begin(); i != params.end(); i++) {
         parameters[*i] = callback;
     }
@@ -50,7 +50,7 @@ void settings_parser_c::add_parser(abstract_parser_c *parser) {
     parsers.push_back(parser);
 }
 
-void settings_parser_c::set_dividers(std::vector<std::string> &d) {
+void settings_parser_c::set_dividers(const std::vector<std::string> &d) {
     dividers.clear();
     dividers.insert(dividers.begin(), d.begin(), d.end());
 }
@@ -171,7 +171,7 @@ bool console_argument_parser_c::parse(abstract_settings_parser_c &parser_object)
     }
     return last_state == argument_ok_state;
 }
-void console_argument_parser_c::set_flag(std::vector<std::string> &v) {
+void console_argument_parser_c::set_flag(const std::vector<std::string> &v) {
     for (auto i = v.begin(); i != v.end(); i++) {
         is_flag[*i] = true;
     }
@@ -248,7 +248,7 @@ std::string environment_variable_parser_c::get_environment_variable(const std::s
     return buffer;
 }
 bool environment_variable_parser_c::invoke_initialization(abstract_settings_parser_c &parser_object) {
-    std::map<std::string, std::function<bool(std::string&)> > m;
+    std::map<std::string, std::function<bool(const std::string&)> > m;
     for (auto i = parameters.begin(); i != parameters.end(); i++) {
         if (exists_environment_variable(i->first)) {
             m[i->first] = i->second;

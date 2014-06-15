@@ -1,7 +1,7 @@
 #ifndef _SPAWNER_ARGUMENTS_
 #define _SPAWNER_ARGUMENTS_
 
-#include <algorithm>
+//#include <algorithm>
 #include <string>
 #include <map>
 #include <vector>
@@ -66,12 +66,12 @@ public:
 
 class abstract_parser_c {
 protected:
-    std::map<std::string, std::function<bool(std::string&)> > parameters;
-    std::function<bool(std::string&)> callback;
+    std::map<std::string, std::function<bool(const std::string&)> > parameters;
+    std::function<bool(const std::string&)> callback;
 public:
     //abstract_parser_c(const parser_t &parser){}
     virtual bool invoke_initialization(abstract_settings_parser_c &parser_object){return false;} //init settings for parser object
-    virtual void add_parameter(std::vector<std::string> &params, std::function<bool(std::string)> callback);
+    virtual void add_parameter(const std::vector<std::string> &params, std::function<bool(const std::string)> callback);
     virtual bool parse(abstract_settings_parser_c &parser_object) {return false;}
     virtual bool invoke(abstract_settings_parser_c &parser_object) {return false;}
     virtual std::string help() { return ""; }
@@ -113,60 +113,8 @@ struct environment_argument_t {
     compact_list_c names;
 };
 
-#define default_behavior on_error_die, on_repeat_replace
 #define short_arg(x) ((std::string("-")+x).c_str())
 #define long_arg(x) ((std::string("--")+x).c_str())
-
-
-
-
-class argument_value_c {
-public:
-    static argument_value_c *create_argument(const std::string &value) {
-        return NULL;
-    }
-};
-
-class argument_string_value_c : public argument_value_c{
-private:
-    std::string value;
-public:
-    argument_string_value_c(const std::string &value) : value(value) {}
-};
-
-struct temp_name;
-
-class dictionary_c {
-private:
-    std::map<std::string, temp_name> contents;
-public:
-    void add_value(const std::string &key, temp_name &value);
-};
-
-struct temp_name {
-    char *short_name;
-    char *long_name;
-    char *environment_name;
-    argument_value_c *(*callback)(const std::string&);
-};
-
-enum value_type_e {
-    string_value,
-    integer_value,
-    real_value,
-    bool_value,
-};
-
-enum behavior_type_e {
-    array_behavior,
-    variable_behavior
-};
-
-struct dictionary_t {
-    char *name;
-    char *description;
-    compact_list_c parsers;
-};
 
 
 //configuration_manager
@@ -175,9 +123,6 @@ private:
     int position;
     int fetched_position;
     bool stopped;
-    //std::map<std::string, parser_t> registered_parsers;
-
-    //std::map<std::string, bool> enabled_dictionaries;
 
     std::vector<std::pair<int, abstract_parser_c*> > saved_positions;
     std::vector<abstract_parser_c*> parsers;
@@ -186,20 +131,14 @@ private:
     std::vector<std::string> program_arguments;
     int arg_c;
     char **arg_v;
-    //std::vector<int> system_parsers;
-    //void rebuild_parsers();
     bool is_program();
     void parse_program();
 public:
-    //Json::Value object, *current_task;
     settings_parser_c();
     ~settings_parser_c();
-    /*template<typename T> static abstract_parser_c *create_parser(const parser_t &value) {
-        return new T(value);
-    }*/
 
     void add_parser(abstract_parser_c *parser);
-    void set_dividers(std::vector<std::string> &d);
+    void set_dividers(const std::vector<std::string> &d);
 
     void clear_parsers();
 
@@ -227,29 +166,6 @@ public:
 };
 
 
-struct argument_t {
-    char *name;
-    argument_value_c *(*callback)(const std::string&);
-    value_type_e value_type;
-    behavior_type_e behavior;
-    char *help;
-};
-
-#define PARSER_CONSTRUCTOR(X) &settings_parser_c::create_parser<X>
-
-/*argument_t base_dictionary[] = {
-    {
-        "output_stream",
-        VALUE_CONSTRUCTOR(argument_value_c),
-        string_value, //expected value
-        array_behavior,
-        "help"
-    }
-};*/
-    //&argument_parser::set_value<output_stream_value_c>,
-
-
-typedef 
 
 
 class console_argument_parser_c : public abstract_parser_c {
@@ -268,7 +184,7 @@ protected:
     abstract_settings_parser_c *parser_object;
 public:
     console_argument_parser_c();
-    void set_flag(std::vector<std::string> &v);
+    void set_flag(const std::vector<std::string> &v);
     virtual bool parse(abstract_settings_parser_c &parser_object);
     virtual parsing_state_e process_argument(const char *argument);
     virtual parsing_state_e process_value(const char *argument);
@@ -297,98 +213,5 @@ public:
 
 
 
-/* console_argument_parser_settings_t default_console_parser_settings = {
-    c_lst("=")
-};
-const console_argument_parser_settings_t spawner_console_parser_settings = {
-    c_lst(":")
-};
-const console_argument_t system_arguments[] = {
-    {
-        sp_test,
-        console_argument_required,
-        c_lst(short_arg("t"), long_arg("test")),
-        default_behavior
-    },
-    {
-        sp_output_stream,
-        console_argument_required,
-        c_lst(short_arg("o"), long_arg("out")),
-        default_behavior
-    },
-    {
-        sp_input_stream,
-        console_argument_required,
-        c_lst(short_arg("i"), long_arg("in")),
-        default_behavior
-    },
-    {
-        sp_error_stream,
-        console_argument_required,
-        c_lst(short_arg("e"), long_arg("err")),
-        default_behavior
-    },
-    {
-        NULL
-    }
-};
-
-static environment_argument_t system_environment[] = {
-    {
-        sp_test,
-        c_lst("SP_TEST")
-    },
-    {
-        NULL
-    }
-};
-
-static parser_t c_parsers[] = {
-    {
-        "system",
-        (void*)&default_console_parser_settings,
-        (void*)&system_arguments,
-        sp_console_parser
-    },
-    {
-        "system_environment",
-        NULL,
-        (void*)&system_environment,
-        sp_environment_parser
-    },
-    {
-        "system_json",
-        NULL
-    },
-    {
-        NULL,
-        NULL
-    }
-};
-
-static dictionary_t c_dictionaries[] = {
-    {
-        "system",
-        "Default system commands",
-        c_lst("system", "system_environment", "system_json")
-    },
-    {
-        NULL
-    }
-};
-
-static parser_constructor_t c_parser_constructors[] = {
-    {
-        sp_console_parser,
-        PARSER_CONSTRUCTOR(console_argument_parser_c)
-    },
-    {
-        sp_environment_parser,
-        PARSER_CONSTRUCTOR(environment_variable_parser_c)
-    },
-    {
-        NULL
-    }
-*/
 
 #endif//_SPAWNER_ARGUMENTS_

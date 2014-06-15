@@ -46,7 +46,7 @@ size_t duplex_buffer_class::read(void *data, size_t size) {
     //*/
     //std::cout << "locked " << (unsigned int)__buffer.length() << std::endl;
     uint len = 0;
-    uint sz = min(__buffer.length(), size);
+    uint sz = min_def(__buffer.length(), size);
     memcpy(data, __buffer.c_str(), sz);
     __buffer = __buffer.substr(sz);
 

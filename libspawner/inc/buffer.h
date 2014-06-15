@@ -10,9 +10,9 @@
 const unsigned int BUFFER_SIZE = 4096;//provide this in to constructor
 
 //dirty hack
-#ifndef min
-#define min(a, b) (a) > (b) ? (b) : (a)
-#endif
+//#ifndef min
+#define min_def(a, b) (a) > (b) ? (b) : (a)
+//#endif
 
 class buffer_class {
 protected:
@@ -127,7 +127,7 @@ public:
         while (!ready)
             Sleep(5);
         std::string s = buffer.str();
-        size = min(size, (size_t)s.length());
+        size = min_def(size, (size_t)s.length());
         memcpy(data, s.c_str(), size);
         buffer.str(s.substr(offset));
         ready = false;
