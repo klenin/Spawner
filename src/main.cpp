@@ -428,6 +428,101 @@ protected:
 public:
     spawner_new_c(settings_parser_c &parser): parser(parser), spawner_base_c(), options(session_class::base_session), runas(false) {
     }
+    Json::Value unit_to_json(restriction_t real_value, double value, const std::string &units) {
+        if (real_value == restriction_no_limit) {
+            return "Infinity";
+        }
+        Json::Value object(Json::objectValue);
+        object["real_value"] = real_value;
+        object["value"] = value;
+        object["units"] = units;
+        return object;
+    }
+
+    std::string json_report(runner *runner_instance) {
+        Json::Value object(Json::objectValue);
+        report_class rep = runner_instance->get_report();
+        options_class options = runner_instance->get_options();
+        restrictions_class restrictions = ((secure_runner*)runner_instance)->get_restrictions();
+
+        object["Application"]           = rep.application_name;
+        object["Parameters"]            = Json::Value(Json::arrayValue);
+        for (size_t i = 0; i < options.get_arguments_count(); ++i) {
+            object["Parameters"].append(options.get_argument(i));
+        }
+        object["SecurityLevel"]         = (restrictions.get_restriction(restriction_security_limit) == restriction_limited);
+        object["CreateProcessMethod"]   = (options.login==""?"CreateProcess":"WithLogon");
+        object["UserName"]              = rep.login;
+
+        object["UserTimeLimit"] = unit_to_json(
+            restrictions.get_restriction(restriction_processor_time_limit),
+            convert(
+                value_t(unit_time_second, degree_milli), 
+                value_t(unit_time_second), 
+                (long double)restrictions.get_restriction(restriction_processor_time_limit)
+                ),
+            unit_name(unit_time_second)
+        );
+        object["Deadline"] = unit_to_json(
+            restrictions.get_restriction(restriction_user_time_limit),
+            convert(
+                value_t(unit_time_second, degree_milli),
+                value_t(unit_time_second),
+                (long double)restrictions.get_restriction(restriction_user_time_limit)
+                ),
+            unit_name(unit_time_second)
+        );
+        object["MemoryLimit"] = unit_to_json(
+            restrictions.get_restriction(restriction_memory_limit),
+            convert(
+                value_t(unit_memory_byte),
+                value_t(unit_memory_byte, degree_mega),
+                (long double)restrictions.get_restriction(restriction_memory_limit)
+                ),
+            degree_short_name(degree_mega) + unit_short_name(unit_memory_byte)
+        );
+        object["WriteLimit"] = unit_to_json(
+            restrictions.get_restriction(restriction_write_limit),
+            convert(
+                value_t(unit_memory_byte),
+                value_t(unit_memory_byte, degree_mega),
+                (long double)restrictions.get_restriction(restriction_write_limit)
+                ),
+            degree_short_name(degree_mega) + unit_short_name(unit_memory_byte)
+        );
+        object["UserTime"] = unit_to_json(
+            rep.processor_time,
+            convert(
+                value_t(unit_time_second, degree_micro),
+                value_t(unit_time_second),
+                (long double)rep.processor_time/10.0
+                ),
+            unit_name(unit_time_second)
+        );
+        object["PeakMemoryUsed"] = unit_to_json(
+            rep.peak_memory_used,
+            convert(
+                value_t(unit_memory_byte),
+                value_t(unit_memory_byte, degree_mega),
+                (long double)rep.peak_memory_used
+                ),
+            degree_short_name(degree_mega) + unit_short_name(unit_memory_byte)
+        );
+        object["Written"] = unit_to_json(
+            rep.write_transfer_count,
+            convert(
+                value_t(unit_memory_byte),
+                value_t(unit_memory_byte, degree_mega),
+                (long double)rep.write_transfer_count
+                ),
+            degree_short_name(degree_mega) + unit_short_name(unit_memory_byte)
+        );
+        object["TerminateReason"]       = get_terminate_reason(rep.terminate_reason);
+	    object["ExitCode"]              = rep.exit_code;
+	    object["ExitStatus"]            = ExitCodeToString(rep.exit_code);
+        object["SpawnerError"]          = error_list::pop_error();
+        return object.toStyledString();
+    }
     virtual bool init() {
         if (!parser.get_program().length()) {
             return false;
@@ -482,17 +577,21 @@ public:
         std::cout.flush();
         if (!options.hide_report || options.report_file.length()) {
             std::string report;
-            report = GenerateSpawnerReport(
-                rep, secure_runner_instance->get_options(), 
-                secure_runner_instance->get_restrictions()
-            );
+			if (!options.json) {
+                report = GenerateSpawnerReport(
+                    rep, secure_runner_instance->get_options(), 
+                    secure_runner_instance->get_restrictions()
+                );
+            } else {
+                report = json_report(secure_runner_instance);
+            }
             if (!options.hide_report) {
                 std::cout << report;
             }
             if (options.report_file.length())
             {
                 std::ofstream fo(options.report_file.c_str());
-                fo << GenerateSpawnerReport(rep, options, ((secure_runner*)secure_runner_instance)->get_restrictions());
+                fo << report;//GenerateSpawnerReport(rep, options, ((secure_runner*)secure_runner_instance)->get_restrictions());
                 fo.close();
             }
         }
@@ -548,7 +647,9 @@ Spawner options:\n\
         ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("hr")),   c_lst("SP_HIDE_REPORT"),   options.hide_report, BOOL_CONVERT);
         ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("sw")),   c_lst("SP_SHOW_WINDOW"),   options.hide_gui,    !BOOL_CONVERT);
 
-        ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(long_arg("session")), options.session_id, STRING_CONVERT);
+        ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("json")),  c_lst("SP_JSON"),	        options.json,        BOOL_CONVERT);
+
+		ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(long_arg("session")), options.session_id, STRING_CONVERT);
         ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("separator")), c_lst("SP_SEPARATOR"),   bool tmp, 1; parser.set_separator);
         ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("program")), c_lst("SP_PROGRAM"),   options.session_id, STRING_CONVERT);
     //{SP_SILENT,             "--silent", SO_NONE},
