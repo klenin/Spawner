@@ -217,19 +217,19 @@ public:
         return spawner_base_c::help() + "\
 Spawner options:\n\
 \t Argument            Environment variable     Description\n\
-\t-ml:[n]             SP_MEMORY_LIMIT     Максимальный объем виртуальной памяти, выделенный процессу (в Mb).\n\
-\t-tl:[n]             SP_TIME_LIMIT       Максимальное время выполнения процесса в пользовательском режиме (в сек).\n\
-\t-d:[n]              SP_DEADLINE         Лимит физического времени, выделенного процессу (в сек).\n\
-\t-wl:[n]             SP_WRITE_LIMIT      Максимальный объем данных, который может быть записан процессом (в Mb).\n\
-\t-u:[user@domain]    SP_USER             Имя пользователя в формате: User[@Domain]\n\
-\t-p:[password]       SP_PASSWORD         Пароль.\n\
-\t-runas:[0|1]        SP_RUNAS            Использовать сервис RunAs для запуска процесса.\n\
-\t-s:[n]              SP_SECURITY_LEVEL   Уровень безопасности. Может принимать значения 0 или 1.\n\
-\t-hr:[0|1]           SP_HIDE_REPORT      Не показывать отчет.\n\
-\t-ho:[0|1]           SP_HIDE_OUTPUT      Не показывать выходной поток (STDOUT) приложения.\n\
-\t-sr:[file]          SP_REPORT_FILE      Сохранить отчет в файл.\n\
-\t-so:[file]          SP_OUTPUT_FILE      Сохранить выходной поток в файл.\n\
-\t-i:[file]           SP_INPUT_FILE       Получить входной поток из файла. \n";
+\t-ml:[n]             SP_MEMORY_LIMIT     ГЊГ ГЄГ±ГЁГ¬Г Г«ГјГ­Г»Г© Г®ГЎГєГҐГ¬ ГўГЁГ°ГІГіГ Г«ГјГ­Г®Г© ГЇГ Г¬ГїГІГЁ, ГўГ»Г¤ГҐГ«ГҐГ­Г­Г»Г© ГЇГ°Г®Г¶ГҐГ±Г±Гі (Гў Mb).\n\
+\t-tl:[n]             SP_TIME_LIMIT       ГЊГ ГЄГ±ГЁГ¬Г Г«ГјГ­Г®ГҐ ГўГ°ГҐГ¬Гї ГўГ»ГЇГ®Г«Г­ГҐГ­ГЁГї ГЇГ°Г®Г¶ГҐГ±Г±Г  Гў ГЇГ®Г«ГјГ§Г®ГўГ ГІГҐГ«ГјГ±ГЄГ®Г¬ Г°ГҐГ¦ГЁГ¬ГҐ (Гў Г±ГҐГЄ).\n\
+\t-d:[n]              SP_DEADLINE         Г‹ГЁГ¬ГЁГІ ГґГЁГ§ГЁГ·ГҐГ±ГЄГ®ГЈГ® ГўГ°ГҐГ¬ГҐГ­ГЁ, ГўГ»Г¤ГҐГ«ГҐГ­Г­Г®ГЈГ® ГЇГ°Г®Г¶ГҐГ±Г±Гі (Гў Г±ГҐГЄ).\n\
+\t-wl:[n]             SP_WRITE_LIMIT      ГЊГ ГЄГ±ГЁГ¬Г Г«ГјГ­Г»Г© Г®ГЎГєГҐГ¬ Г¤Г Г­Г­Г»Гµ, ГЄГ®ГІГ®Г°Г»Г© Г¬Г®Г¦ГҐГІ ГЎГ»ГІГј Г§Г ГЇГЁГ±Г Г­ ГЇГ°Г®Г¶ГҐГ±Г±Г®Г¬ (Гў Mb).\n\
+\t-u:[user@domain]    SP_USER             Г€Г¬Гї ГЇГ®Г«ГјГ§Г®ГўГ ГІГҐГ«Гї Гў ГґГ®Г°Г¬Г ГІГҐ: User[@Domain]\n\
+\t-p:[password]       SP_PASSWORD         ГЏГ Г°Г®Г«Гј.\n\
+\t-runas:[0|1]        SP_RUNAS            Г€Г±ГЇГ®Г«ГјГ§Г®ГўГ ГІГј Г±ГҐГ°ГўГЁГ± RunAs Г¤Г«Гї Г§Г ГЇГіГ±ГЄГ  ГЇГ°Г®Г¶ГҐГ±Г±Г .\n\
+\t-s:[n]              SP_SECURITY_LEVEL   Г“Г°Г®ГўГҐГ­Гј ГЎГҐГ§Г®ГЇГ Г±Г­Г®Г±ГІГЁ. ГЊГ®Г¦ГҐГІ ГЇГ°ГЁГ­ГЁГ¬Г ГІГј Г§Г­Г Г·ГҐГ­ГЁГї 0 ГЁГ«ГЁ 1.\n\
+\t-hr:[0|1]           SP_HIDE_REPORT      ГЌГҐ ГЇГ®ГЄГ Г§Г»ГўГ ГІГј Г®ГІГ·ГҐГІ.\n\
+\t-ho:[0|1]           SP_HIDE_OUTPUT      ГЌГҐ ГЇГ®ГЄГ Г§Г»ГўГ ГІГј ГўГ»ГµГ®Г¤Г­Г®Г© ГЇГ®ГІГ®ГЄ (STDOUT) ГЇГ°ГЁГ«Г®Г¦ГҐГ­ГЁГї.\n\
+\t-sr:[file]          SP_REPORT_FILE      Г‘Г®ГµГ°Г Г­ГЁГІГј Г®ГІГ·ГҐГІ Гў ГґГ Г©Г«.\n\
+\t-so:[file]          SP_OUTPUT_FILE      Г‘Г®ГµГ°Г Г­ГЁГІГј ГўГ»ГµГ®Г¤Г­Г®Г© ГЇГ®ГІГ®ГЄ Гў ГґГ Г©Г«.\n\
+\t-i:[file]           SP_INPUT_FILE       ГЏГ®Г«ГіГ·ГЁГІГј ГўГµГ®Г¤Г­Г®Г© ГЇГ®ГІГ®ГЄ ГЁГ§ ГґГ Г©Г«Г . \n";
     }
     virtual void init_arguments() {
     
@@ -428,6 +428,101 @@ protected:
 public:
     spawner_new_c(settings_parser_c &parser): parser(parser), spawner_base_c(), options(session_class::base_session), runas(false) {
     }
+    Json::Value unit_to_json(restriction_t real_value, double value, const std::string &units) {
+        if (real_value == restriction_no_limit) {
+            return "Infinity";
+        }
+        Json::Value object(Json::objectValue);
+        object["real_value"] = real_value;
+        object["value"] = value;
+        object["units"] = units;
+        return object;
+    }
+
+    std::string json_report(runner *runner_instance) {
+        Json::Value object(Json::objectValue);
+        report_class rep = runner_instance->get_report();
+        options_class options = runner_instance->get_options();
+        restrictions_class restrictions = ((secure_runner*)runner_instance)->get_restrictions();
+
+        object["Application"]           = rep.application_name;
+        object["Parameters"]            = Json::Value(Json::arrayValue);
+        for (size_t i = 0; i < options.get_arguments_count(); ++i) {
+            object["Parameters"].append(options.get_argument(i));
+        }
+        object["SecurityLevel"]         = (restrictions.get_restriction(restriction_security_limit) == restriction_limited);
+        object["CreateProcessMethod"]   = (options.login==""?"CreateProcess":"WithLogon");
+        object["UserName"]              = rep.login;
+
+        object["UserTimeLimit"] = unit_to_json(
+            restrictions.get_restriction(restriction_processor_time_limit),
+            convert(
+                value_t(unit_time_second, degree_milli), 
+                value_t(unit_time_second), 
+                (long double)restrictions.get_restriction(restriction_processor_time_limit)
+                ),
+            unit_name(unit_time_second)
+        );
+        object["Deadline"] = unit_to_json(
+            restrictions.get_restriction(restriction_user_time_limit),
+            convert(
+                value_t(unit_time_second, degree_milli),
+                value_t(unit_time_second),
+                (long double)restrictions.get_restriction(restriction_user_time_limit)
+                ),
+            unit_name(unit_time_second)
+        );
+        object["MemoryLimit"] = unit_to_json(
+            restrictions.get_restriction(restriction_memory_limit),
+            convert(
+                value_t(unit_memory_byte),
+                value_t(unit_memory_byte, degree_mega),
+                (long double)restrictions.get_restriction(restriction_memory_limit)
+                ),
+            degree_short_name(degree_mega) + unit_short_name(unit_memory_byte)
+        );
+        object["WriteLimit"] = unit_to_json(
+            restrictions.get_restriction(restriction_write_limit),
+            convert(
+                value_t(unit_memory_byte),
+                value_t(unit_memory_byte, degree_mega),
+                (long double)restrictions.get_restriction(restriction_write_limit)
+                ),
+            degree_short_name(degree_mega) + unit_short_name(unit_memory_byte)
+        );
+        object["UserTime"] = unit_to_json(
+            rep.processor_time,
+            convert(
+                value_t(unit_time_second, degree_micro),
+                value_t(unit_time_second),
+                (long double)rep.processor_time/10.0
+                ),
+            unit_name(unit_time_second)
+        );
+        object["PeakMemoryUsed"] = unit_to_json(
+            rep.peak_memory_used,
+            convert(
+                value_t(unit_memory_byte),
+                value_t(unit_memory_byte, degree_mega),
+                (long double)rep.peak_memory_used
+                ),
+            degree_short_name(degree_mega) + unit_short_name(unit_memory_byte)
+        );
+        object["Written"] = unit_to_json(
+            rep.write_transfer_count,
+            convert(
+                value_t(unit_memory_byte),
+                value_t(unit_memory_byte, degree_mega),
+                (long double)rep.write_transfer_count
+                ),
+            degree_short_name(degree_mega) + unit_short_name(unit_memory_byte)
+        );
+        object["TerminateReason"]       = get_terminate_reason(rep.terminate_reason);
+	    object["ExitCode"]              = rep.exit_code;
+	    object["ExitStatus"]            = ExitCodeToString(rep.exit_code);
+        object["SpawnerError"]          = error_list::pop_error();
+        return object.toStyledString();
+    }
     virtual bool init() {
         if (!parser.get_program().length()) {
             return false;
@@ -482,17 +577,21 @@ public:
         std::cout.flush();
         if (!options.hide_report || options.report_file.length()) {
             std::string report;
-            report = GenerateSpawnerReport(
-                rep, secure_runner_instance->get_options(), 
-                secure_runner_instance->get_restrictions()
-            );
+			if (!options.json) {
+                report = GenerateSpawnerReport(
+                    rep, secure_runner_instance->get_options(), 
+                    secure_runner_instance->get_restrictions()
+                );
+            } else {
+                report = json_report(secure_runner_instance);
+            }
             if (!options.hide_report) {
                 std::cout << report;
             }
             if (options.report_file.length())
             {
                 std::ofstream fo(options.report_file.c_str());
-                fo << GenerateSpawnerReport(rep, options, ((secure_runner*)secure_runner_instance)->get_restrictions());
+                fo << report;//GenerateSpawnerReport(rep, options, ((secure_runner*)secure_runner_instance)->get_restrictions());
                 fo.close();
             }
         }
@@ -501,19 +600,19 @@ public:
         return spawner_base_c::help() + "\
 Spawner options:\n\
 \t Argument            Environment variable     Description\n\
-\t-ml:[n]             SP_MEMORY_LIMIT     Максимальный объем виртуальной памяти, выделенный процессу (в Mb).\n\
-\t-tl:[n]             SP_TIME_LIMIT       Максимальное время выполнения процесса в пользовательском режиме (в сек).\n\
-\t-d:[n]              SP_DEADLINE         Лимит физического времени, выделенного процессу (в сек).\n\
-\t-wl:[n]             SP_WRITE_LIMIT      Максимальный объем данных, который может быть записан процессом (в Mb).\n\
-\t-u:[user@domain]    SP_USER             Имя пользователя в формате: User[@Domain]\n\
-\t-p:[password]       SP_PASSWORD         Пароль.\n\
-\t-runas:[0|1]        SP_RUNAS            Использовать сервис RunAs для запуска процесса.\n\
-\t-s:[n]              SP_SECURITY_LEVEL   Уровень безопасности. Может принимать значения 0 или 1.\n\
-\t-hr:[0|1]           SP_HIDE_REPORT      Не показывать отчет.\n\
-\t-ho:[0|1]           SP_HIDE_OUTPUT      Не показывать выходной поток (STDOUT) приложения.\n\
-\t-sr:[file]          SP_REPORT_FILE      Сохранить отчет в файл.\n\
-\t-so:[file]          SP_OUTPUT_FILE      Сохранить выходной поток в файл.\n\
-\t-i:[file]           SP_INPUT_FILE       Получить входной поток из файла. \n";
+\t-ml:[n]             SP_MEMORY_LIMIT     ГЊГ ГЄГ±ГЁГ¬Г Г«ГјГ­Г»Г© Г®ГЎГєГҐГ¬ ГўГЁГ°ГІГіГ Г«ГјГ­Г®Г© ГЇГ Г¬ГїГІГЁ, ГўГ»Г¤ГҐГ«ГҐГ­Г­Г»Г© ГЇГ°Г®Г¶ГҐГ±Г±Гі (Гў Mb).\n\
+\t-tl:[n]             SP_TIME_LIMIT       ГЊГ ГЄГ±ГЁГ¬Г Г«ГјГ­Г®ГҐ ГўГ°ГҐГ¬Гї ГўГ»ГЇГ®Г«Г­ГҐГ­ГЁГї ГЇГ°Г®Г¶ГҐГ±Г±Г  Гў ГЇГ®Г«ГјГ§Г®ГўГ ГІГҐГ«ГјГ±ГЄГ®Г¬ Г°ГҐГ¦ГЁГ¬ГҐ (Гў Г±ГҐГЄ).\n\
+\t-d:[n]              SP_DEADLINE         Г‹ГЁГ¬ГЁГІ ГґГЁГ§ГЁГ·ГҐГ±ГЄГ®ГЈГ® ГўГ°ГҐГ¬ГҐГ­ГЁ, ГўГ»Г¤ГҐГ«ГҐГ­Г­Г®ГЈГ® ГЇГ°Г®Г¶ГҐГ±Г±Гі (Гў Г±ГҐГЄ).\n\
+\t-wl:[n]             SP_WRITE_LIMIT      ГЊГ ГЄГ±ГЁГ¬Г Г«ГјГ­Г»Г© Г®ГЎГєГҐГ¬ Г¤Г Г­Г­Г»Гµ, ГЄГ®ГІГ®Г°Г»Г© Г¬Г®Г¦ГҐГІ ГЎГ»ГІГј Г§Г ГЇГЁГ±Г Г­ ГЇГ°Г®Г¶ГҐГ±Г±Г®Г¬ (Гў Mb).\n\
+\t-u:[user@domain]    SP_USER             Г€Г¬Гї ГЇГ®Г«ГјГ§Г®ГўГ ГІГҐГ«Гї Гў ГґГ®Г°Г¬Г ГІГҐ: User[@Domain]\n\
+\t-p:[password]       SP_PASSWORD         ГЏГ Г°Г®Г«Гј.\n\
+\t-runas:[0|1]        SP_RUNAS            Г€Г±ГЇГ®Г«ГјГ§Г®ГўГ ГІГј Г±ГҐГ°ГўГЁГ± RunAs Г¤Г«Гї Г§Г ГЇГіГ±ГЄГ  ГЇГ°Г®Г¶ГҐГ±Г±Г .\n\
+\t-s:[n]              SP_SECURITY_LEVEL   Г“Г°Г®ГўГҐГ­Гј ГЎГҐГ§Г®ГЇГ Г±Г­Г®Г±ГІГЁ. ГЊГ®Г¦ГҐГІ ГЇГ°ГЁГ­ГЁГ¬Г ГІГј Г§Г­Г Г·ГҐГ­ГЁГї 0 ГЁГ«ГЁ 1.\n\
+\t-hr:[0|1]           SP_HIDE_REPORT      ГЌГҐ ГЇГ®ГЄГ Г§Г»ГўГ ГІГј Г®ГІГ·ГҐГІ.\n\
+\t-ho:[0|1]           SP_HIDE_OUTPUT      ГЌГҐ ГЇГ®ГЄГ Г§Г»ГўГ ГІГј ГўГ»ГµГ®Г¤Г­Г®Г© ГЇГ®ГІГ®ГЄ (STDOUT) ГЇГ°ГЁГ«Г®Г¦ГҐГ­ГЁГї.\n\
+\t-sr:[file]          SP_REPORT_FILE      Г‘Г®ГµГ°Г Г­ГЁГІГј Г®ГІГ·ГҐГІ Гў ГґГ Г©Г«.\n\
+\t-so:[file]          SP_OUTPUT_FILE      Г‘Г®ГµГ°Г Г­ГЁГІГј ГўГ»ГµГ®Г¤Г­Г®Г© ГЇГ®ГІГ®ГЄ Гў ГґГ Г©Г«.\n\
+\t-i:[file]           SP_INPUT_FILE       ГЏГ®Г«ГіГ·ГЁГІГј ГўГµГ®Г¤Г­Г®Г© ГЇГ®ГІГ®ГЄ ГЁГ§ ГґГ Г©Г«Г . \n";
     }
     virtual void init_arguments() {
     
