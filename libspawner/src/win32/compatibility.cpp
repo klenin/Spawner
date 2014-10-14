@@ -172,7 +172,7 @@ std::string GenerateSpawnerReport(const report_class &rep, const options_class &
     osstream << "UserTime:                  " << convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), rep.processor_time/10.0, " (sec)") << std::endl;
     osstream << "PeakMemoryUsed:            " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.peak_memory_used, " (Mb)") << std::endl;
     osstream << "Written:                   " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.write_transfer_count, " (Mb)") << std::endl;
-    osstream << "TerminateReason:           " << (rep.exit_code&&!terminate_reason?"AbnormalExit":get_terminate_reason(rep.terminate_reason)) << std::endl;
+    osstream << "TerminateReason:           " << (rep.exit_code&&!rep.terminate_reason?"AbnormalExit":get_terminate_reason(rep.terminate_reason)) << std::endl;
 	osstream << "ExitStatus:                " << ExitCodeToString(rep.exit_code) << std::endl;
     osstream << "----------------------------------------------" << std::endl;
     osstream << "SpawnerError:              " << error_list::pop_error() << std::endl;
