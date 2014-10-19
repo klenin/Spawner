@@ -142,7 +142,7 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);//freezed
             break;
         }
-        if ((clock() - dt)*sec_clocks > 10.0 && bai.BasicInfo.TotalUserTime.QuadPart) {
+        if ((clock() - dt)*sec_clocks > 10.0) {
             //change to time limit
             double load_ratio = (double)(bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part)/(sec_clocks*(clock() - dt));
             rates.push_back(load_ratio);// make everything integer
