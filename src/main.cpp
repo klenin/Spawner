@@ -728,7 +728,9 @@ void command_handler_c::add_parser(abstract_parser_c *p) {
 
 bool command_handler_c::parse(int argc, char *argv[]) {
 //    reset();
-    parser.parse(argc, argv);
+    if (!parser.parse(argc, argv)) {
+        return false;
+    }
 
     if (spawner && spawner->init()) {
         spawner->run();
@@ -740,7 +742,9 @@ bool command_handler_c::parse(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
     command_handler_c handler;
-    handler.parse(argc, argv);
+    if (!handler.parse(argc, argv)) {
+
+    }
     return 0;
     /*
     spawner_c spawner(argc, argv);

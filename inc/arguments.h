@@ -159,7 +159,7 @@ public:
     void set_separator(const std::string &s);
     void reset_program();
 
-    void parse(int argc, char *argv[]);
+    bool parse(int argc, char *argv[]);
 
     size_t parsers_count();
     void pop_back();

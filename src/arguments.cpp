@@ -111,7 +111,7 @@ void settings_parser_c::reset_program() {
     program = "";
     program_arguments.clear();
 }
-void settings_parser_c::parse(int argc, char *argv[]) {
+bool settings_parser_c::parse(int argc, char *argv[]) {
     arg_c = argc;
     arg_v = argv;
     position = 1;
@@ -127,7 +127,7 @@ void settings_parser_c::parse(int argc, char *argv[]) {
         if (saved_count() == 1) {
             if (!pop_saved_parser()->invoke(*this)) {
                 std::cerr << "some error " << arg_v[position - 1] << std::endl;
-                throw "";
+                return false;
             }
         } else if (saved_count() > 1) {
             //ambiguous arguments
@@ -140,7 +140,8 @@ void settings_parser_c::parse(int argc, char *argv[]) {
             } else {
                 //unknown_argument
                 std::cerr << "unknown argument " << arg_v[position] << std::endl;
-                throw "";
+                //throw "";
+                return false;
             }
         }
     }
