@@ -89,7 +89,7 @@ const terminate_reason_description terminate_reason_descriptions[] = {
     {terminate_reason_write_limit,      "WriteLimitExceeded"},//"TERMINATE_REASON_WRITE_LIMIT"},
     {terminate_reason_memory_limit,     "MemoryLimitExceeded"},//"TERMINATE_REASON_MEMORY_LIMIT"},
     {terminate_reason_user_time_limit,  "TimeLimitExceeded"},//"TERMINATE_REASON_USER_TIME_LIMIT"},
-    {terminate_reason_load_ratio_limit, "LoadRatio"},//"TERMINATE_REASON_LOAD_RATIO_LIMIT"},
+    {terminate_reason_load_ratio_limit, "IdleTimeLimitExceeded"},//"TERMINATE_REASON_LOAD_RATIO_LIMIT"},
     {terminate_reason_debug_event,      "DebugEvent"},//"TERMINATE_REASON_DEBUG_EVENT"},
 };
 
