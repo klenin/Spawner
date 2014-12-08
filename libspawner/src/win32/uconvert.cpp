@@ -176,47 +176,48 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
     long double value = 0.0;
 
     std::istringstream iss(val);
-    iss >> value;
+
+    if (!(iss >> value)) {
+        throw std::string("Number expected");
+        return default_value;
+    }
 
     size_t current_index = iss.tellg();
 
-    if (current_index == -1 && value == 0.0)
-        return default_value;
-
-    if (current_index != -1)
+    if (current_index != -1) {
         v = v.substr(current_index, v.length() - current_index);
-    else
+    } else {
         v = "";
+    }
 
-    if (to.unit_type & unit_memory)
-    {
+    if (to.unit_type & unit_memory) {
         from = value_t(unit_memory_byte, degree_mega);
     }
-    if (to.unit_type & unit_time)
-    {
+    if (to.unit_type & unit_time) {
         from = value_t(unit_time_second);
     }
 
-    if (v.length() > 0)
-    {
+    if (v.length() > 0) {
         size_t len = v.length(), index = 0, degree_index = 0, unit_index = 0;
-        for (degree_index = 1; degree_index < degrees_count; degree_index++)
-        {
+        for (degree_index = 1; degree_index < degrees_count; degree_index++) {
             while (index < len && index < strlen(degree_descriptions[degree_index].short_name) && 
-                v[index]==degree_descriptions[degree_index].short_name[index])
+                v[index]==degree_descriptions[degree_index].short_name[index]) {
                 index++;
-            if (index == strlen(degree_descriptions[degree_index].short_name))
+            }
+            if (index == strlen(degree_descriptions[degree_index].short_name)) {
                 break;
+            }
             index = 0;
         }
         int old_index = index;
-        for (unit_index = 1; unit_index < units_count; unit_index++)
-        {
+        for (unit_index = 1; unit_index < units_count; unit_index++) {
             while (index < len && index-old_index < strlen(unit_descriptions[unit_index].short_name) && 
-                v[index]==unit_descriptions[unit_index].short_name[index - old_index])
+                v[index]==unit_descriptions[unit_index].short_name[index - old_index]) {
                 index++;
-            if (index == (old_index + strlen(unit_descriptions[unit_index].short_name)))
+            }
+            if (index == (old_index + strlen(unit_descriptions[unit_index].short_name))) {
                 break;
+            }
             index = old_index;
         }
         if (v.length() == 1) {
@@ -235,6 +236,7 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
         }
         if (!((to.unit_type & from.unit_type) & unit_memory || (to.unit_type & from.unit_type) & unit_time || (from.unit_type == to.unit_type && from.unit_type == unit_no_unit)) ||
             unit_index == units_count || degree_index == degrees_count) {
+            throw std::string("Incompatible unit types");
             return default_value;
         }
     }
