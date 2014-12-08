@@ -7,7 +7,7 @@
 #include <vector>
 #include <json/json.h>
 #include <inc/compatibility.h>
-#include <functional>
+
 #define min_def(x, y)((x)<(y)?(x):(y))
 #define max_def(x, y)((x)>(y)?(x):(y))
 
@@ -17,19 +17,6 @@ typedef char *argument_type_t;
 
 
 //unique names for arguments
-const argument_type_t sp_output_stream          = "output_stream";
-const argument_type_t sp_input_stream           = "intput_stream";
-const argument_type_t sp_error_stream           = "error_stream";
-
-const argument_type_t sp_test                   = "test";
-
-const argument_type_t sp_end                    = NULL;
-const argument_type_t sp_reserved               = NULL;
-
-typedef char *parser_type_t;
-
-const parser_type_t sp_console_parser       = "console_parser";
-const parser_type_t sp_environment_parser   = "environment_parser";
 
 enum on_error_behavior_e {
     on_error_skip,
@@ -64,30 +51,56 @@ public:
 //    virtual void set_init_value(argument_type_t argument, const std::string &value) = 0;
 };
 
+class argument_parser_exception_c {
+private:
+    std::string exception;
+public:
+    argument_parser_exception_c(const std::string &exception) : exception(exception) {}
+};
+
+class abstract_argument_parser_c {
+private:
+    unsigned int reference_count;
+public:
+    abstract_argument_parser_c() : reference_count(0) {}
+    virtual void after() {}
+    virtual bool set(const std::string &s) = 0;
+    virtual bool apply(const std::string &s) = 0;
+    void dereference() { reference_count--; if (!reference_count) delete this; }
+    abstract_argument_parser_c *reference() { reference_count++; return this; }
+};
+
+template<typename T>
+class base_argument_parser_c : public abstract_argument_parser_c {
+protected:
+    T &value;
+    std::string error;
+public:
+    base_argument_parser_c(T &value) : value(value), abstract_argument_parser_c() {}
+    virtual bool set(const std::string &s) {return false;}
+    virtual bool apply(const std::string &s) {
+        if (!set(s)) {
+            throw error;
+        }
+        after();
+        return true;
+    }
+};
+
 class abstract_parser_c {
 protected:
-    std::map<std::string, std::function<bool(const std::string&)> > parameters;
-    std::function<bool(const std::string&)> callback;
+    std::map<std::string, abstract_argument_parser_c*> parameters;
+    abstract_argument_parser_c *current_argument_parser;
 public:
     //abstract_parser_c(const parser_t &parser){}
+    ~abstract_parser_c();
     virtual bool invoke_initialization(abstract_settings_parser_c &parser_object){return false;} //init settings for parser object
-    virtual void add_parameter(const std::vector<std::string> &params, std::function<bool(const std::string)> callback);
+    virtual abstract_argument_parser_c *add_argument_parser(const std::vector<std::string> &params, abstract_argument_parser_c *argument_parser);
     virtual bool parse(abstract_settings_parser_c &parser_object) {return false;}
     virtual bool invoke(abstract_settings_parser_c &parser_object) {return false;}
     virtual std::string help() { return ""; }
 };
 
-struct parser_t {
-    char *name;
-    void *settings;
-    void *items;
-    parser_type_t type;
-};
-
-struct parser_constructor_t {
-    parser_type_t type;
-    abstract_parser_c *(*constructor)(const parser_t&);
-};
 
 
 struct console_argument_parser_settings_t {
@@ -118,6 +131,8 @@ struct environment_argument_t {
 
 
 //configuration_manager
+#include <memory>
+#include <utility>
 class settings_parser_c: public abstract_settings_parser_c {
 private:
     int position;
@@ -184,11 +199,12 @@ protected:
     abstract_settings_parser_c *parser_object;
 public:
     console_argument_parser_c();
-    void set_flag(const std::vector<std::string> &v);
+    virtual abstract_argument_parser_c *add_flag_parser(const std::vector<std::string> &params, abstract_argument_parser_c *argument_parser);
     virtual bool parse(abstract_settings_parser_c &parser_object);
     virtual parsing_state_e process_argument(const char *argument);
     virtual parsing_state_e process_value(const char *argument);
     virtual bool invoke(abstract_settings_parser_c &parser_object);
+    virtual bool invoke_initialization(abstract_settings_parser_c &parser_object);
     virtual std::string help();
 };
 

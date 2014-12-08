@@ -28,10 +28,17 @@ compact_list_c::operator std::vector<std::string>() const {
 }
 
 
-void abstract_parser_c::add_parameter(const std::vector<std::string> &params, std::function<bool(const std::string)> callback) {
-    for (auto i = params.begin(); i != params.end(); i++) {
-        parameters[*i] = callback;
+abstract_parser_c::~abstract_parser_c() {
+    for (auto i = parameters.begin(); i != parameters.end(); i++) {
+        i->second->dereference();
     }
+}
+
+abstract_argument_parser_c *abstract_parser_c::add_argument_parser(const std::vector<std::string> &params, abstract_argument_parser_c *argument_parser) {
+    for (auto i = params.begin(); i != params.end(); i++) {
+        parameters[*i] = argument_parser->reference();
+    }
+    return argument_parser;
 }
 
 
@@ -125,8 +132,10 @@ bool settings_parser_c::parse(int argc, char *argv[]) {
             restore_position();
         }
         if (saved_count() == 1) {
-            if (!pop_saved_parser()->invoke(*this)) {
-                std::cerr << "some error " << arg_v[position - 1] << std::endl;
+            try {
+                pop_saved_parser()->invoke(*this);
+            } catch (std::string error) {
+                std::cerr << "Invalid parameter value: " << arg_v[position - 1] << " with error: " << error << std::endl;
                 return false;
             }
         } else if (saved_count() > 1) {
@@ -145,6 +154,7 @@ bool settings_parser_c::parse(int argc, char *argv[]) {
             }
         }
     }
+    return true;
 }
 size_t settings_parser_c::parsers_count() {
     return parsers.size();
@@ -175,10 +185,11 @@ bool console_argument_parser_c::parse(abstract_settings_parser_c &parser_object)
     }
     return last_state == argument_ok_state;
 }
-void console_argument_parser_c::set_flag(const std::vector<std::string> &v) {
-    for (auto i = v.begin(); i != v.end(); i++) {
+abstract_argument_parser_c *console_argument_parser_c::add_flag_parser(const std::vector<std::string> &params, abstract_argument_parser_c *argument_parser) {
+    for (auto i = params.begin(); i != params.end(); i++) {
         is_flag[*i] = true;
     }
+    return add_argument_parser(params, argument_parser);
 }
 console_argument_parser_c::parsing_state_e console_argument_parser_c::process_argument(const char *argument) {
     //check if in the dictionary
@@ -189,7 +200,7 @@ console_argument_parser_c::parsing_state_e console_argument_parser_c::process_ar
     std::string left, right;
     if (is_flag.find(std::string(argument)) != is_flag.end()) {
         value = "1";
-        callback = parameters[argument];
+        current_argument_parser = parameters[argument];
         last_state = argument_ok_state;
         return last_state;
     }
@@ -209,7 +220,7 @@ console_argument_parser_c::parsing_state_e console_argument_parser_c::process_ar
     } else if (is_flag.find(left) != is_flag.end()) {
         return argument_error_state;
     }
-    callback = parameters[left];
+    current_argument_parser = parameters[left];
     last_state = argument_started_state;
     if (length < s.length()) {
         right = s.substr(length + divider_length, s.length() - length - divider_length);
@@ -229,12 +240,13 @@ console_argument_parser_c::parsing_state_e console_argument_parser_c::process_va
     return last_state;
 }
 bool console_argument_parser_c::invoke(abstract_settings_parser_c &parser_object) {
-    if (!callback(value)) {
-        return false;//not good
-    }
-    return true;
-    //((settings_parser_c&)parser_object).set_value(argument_name, value);
+    return current_argument_parser->apply(value);
 }
+
+bool console_argument_parser_c::invoke_initialization(abstract_settings_parser_c &parser_object) {
+    return true;
+}
+
 std::string console_argument_parser_c::help() { return ""; }
 
 
@@ -253,14 +265,19 @@ std::string environment_variable_parser_c::get_environment_variable(const std::s
     return buffer;
 }
 bool environment_variable_parser_c::invoke_initialization(abstract_settings_parser_c &parser_object) {
-    std::map<std::string, std::function<bool(const std::string&)> > m;
+    std::map<std::string, abstract_argument_parser_c*> m;
     for (auto i = parameters.begin(); i != parameters.end(); i++) {
         if (exists_environment_variable(i->first)) {
             m[i->first] = i->second;
         }
     }
     for (auto i = m.begin(); i != m.end(); i++) {
-        if (!i->second(get_environment_variable(i->first))) {
+        /// DANGEROUS !!!
+        try {
+            if (!i->second->apply(get_environment_variable(i->first))) {
+            }
+        } catch (std::string &error) {
+            std::cerr << "Invalid parameter value for \"" << i->first << "\" with error: " << error << std::endl;
         }
     }
     return true;

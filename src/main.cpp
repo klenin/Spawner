@@ -4,36 +4,129 @@
 #include <string>
 
 #include <spawner.h>
-#include <functional>
+
+class string_argument_parser_c : public base_argument_parser_c<std::string> {
+public:
+    string_argument_parser_c(std::string &value) : base_argument_parser_c<std::string>(value) {}
+    virtual bool set(const std::string &s) {
+        value = s;
+        return true;
+    }
+};
+
+template<typename T, unit_t u, degrees_enum d>
+class unit_argument_parser_c : public base_argument_parser_c<T> {
+public:
+    unit_argument_parser_c(T &value) : base_argument_parser_c<T>(value) {}
+    virtual bool set(const std::string &s) {
+        try {
+            value = convert(value_t(u, d), s, restriction_no_limit);
+        } catch(std::string &str) {
+            error = "Value type is not compatible: " + str;
+            return false;
+        }
+        return true;
+    }
+};
+
+class millisecond_argument_parser_c : public unit_argument_parser_c<restriction_t, unit_time_second, degree_milli> {
+protected:
+    virtual bool accept_zero() {
+        return false;
+    }
+public:
+    millisecond_argument_parser_c(restriction_t &value) : unit_argument_parser_c<restriction_t, unit_time_second, degree_milli>(value) {}
+    virtual bool set(const std::string &s) {
+        if (!unit_argument_parser_c<restriction_t, unit_time_second, degree_milli>::set(s)) {
+            return false;
+        }
+        if (value == 0 && !accept_zero()) {
+            error = "Time cannot be set to 0";
+            return false;
+        }
+        return true;
+    }
+};
+
+class byte_argument_parser_c : public unit_argument_parser_c<restriction_t, unit_memory_byte, degree_default> {
+protected:
+    virtual bool accept_zero() {
+        return false;
+    }
+public:
+    byte_argument_parser_c(restriction_t &value) : unit_argument_parser_c<restriction_t, unit_memory_byte, degree_default>(value) {}
+    virtual bool set(const std::string &s) {
+        if (!unit_argument_parser_c<restriction_t, unit_memory_byte, degree_default>::set(s)) {
+            return false;
+        }
+        if (value == 0 && !accept_zero()) {
+            error = "Memory cannot be set to 0";
+            return false;
+        }
+        return true;
+    }
+};
+
+class percent_argument_parser_c : public unit_argument_parser_c<restriction_t, unit_no_unit, degree_m4> {
+protected:
+    virtual bool accept_zero() {
+        return false;
+    }
+public:
+    percent_argument_parser_c(restriction_t &value) : unit_argument_parser_c<restriction_t, unit_no_unit, degree_m4>(value) {}
+    virtual bool set(const std::string &s) {
+        if (!unit_argument_parser_c<restriction_t, unit_no_unit, degree_m4>::set(s)) {
+            return false;
+        }
+        if (value == 0 && !accept_zero()) {
+            error = "Ratio cannot be set to 0";
+            return false;
+        }
+        return true;
+    }
+};
+
+template<typename T>
+class base_boolean_argument_parser_c : public base_argument_parser_c<T> {
+protected:
+    virtual T true_value() {
+        return true;
+    }
+    virtual T false_value() {
+        return false;
+    }
+public:
+    base_boolean_argument_parser_c(T &value) : base_argument_parser_c<T>(value) {}
+    virtual bool set(const std::string &s) {
+        if (s == "1") {
+            value = true_value();
+        } else if (s == "0") {
+            value = false_value();
+        } else {
+            error = "Value type is not compatible";
+            return false;
+        }
+        return true;
+    }
+};
+
+typedef base_boolean_argument_parser_c<bool> boolean_argument_parser_c;
+
+class bool_restriction_argument_parser_c : public base_boolean_argument_parser_c<restriction_t> {
+public:
+    bool_restriction_argument_parser_c(restriction_t &value) : base_boolean_argument_parser_c<restriction_t>(value) {}
+protected:
+    virtual restriction_t true_value() {
+        return restriction_limited;
+    }
+    virtual restriction_t false_value() {
+        return restriction_no_limit;
+    }
+};
 
 
-#define NEW_CONSOLE_PARSER(PARSER) console_argument_parser_c *console_parser_##PARSER = new console_argument_parser_c
-#define NEW_ENVIRONMENT_PARSER(PARSER) environment_variable_parser_c *environment_parser_##PARSER = new environment_variable_parser_c
-#define MILLISECOND_CONVERT convert<unit_time_second, degree_milli>
-#define BYTE_CONVERT convert<unit_memory_byte, degree_default>
-#define PERCENT_CONVERT convert<unit_no_unit, degree_m4>
-#define RESTRICTION_BOOL_CONVERT restriction_convert_bool
-#define BOOL_CONVERT convert_bool
-#define STRING_CONVERT
-#define ADD_CONSOLE_ARGUMENT(PARSER, ARGUMENTS, VALUE, TYPE_CONVERTER, ...) (console_parser_##PARSER->\
-    add_parameter((std::vector<std::string>)ARGUMENTS, [this](const std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;}))
-#define ADD_FLAG_ARGUMENT(PARSER, ARGUMENTS, VALUE, TYPE_CONVERTER, ...) do {\
-    console_parser_##PARSER->add_parameter((std::vector<std::string>)ARGUMENTS, [this](const std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;});\
-    console_parser_##PARSER->set_flag((std::vector<std::string>)ARGUMENTS);\
-    } while (0)
-#define ADD_ENVIRONMENT_ARGUMENT(PARSER, ARGUMENTS, VALUE, TYPE_CONVERTER, ...) (environment_parser_##PARSER->\
-    add_parameter((std::vector<std::string>)ARGUMENTS, [this](const std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;}))
-
-#define ADD_CONSOLE_ENVIRONMENT_ARGUMENT(PARSER, CONSOLE_ARGUMENTS, ENVIRONMENT_ARGUMENTS, VALUE, TYPE_CONVERTER, ...) do {\
-    console_parser_##PARSER->add_parameter((std::vector<std::string>)CONSOLE_ARGUMENTS, [this](const std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;});\
-    environment_parser_##PARSER->add_parameter((std::vector<std::string>)ENVIRONMENT_ARGUMENTS, [this](const std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;});\
-    } while (0)
-
-#define ADD_FLAG_ENVIRONMENT_ARGUMENT(PARSER, CONSOLE_ARGUMENTS, ENVIRONMENT_ARGUMENTS, VALUE, TYPE_CONVERTER, ...) do {\
-    console_parser_##PARSER->add_parameter((std::vector<std::string>)CONSOLE_ARGUMENTS, [this](const std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;});\
-    console_parser_##PARSER->set_flag((std::vector<std::string>)CONSOLE_ARGUMENTS);\
-    environment_parser_##PARSER->add_parameter((std::vector<std::string>)ENVIRONMENT_ARGUMENTS, [this](const std::string &s) -> bool {VALUE=TYPE_CONVERTER(s); __VA_ARGS__ ; return 1;});\
-    } while (0)
+class function_restriction_argument_parser_c : public abstract_argument_parser_c {
+};
 
 
 class spawner_base_c {
@@ -235,27 +328,54 @@ Spawner options:\n\
     
         parser.set_dividers(c_lst(":").vector());
 
-        NEW_CONSOLE_PARSER(old_spawner);
-        NEW_ENVIRONMENT_PARSER(old_spawner);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("tl")),   c_lst("SP_TIME_LIMIT"),     restrictions[restriction_processor_time_limit],  MILLISECOND_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("ml")),   c_lst("SP_MEMORY_LIMIT"),   restrictions[restriction_memory_limit],     BYTE_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("s")),    c_lst("SP_SECURITY_LEVEL"), restrictions[restriction_security_limit],   RESTRICTION_BOOL_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("d")),    c_lst("SP_DEADLINE"),       restrictions[restriction_user_time_limit], MILLISECOND_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("wl")),   c_lst("SP_WRITE_LIMIT"),    restrictions[restriction_write_limit],      BYTE_CONVERT);
+        console_argument_parser_c *console_default_parser = new console_argument_parser_c();
+        environment_variable_parser_c *environment_default_parser = new environment_variable_parser_c();
 
+        console_default_parser->add_argument_parser(c_lst(short_arg("tl")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_TIME_LIMIT"), new millisecond_argument_parser_c(restrictions[restriction_processor_time_limit]))
+        );
+        console_default_parser->add_argument_parser(c_lst(short_arg("d")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_DEADLINE"), new millisecond_argument_parser_c(restrictions[restriction_user_time_limit]))
+        );
+        console_default_parser->add_argument_parser(c_lst(short_arg("s")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_SECURITY_LEVEL"), new bool_restriction_argument_parser_c(restrictions[restriction_security_limit]))
+        );
+        console_default_parser->add_argument_parser(c_lst(short_arg("ml")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_MEMORY_LIMIT"), new byte_argument_parser_c(restrictions[restriction_memory_limit]))
+        );
+        console_default_parser->add_argument_parser(c_lst(short_arg("wl")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_WRITE_LIMIT"), new byte_argument_parser_c(restrictions[restriction_write_limit]))
+        );
 
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("u")),    c_lst("SP_USER"),           options.login,    STRING_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("p")),    c_lst("SP_PASSWORD"),       options.password, STRING_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("sr")),   c_lst("SP_REPORT_FILE"),    options.report_file,      STRING_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("so")),   c_lst("SP_OUTPUT_FILE"),    output_file,      STRING_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("i")),    c_lst("SP_INPUT_FILE"),     input_file,       STRING_CONVERT);
+        console_default_parser->add_argument_parser(c_lst(short_arg("u")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_USER"), new string_argument_parser_c(options.login))
+        );
+        console_default_parser->add_argument_parser(c_lst(short_arg("p")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_PASSWORD"), new string_argument_parser_c(options.password))
+        );
 
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("runas")), c_lst("SP_RUNAS"),         runas,        BOOL_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("ho")),    c_lst("SP_HIDE_OUTPUT"),   options.hide_output,  BOOL_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("hr")),    c_lst("SP_HIDE_REPORT"),   options.hide_report,  BOOL_CONVERT);
+        console_default_parser->add_argument_parser(c_lst(short_arg("sr")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_REPORT_FILE"), new string_argument_parser_c(options.report_file))
+        );
+        console_default_parser->add_argument_parser(c_lst(short_arg("so")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_OUTPUT_FILE"), new string_argument_parser_c(output_file))
+        );
+        console_default_parser->add_argument_parser(c_lst(short_arg("i")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_INPUT_FILE"), new string_argument_parser_c(input_file))
+        );
 
-        parser.add_parser(console_parser_old_spawner);
-        parser.add_parser(environment_parser_old_spawner);
+        console_default_parser->add_argument_parser(c_lst(short_arg("runas")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_RUNAS"), new boolean_argument_parser_c(runas))
+        );
+        console_default_parser->add_argument_parser(c_lst(short_arg("ho")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_HIDE_OUTPUT"), new boolean_argument_parser_c(options.hide_output))
+        );
+        console_default_parser->add_argument_parser(c_lst(short_arg("hr")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_HIDE_REPORT"), new boolean_argument_parser_c(options.hide_report))
+        );
+
+        parser.add_parser(console_default_parser);
+        parser.add_parser(environment_default_parser);
     }
 };
 
@@ -386,27 +506,6 @@ Examples:\n\
         parser.set_dividers(c_lst("=").vector());
         options.hide_output = true;
 
-        NEW_CONSOLE_PARSER(pcms2);
-        NEW_ENVIRONMENT_PARSER(pcms2);
-        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("t")),    restrictions[restriction_processor_time_limit],  MILLISECOND_CONVERT);
-        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("m")),    restrictions[restriction_memory_limit],     BYTE_CONVERT);
-        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("r")),    restrictions[restriction_load_ratio],       PERCENT_CONVERT);
-        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("y")),    restrictions[restriction_idle_time_limit],  MILLISECOND_CONVERT);
-
-        
-        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("l")),    options.login,    STRING_CONVERT);
-        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("d")),    options.working_directory,    STRING_CONVERT);
-        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("p")),    options.password, STRING_CONVERT);
-        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("s")),    options.report_file,      STRING_CONVERT);
-        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("o")),    output_file,      STRING_CONVERT);
-        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("e")),    error_file,      STRING_CONVERT);
-        ADD_CONSOLE_ARGUMENT(pcms2, c_lst(short_arg("i")),    input_file,       STRING_CONVERT);
-
-        ADD_FLAG_ARGUMENT(pcms2, c_lst(short_arg("q")),    options.hide_report=options.hide_output,  BOOL_CONVERT);
-        ADD_FLAG_ARGUMENT(pcms2, c_lst(short_arg("w")),    options.hide_gui=options.hide_gui,  !BOOL_CONVERT);// create separate console
-
-        parser.add_parser(console_parser_pcms2);
-        parser.add_parser(environment_parser_pcms2);
     }
     virtual void init_std_streams() {
     }
@@ -617,50 +716,6 @@ Spawner options:\n\
     virtual void init_arguments() {
     
         parser.set_dividers(c_lst("=", ":").vector());
-
-        NEW_CONSOLE_PARSER(old_spawner);
-        NEW_ENVIRONMENT_PARSER(old_spawner);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("tl")),   c_lst("SP_TIME_LIMIT"),     restrictions[restriction_processor_time_limit],  MILLISECOND_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("ml")),   c_lst("SP_MEMORY_LIMIT"),   restrictions[restriction_memory_limit],     BYTE_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("s")),    c_lst("SP_SECURITY_LEVEL"), restrictions[restriction_security_limit],   RESTRICTION_BOOL_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("d")),    c_lst("SP_DEADLINE"),       restrictions[restriction_user_time_limit], MILLISECOND_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("wl")),   c_lst("SP_WRITE_LIMIT"),    restrictions[restriction_write_limit],      BYTE_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("lr")),   c_lst("SP_LOAD_RATIO"),     restrictions[restriction_load_ratio],      PERCENT_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("y")),    c_lst("SP_IDLE_TIME_LIMIT"),restrictions[restriction_idle_time_limit],      MILLISECOND_CONVERT);
-
-
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("u")),    c_lst("SP_USER"),           options.login,    STRING_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("p")),    c_lst("SP_PASSWORD"),       options.password, STRING_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("sr")),   c_lst("SP_REPORT_FILE"),    options.report_file,      STRING_CONVERT);
-        
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("so"), long_arg("out")),   c_lst("SP_OUTPUT_FILE"),    bool tmp,     1; options.add_stdoutput);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("e"), short_arg("se"), long_arg("err")),   c_lst("SP_ERROR_FILE"),      bool tmp,     1; options.add_stderror);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("i"), long_arg("in")),   c_lst("SP_INPUT_FILE"),      bool tmp,     1; options.add_stdinput);
-
-        ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("delegated")),c_lst("SP_RUNAS"),          runas,        BOOL_CONVERT);
-        ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("debug")),    c_lst("SP_DEBUG"),          options.debug,        BOOL_CONVERT);
-
-        ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("cmd"), long_arg("systempath")),    c_lst("SP_SYSTEM_PATH"),          options.use_cmd,        BOOL_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("wd")),   c_lst("SP_DIRECTORY"),       options.working_directory,    STRING_CONVERT);
-
-        ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("ho")),   c_lst("SP_HIDE_OUTPUT"),   options.hide_output, BOOL_CONVERT);
-        ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("hr")),   c_lst("SP_HIDE_REPORT"),   options.hide_report, BOOL_CONVERT);
-        ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(short_arg("sw")),   c_lst("SP_SHOW_WINDOW"),   options.hide_gui,    !BOOL_CONVERT);
-
-        ADD_FLAG_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("json")),  c_lst("SP_JSON"),	        options.json,        BOOL_CONVERT);
-
-		ADD_CONSOLE_ARGUMENT(old_spawner, c_lst(long_arg("session")), options.session_id, STRING_CONVERT);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("separator")), c_lst("SP_SEPARATOR"),   bool tmp, 1; parser.set_separator);
-        ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("program")), c_lst("SP_PROGRAM"),   options.session_id, STRING_CONVERT);
-    //{SP_SILENT,             "--silent", SO_NONE},
-    //{SP_WORKING_DIRECTORY,  "-wd" ,     SO_REQ_CMB},
-
-    //{SP_SEPARATOR,          "--separator", SO_REQ_CMB},
-    //{SP_PROGRAM_ID,         "--program", SO_REQ_CMB},
-    //{SP_JSON,               "--json",   SO_NONE},
-
-        parser.add_parser(console_parser_old_spawner);
-        parser.add_parser(environment_parser_old_spawner);
     }
 };
 
@@ -671,15 +726,33 @@ callback_t param_binder() {
     //return
 }
 
-void command_handler_c::add_default_parser() {
-    NEW_CONSOLE_PARSER(default_parser);
-    NEW_ENVIRONMENT_PARSER(default_parser);
+// think about name for this class // this is too stupid
+class command_handler_legacy_argument_class_c : public string_argument_parser_c {
+private:
+    std::string v;
+    command_handler_c &handler;
+    bool create;
+public:
+    command_handler_legacy_argument_class_c(command_handler_c &handler, bool create = true) : string_argument_parser_c(v), handler(handler), create(create) {}
+    virtual bool set(const std::string &s) {
+        if ((create && !handler.create_spawner(s)) || (!create && !handler.set_legacy(s))) {
+            error = "Invalid value for legacy argument \"" + s + "\". Check if value is supported and whether is already defined (Currently disabled).";
+            return false;
+        }
+        return true;
+    }
+};
 
-    ADD_CONSOLE_ARGUMENT(default_parser, c_lst(long_arg("legacy")), bool tmp, create_spawner, if (!tmp) return 0);
-    ADD_ENVIRONMENT_ARGUMENT(default_parser, c_lst("SP_LEGACY"), bool tmp, set_legacy, if (!tmp) return 0);
-    ADD_FLAG_ARGUMENT(default_parser, c_lst(short_arg("h"), long_arg("help")), show_help, 1; , std::cout << spawner->help(); parser.stop());
-    add_parser(console_parser_default_parser);
-    add_parser(environment_parser_default_parser);
+void command_handler_c::add_default_parser() {
+    console_argument_parser_c *console_default_parser = new console_argument_parser_c();
+    environment_variable_parser_c *environment_default_parser = new environment_variable_parser_c();
+
+    console_default_parser->add_flag_parser(c_lst(short_arg("h"), long_arg("help")), new boolean_argument_parser_c(show_help));
+    console_default_parser->add_argument_parser(c_lst(long_arg("legacy")), new command_handler_legacy_argument_class_c(*this));
+    environment_default_parser->add_argument_parser(c_lst("SP_LEGACY"), new command_handler_legacy_argument_class_c(*this, false));
+
+    add_parser(console_default_parser);
+    add_parser(environment_default_parser);
 }
 command_handler_c::command_handler_c(): spawner(NULL), show_help(false), legacy_set(false) {
 //    reset();
@@ -723,7 +796,9 @@ spawner_base_c *command_handler_c::create_spawner(const std::string &s) {
 }
 void command_handler_c::add_parser(abstract_parser_c *p) {
     parser.add_parser(p);
-    p->invoke_initialization(parser);
+    if (!p->invoke_initialization(parser)) {
+        parser.stop();
+    }
 }
 
 bool command_handler_c::parse(int argc, char *argv[]) {
@@ -731,7 +806,10 @@ bool command_handler_c::parse(int argc, char *argv[]) {
     if (!parser.parse(argc, argv)) {
         return false;
     }
-
+    if (show_help) {
+        std::cout << spawner->help();
+        return true;
+    }
     if (spawner && spawner->init()) {
         spawner->run();
     } else {
@@ -740,8 +818,17 @@ bool command_handler_c::parse(int argc, char *argv[]) {
 }
 
 
+command_handler_c handler;
+
+
+BOOL WINAPI CtrlHandlerRoutine(DWORD dwCtrlType) {
+    handler.spawner->print_report();
+    return FALSE;
+}
+
+
 int main(int argc, char *argv[]) {
-    command_handler_c handler;
+    SetConsoleCtrlHandler(CtrlHandlerRoutine, TRUE);
     if (!handler.parse(argc, argv)) {
 
     }
