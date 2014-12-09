@@ -392,6 +392,11 @@ public:
             std::cout << "\", press ESC to terminate...\n";
         }
     }
+    virtual bool init() {
+        options.hide_report = options.hide_output;
+        options.hide_gui = !options.hide_gui;
+        return spawner_old_c::init();
+    }
     virtual void print_report() {
         report_class rep = secure_runner_instance->get_report();
         options_class options = secure_runner_instance->get_options();
@@ -505,7 +510,29 @@ Examples:\n\
     
         parser.set_dividers(c_lst("=").vector());
         options.hide_output = true;
+        options.hide_gui = true;
 
+        console_argument_parser_c *console_default_parser = new console_argument_parser_c();
+        environment_variable_parser_c *environment_default_parser = new environment_variable_parser_c();
+
+        console_default_parser->add_argument_parser(c_lst(short_arg("t")), new millisecond_argument_parser_c(restrictions[restriction_processor_time_limit]));
+        console_default_parser->add_argument_parser(c_lst(short_arg("m")), new byte_argument_parser_c(restrictions[restriction_memory_limit]));
+        console_default_parser->add_argument_parser(c_lst(short_arg("r")), new percent_argument_parser_c(restrictions[restriction_load_ratio]));
+        console_default_parser->add_argument_parser(c_lst(short_arg("y")), new millisecond_argument_parser_c(restrictions[restriction_idle_time_limit]));
+
+        console_default_parser->add_argument_parser(c_lst(short_arg("l")), new string_argument_parser_c(options.login));
+        console_default_parser->add_argument_parser(c_lst(short_arg("d")), new string_argument_parser_c(options.working_directory));
+        console_default_parser->add_argument_parser(c_lst(short_arg("p")), new string_argument_parser_c(options.password));
+        console_default_parser->add_argument_parser(c_lst(short_arg("s")), new string_argument_parser_c(options.report_file));
+        console_default_parser->add_argument_parser(c_lst(short_arg("o")), new string_argument_parser_c(output_file));
+        console_default_parser->add_argument_parser(c_lst(short_arg("e")), new string_argument_parser_c(error_file));
+        console_default_parser->add_argument_parser(c_lst(short_arg("i")), new string_argument_parser_c(input_file));
+
+        console_default_parser->add_flag_parser(c_lst(short_arg("q")), new boolean_argument_parser_c(options.hide_output));
+        console_default_parser->add_flag_parser(c_lst(short_arg("w")), new boolean_argument_parser_c(options.hide_gui));
+
+        parser.add_parser(console_default_parser);
+        parser.add_parser(environment_default_parser);
     }
     virtual void init_std_streams() {
     }
@@ -719,12 +746,6 @@ Spawner options:\n\
     }
 };
 
-typedef std::function<void(std::string)> callback_t;
-
-template<typename T, typename T1>
-callback_t param_binder() {
-    //return
-}
 
 // think about name for this class // this is too stupid
 class command_handler_legacy_argument_class_c : public string_argument_parser_c {
