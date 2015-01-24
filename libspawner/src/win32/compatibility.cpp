@@ -164,12 +164,13 @@ std::string GenerateSpawnerReport(const report_class &rep, const options_class &
     osstream << "SecurityLevel:             " << (restrictions.get_restriction(restriction_security_limit) == restriction_limited) << std::endl;
     osstream << "CreateProcessMethod:       " << (options.login==""?"CreateProcess":"WithLogon") << std::endl;
     osstream << "UserName:                  " << rep.login << std::endl;
-    osstream << "UserTimeLimit:             " << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), restrictions.get_restriction(restriction_processor_time_limit), " (u)", restriction_no_limit) << std::endl;
-    osstream << "DeadLine:                  " << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), restrictions.get_restriction(restriction_user_time_limit), " (u)", restriction_no_limit) << std::endl;
+    osstream << "UserTimeLimit:             " << convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), restrictions.get_restriction(restriction_processor_time_limit), " (u)", restriction_no_limit) << std::endl;
+    osstream << "DeadLine:                  " << convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), restrictions.get_restriction(restriction_user_time_limit), " (u)", restriction_no_limit) << std::endl;
     osstream << "MemoryLimit:               " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), restrictions.get_restriction(restriction_memory_limit), " (du)", restriction_no_limit) << std::endl;
     osstream << "WriteLimit:                " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), restrictions.get_restriction(restriction_write_limit), " (du)", restriction_no_limit) << std::endl;
     osstream << "----------------------------------------------" << std::endl;
     osstream << "UserTime:                  " << convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), rep.processor_time/10.0, " (sec)") << std::endl;
+    //osstream << "UserTime:                  " << convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), rep.user_time/10.0, " (sec)") << std::endl;
     osstream << "PeakMemoryUsed:            " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.peak_memory_used, " (Mb)") << std::endl;
     osstream << "Written:                   " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.write_transfer_count, " (Mb)") << std::endl;
     osstream << "TerminateReason:           " << (rep.exit_code&&!rep.terminate_reason?"AbnormalExit":get_terminate_reason(rep.terminate_reason)) << std::endl;

@@ -28,7 +28,7 @@ public:
     size_t total_time;
     double load_ratio;
     unsigned long long processor_time;
-    unsigned long user_time;
+    unsigned long long user_time;
     // additional info subset
     unsigned long long kernel_time;
     // options subset

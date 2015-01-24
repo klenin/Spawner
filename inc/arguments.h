@@ -59,8 +59,11 @@ public:
 };
 
 class abstract_argument_parser_c {
+friend class command_handler_c;
 private:
     unsigned int reference_count;
+protected:
+    std::string default_error;
 public:
     abstract_argument_parser_c() : reference_count(0) {}
     virtual void after() {}
@@ -91,8 +94,10 @@ class abstract_parser_c {
 protected:
     std::map<std::string, abstract_argument_parser_c*> parameters;
     abstract_argument_parser_c *current_argument_parser;
+    bool initialized;
 public:
     //abstract_parser_c(const parser_t &parser){}
+    abstract_parser_c() : initialized(false) {}
     ~abstract_parser_c();
     virtual bool invoke_initialization(abstract_settings_parser_c &parser_object){return false;} //init settings for parser object
     virtual abstract_argument_parser_c *add_argument_parser(const std::vector<std::string> &params, abstract_argument_parser_c *argument_parser);

@@ -1,4 +1,4 @@
-#include "spawner.h"
+/*#include "spawner.h"
 #include <json/json.h>
 #include <inc/uconvert.h>
 #include <iostream>
@@ -391,4 +391,4 @@ std::string spawner_c::json_report(runner *runner_instance) {
 	object["ExitStatus"]            = ExitCodeToString(rep.exit_code);
     object["SpawnerError"]          = error_list::pop_error();
     return object.toStyledString();
-}
+}*/

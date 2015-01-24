@@ -1,9 +1,6 @@
-#ifndef _SPAWNER_H_
+/*#ifndef _SPAWNER_H_
 #define _SPAWNER_H_
 
-#include <sp.h>
-#include <inc/compatibility.h>
-#include <ParseArguments.h>
 
 enum spawner_state_e {
     spawner_state_ok,
@@ -30,4 +27,4 @@ public:
 };
 
 
-#endif//_SPAWNER_H_
+#endif//_SPAWNER_H_*/

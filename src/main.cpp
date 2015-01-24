@@ -3,7 +3,8 @@
 #include <fstream>
 #include <string>
 
-#include <spawner.h>
+#include <sp.h>
+#include <inc/compatibility.h>
 
 class string_argument_parser_c : public base_argument_parser_c<std::string> {
 public:
@@ -28,6 +29,23 @@ public:
     }
 };
 
+template<typename O, typename C>
+class function_argument_parser_c : public string_argument_parser_c {
+private:
+    O o;
+    C c;
+    std::string v;
+public:
+    function_argument_parser_c(O o, C c): o(o), c(c), string_argument_parser_c(v) {}
+    virtual bool set(const std::string &s) {
+        if ((o->*c)(s)) {
+            return true;
+        }
+        error = default_error;
+        return false;
+    }
+};
+
 typedef callback_argument_parser_c<options_class*, void(options_class::*)(const std::string&)> options_callback_argument_parser_c;
 
 template<typename T, unit_t u, degrees_enum d>
@@ -45,15 +63,16 @@ public:
     }
 };
 
-class millisecond_argument_parser_c : public unit_argument_parser_c<restriction_t, unit_time_second, degree_milli> {
+template<degrees_enum d>
+class time_argument_parser_c : public unit_argument_parser_c<restriction_t, unit_time_second, d> {
 protected:
     virtual bool accept_zero() {
         return false;
     }
 public:
-    millisecond_argument_parser_c(restriction_t &value) : unit_argument_parser_c<restriction_t, unit_time_second, degree_milli>(value) {}
+    time_argument_parser_c(restriction_t &value) : unit_argument_parser_c<restriction_t, unit_time_second, d>(value) {}
     virtual bool set(const std::string &s) {
-        if (!unit_argument_parser_c<restriction_t, unit_time_second, degree_milli>::set(s)) {
+        if (!unit_argument_parser_c<restriction_t, unit_time_second, d>::set(s)) {
             return false;
         }
         if (value == 0 && !accept_zero()) {
@@ -63,6 +82,9 @@ public:
         return true;
     }
 };
+
+typedef time_argument_parser_c<degree_milli> millisecond_argument_parser_c;
+typedef time_argument_parser_c<degree_micro> microsecond_argument_parser_c;
 
 class byte_argument_parser_c : public unit_argument_parser_c<restriction_t, unit_memory_byte, degree_default> {
 protected:
@@ -148,6 +170,8 @@ class function_restriction_argument_parser_c : public abstract_argument_parser_c
 
 class spawner_base_c {
 protected:
+    std::vector<runner*> runners;
+    std::map<std::string, runner*> runner_alias;
     output_buffer_class *create_output_buffer(const std::string &name, const pipes_t &pipe_type, const size_t buffer_size = 4096) {
 	    output_buffer_class *output_buffer = NULL;
 	    if (name == "std") {
@@ -206,19 +230,6 @@ public:
 
 
 
-
-template<unit_t u, degrees_enum d>
-restriction_t convert(const std::string &str) {
-    return convert(value_t(u, d), str, restriction_no_limit);
-}
-
-restriction_t restriction_convert_bool(const std::string &str) {
-    return str=="1"?restriction_limited:restriction_no_limit;
-}
-
-restriction_t convert_bool(const std::string &str) {
-    return str=="1"?true:false;
-}
 
 class spawner_old_c: public spawner_base_c {
 protected:
@@ -349,10 +360,10 @@ Spawner options:\n\
         environment_variable_parser_c *environment_default_parser = new environment_variable_parser_c();
 
         console_default_parser->add_argument_parser(c_lst(short_arg("tl")), 
-            environment_default_parser->add_argument_parser(c_lst("SP_TIME_LIMIT"), new millisecond_argument_parser_c(restrictions[restriction_processor_time_limit]))
+            environment_default_parser->add_argument_parser(c_lst("SP_TIME_LIMIT"), new microsecond_argument_parser_c(restrictions[restriction_processor_time_limit]))
         );
         console_default_parser->add_argument_parser(c_lst(short_arg("d")), 
-            environment_default_parser->add_argument_parser(c_lst("SP_DEADLINE"), new millisecond_argument_parser_c(restrictions[restriction_user_time_limit]))
+            environment_default_parser->add_argument_parser(c_lst("SP_DEADLINE"), new microsecond_argument_parser_c(restrictions[restriction_user_time_limit]))
         );
         console_default_parser->add_argument_parser(c_lst(short_arg("s")), 
             environment_default_parser->add_argument_parser(c_lst("SP_SECURITY_LEVEL"), new bool_restriction_argument_parser_c(restrictions[restriction_security_limit]))
@@ -362,6 +373,12 @@ Spawner options:\n\
         );
         console_default_parser->add_argument_parser(c_lst(short_arg("wl")), 
             environment_default_parser->add_argument_parser(c_lst("SP_WRITE_LIMIT"), new byte_argument_parser_c(restrictions[restriction_write_limit]))
+        );
+        console_default_parser->add_argument_parser(c_lst(short_arg("lr"), short_arg("r")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_LOAD_RATIO"), new percent_argument_parser_c(restrictions[restriction_load_ratio]))
+        );
+        console_default_parser->add_argument_parser(c_lst(short_arg("y")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_IDLE_TIME_LIMIT"), new microsecond_argument_parser_c(restrictions[restriction_idle_time_limit]))
         );
 
         console_default_parser->add_argument_parser(c_lst(short_arg("u")), 
@@ -530,10 +547,10 @@ Examples:\n\
         console_argument_parser_c *console_default_parser = new console_argument_parser_c();
         environment_variable_parser_c *environment_default_parser = new environment_variable_parser_c();
 
-        console_default_parser->add_argument_parser(c_lst(short_arg("t")), new millisecond_argument_parser_c(restrictions[restriction_processor_time_limit]));
+        console_default_parser->add_argument_parser(c_lst(short_arg("t")), new microsecond_argument_parser_c(restrictions[restriction_processor_time_limit]));
         console_default_parser->add_argument_parser(c_lst(short_arg("m")), new byte_argument_parser_c(restrictions[restriction_memory_limit]));
         console_default_parser->add_argument_parser(c_lst(short_arg("r")), new percent_argument_parser_c(restrictions[restriction_load_ratio]));
-        console_default_parser->add_argument_parser(c_lst(short_arg("y")), new millisecond_argument_parser_c(restrictions[restriction_idle_time_limit]));
+        console_default_parser->add_argument_parser(c_lst(short_arg("y")), new microsecond_argument_parser_c(restrictions[restriction_idle_time_limit]));
 
         console_default_parser->add_argument_parser(c_lst(short_arg("l")), new string_argument_parser_c(options.login));
         console_default_parser->add_argument_parser(c_lst(short_arg("d")), new string_argument_parser_c(options.working_directory));
@@ -763,10 +780,10 @@ Spawner options:\n\
         environment_variable_parser_c *environment_default_parser = new environment_variable_parser_c();
 
         console_default_parser->add_argument_parser(c_lst(short_arg("tl")), 
-            environment_default_parser->add_argument_parser(c_lst("SP_TIME_LIMIT"), new millisecond_argument_parser_c(restrictions[restriction_processor_time_limit]))
+            environment_default_parser->add_argument_parser(c_lst("SP_TIME_LIMIT"), new microsecond_argument_parser_c(restrictions[restriction_processor_time_limit]))
         );
         console_default_parser->add_argument_parser(c_lst(short_arg("d")), 
-            environment_default_parser->add_argument_parser(c_lst("SP_DEADLINE"), new millisecond_argument_parser_c(restrictions[restriction_user_time_limit]))
+            environment_default_parser->add_argument_parser(c_lst("SP_DEADLINE"), new microsecond_argument_parser_c(restrictions[restriction_user_time_limit]))
         );
         console_default_parser->add_argument_parser(c_lst(short_arg("s")), 
             environment_default_parser->add_argument_parser(c_lst("SP_SECURITY_LEVEL"), new bool_restriction_argument_parser_c(restrictions[restriction_security_limit]))
@@ -781,7 +798,7 @@ Spawner options:\n\
             environment_default_parser->add_argument_parser(c_lst("SP_LOAD_RATIO"), new percent_argument_parser_c(restrictions[restriction_load_ratio]))
         );
         console_default_parser->add_argument_parser(c_lst(short_arg("y")), 
-            environment_default_parser->add_argument_parser(c_lst("SP_IDLE_TIME_LIMIT"), new millisecond_argument_parser_c(restrictions[restriction_idle_time_limit]))
+            environment_default_parser->add_argument_parser(c_lst("SP_IDLE_TIME_LIMIT"), new microsecond_argument_parser_c(restrictions[restriction_idle_time_limit]))
         );
 
         console_default_parser->add_argument_parser(c_lst(short_arg("u")), 
@@ -821,7 +838,7 @@ Spawner options:\n\
         console_default_parser->add_argument_parser(c_lst(long_arg("debug")), 
             environment_default_parser->add_argument_parser(c_lst("SP_DEBUG"), new boolean_argument_parser_c(options.debug))
         );
-        console_default_parser->add_argument_parser(c_lst(long_arg("cmd"), long_arg("systempath")), 
+        console_default_parser->add_flag_parser(c_lst(long_arg("cmd"), long_arg("systempath")), 
             environment_default_parser->add_argument_parser(c_lst("SP_SYSTEM_PATH"), new boolean_argument_parser_c(options.use_cmd))
         );
         console_default_parser->add_argument_parser(c_lst(short_arg("wd")), 
@@ -834,7 +851,10 @@ Spawner options:\n\
 
         console_default_parser->add_flag_parser(c_lst(long_arg("session")), new string_argument_parser_c(options.session_id));
 
-        //ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("separator")), c_lst("SP_SEPARATOR"),   bool tmp, 1; parser.set_separator);
+        console_default_parser->add_argument_parser(c_lst(long_arg("separator")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_SEPARATOR"), new callback_argument_parser_c<settings_parser_c*, void(settings_parser_c::*)(const std::string&)>(&parser, &settings_parser_c::set_separator))
+        );
+
         //ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("program")), c_lst("SP_PROGRAM"),   options.session_id, STRING_CONVERT);
 
         parser.add_parser(console_default_parser);
@@ -844,36 +864,29 @@ Spawner options:\n\
 };
 
 
-// think about name for this class // this is too stupid
-class command_handler_legacy_argument_class_c : public string_argument_parser_c {
-private:
-    std::string v;
-    command_handler_c &handler;
-    bool create;
-public:
-    command_handler_legacy_argument_class_c(command_handler_c &handler, bool create = true) : string_argument_parser_c(v), handler(handler), create(create) {}
-    virtual bool set(const std::string &s) {
-        if ((create && !handler.create_spawner(s)) || (!create && !handler.set_legacy(s))) {
-            error = "Invalid value for legacy argument \"" + s + "\". Check if value is supported and whether is already defined (Currently disabled).";
-            return false;
-        }
-        return true;
-    }
-};
-
 void command_handler_c::add_default_parser() {
     console_argument_parser_c *console_default_parser = new console_argument_parser_c();
     environment_variable_parser_c *environment_default_parser = new environment_variable_parser_c();
 
     console_default_parser->add_flag_parser(c_lst(short_arg("h"), long_arg("help")), new boolean_argument_parser_c(show_help));
-    console_default_parser->add_argument_parser(c_lst(long_arg("legacy")), new command_handler_legacy_argument_class_c(*this));
-    environment_default_parser->add_argument_parser(c_lst("SP_LEGACY"), new command_handler_legacy_argument_class_c(*this, false));
+    console_default_parser->add_argument_parser(
+        c_lst(long_arg("legacy")), 
+        new function_argument_parser_c<command_handler_c*, spawner_base_c*(command_handler_c::*)(const std::string&)>(
+            this, 
+            &command_handler_c::create_spawner
+        )
+    )->default_error = environment_default_parser->add_argument_parser(
+        c_lst("SP_LEGACY"), 
+        new function_argument_parser_c<command_handler_c*, spawner_base_c*(command_handler_c::*)(const std::string&)>(
+            this, 
+            &command_handler_c::create_spawner
+        )
+    )->default_error = "Invalid value for legacy argument.";
 
     add_parser(console_default_parser);
     add_parser(environment_default_parser);
 }
 command_handler_c::command_handler_c(): spawner(NULL), show_help(false), legacy_set(false) {
-//    reset();
     add_default_parser();
     if (!spawner) {
         create_spawner("sp00");
@@ -931,6 +944,7 @@ bool command_handler_c::parse(int argc, char *argv[]) {
     if (spawner && spawner->init()) {
         spawner->run();
     } else {
+        std::cout << spawner->help();
     }
     return true;
 }
@@ -952,11 +966,4 @@ int main(int argc, char *argv[]) {
 
     }
     return 0;
-    /*
-    spawner_c spawner(argc, argv);
-
-    spawner.init();
-    spawner.run();
-    
-	return 0;//*/
 }

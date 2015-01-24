@@ -42,22 +42,22 @@ bool runner::init_process(char *cmd, const char *wd) {
         TRUE,
         process_creation_flags,
         NULL, wd,
-        &si, &process_info) )
-    {
+        &si, &process_info) ) {
         if (!options.use_cmd || !CreateProcess(NULL,
                 cmd,
                 NULL, NULL,
                 TRUE,
                 process_creation_flags,
                 NULL, wd,
-                &si, &process_info) )
-        {
+                &si, &process_info) ) {
                 ReleaseMutex(main_job_object_access_mutex);
                 raise_error(*this, "CreateProcess");
                 return false;
         }
     }
     ReleaseMutex(main_job_object_access_mutex);
+
+    get_times(&creation_time, NULL, NULL, NULL);
     return true;
 }
 
@@ -104,24 +104,6 @@ bool runner::init_process_with_logon(char *cmd, const char *wd) {
         }
     }
 
-    /*if ( !CreateProcessWithLogonW(login, NULL, password, 0,
-        wprogram, wcmd, creation_flags,
-        NULL, wwd, &siw, &process_info) )
-    {
-        if (!options.use_cmd || !CreateProcessWithLogonW(login, NULL, password, 0,
-            NULL, wcmd, creation_flags,
-            NULL, wwd, &siw, &process_info) )
-        {
-            ReleaseMutex(main_job_object_access_mutex);
-            raise_error(*this, "CreateProcessWithLogonW");
-            delete[] login;
-            delete[] password;
-            delete[] wprogram;
-            delete[] wcmd;
-            delete[] wwd;
-            return false;
-        }
-    }*/
     set_allow_breakaway(true);
     ReleaseMutex(main_job_object_access_mutex);
     delete[] login;
@@ -129,11 +111,13 @@ bool runner::init_process_with_logon(char *cmd, const char *wd) {
     delete[] wprogram;
     delete[] wcmd;
     delete[] wwd;
+
+    get_times(&creation_time, NULL, NULL, NULL);
+
     return true;
 }
 
-void runner::create_process()
-{
+void runner::create_process() {
     //WaitForSingleObject(init_semaphore, INFINITE);
 
     if (process_status == process_spawner_crash) {
@@ -222,8 +206,7 @@ void runner::create_process()
     delete[] cmd;
 }
 
-void runner::free()
-{
+void runner::free() {
     for (std::map<pipes_t, pipe_class*>::iterator it = pipes.begin(); it != pipes.end(); ++it) {
         delete it->second;
     }
@@ -231,15 +214,13 @@ void runner::free()
     CloseHandleSafe(process_info.hThread);
 }
 
-void runner::wait()
-{
+void runner::wait() {
     WaitForSingleObject(process_info.hProcess, INFINITE);
 }
 
 void runner::debug() {
     DEBUG_EVENT debug_event;
-    while (WaitForDebugEvent(&debug_event, INFINITE))
-    {
+    while (WaitForDebugEvent(&debug_event, INFINITE)) {
         ContinueDebugEvent(debug_event.dwProcessId,
             debug_event.dwThreadId,
             DBG_CONTINUE);
@@ -252,8 +233,7 @@ void runner::debug() {
 }
 
 void runner::requisites() {
-    if (ResumeThread(process_info.hThread) == (DWORD)-1)
-    {
+    if (ResumeThread(process_info.hThread) == (DWORD)-1) {
         raise_error(*this, "ResumeThread");
         return;
     }
@@ -277,67 +257,67 @@ thread_return_t runner::async_body(thread_param_t param) {
 
 runner::runner(const std::string &program, const options_class &options):
     program(program), options(options), process_status(process_not_started), running_async(false),
-    running_thread(handle_default_value), running(false), init_semaphore(handle_default_value)
-{
+    running_thread(handle_default_value), running(false), init_semaphore(handle_default_value) {
+
     init_semaphore = CreateSemaphore(NULL, 0, 10, NULL);
+    ZeroMemory(&process_info, sizeof(process_info));
 }
 
-runner::~runner()
-{
+runner::~runner() {
     free();
 }
 
-unsigned long runner::get_exit_code()
-{
-    if (process_status == process_spawner_crash)
+unsigned long runner::get_exit_code() {
+    if (process_status == process_spawner_crash) {
         return 0;
+    }
     DWORD dwExitCode = 0;
-    if (!GetExitCodeProcess(process_info.hProcess, &dwExitCode))
+    if (!GetExitCodeProcess(process_info.hProcess, &dwExitCode)) {
         raise_error(*this, "GetExitCodeProcess");
+    }
     return dwExitCode;
 }
 
-process_status_t runner::get_process_status()
-{
+process_status_t runner::get_process_status() {
     //renew process status
-    if (process_status & process_finished_normal || process_status == process_suspended || process_status == process_not_started)
+    if (process_status & process_finished_normal || process_status == process_suspended || process_status == process_not_started) {
         return process_status;
+    }
     unsigned long exitcode = get_exit_code();
-    if (process_status == process_spawner_crash)
+    if (process_status == process_spawner_crash) {
         return process_status;
-    if (exitcode == exit_code_still_active)
+    }
+    if (exitcode == exit_code_still_active) {
         process_status = process_still_active;
-    else
+    } else {
         process_status = process_finished_abnormally;
-    if (exitcode == 0)
+    }
+    if (exitcode == 0) {
         process_status = process_finished_normal;
+    }
     return process_status;
 }
 
-exception_t runner::get_exception()
-{
-    if (get_process_status() == process_finished_abnormally)
+exception_t runner::get_exception() {
+    if (get_process_status() == process_finished_abnormally) {
         return (exception_t)get_exit_code();
+    }
     else return exception_exception_no;
 }
 
-unsigned long runner::get_id()
-{
+unsigned long runner::get_id() {
     return process_info.dwProcessId;
 }
 
-std::string runner::get_program() const
-{
+std::string runner::get_program() const {
     return program;
 }
 
-options_class runner::get_options() const
-{
+options_class runner::get_options() const {
     return options;
 }
 
-report_class runner::get_report()
-{
+report_class runner::get_report() {
     report.application_name = get_program();
 
     report.exception = get_exception();
@@ -345,8 +325,38 @@ report_class runner::get_report()
     return report;
 }
 
-void runner::run_process()
-{
+unsigned long long runner::get_time_since_create() {
+    SYSTEMTIME current_time_sys;
+    FILETIME current_time;
+    GetSystemTime(&current_time_sys);
+    SystemTimeToFileTime(&current_time_sys, &current_time);
+    return *reinterpret_cast<unsigned long long*>(&current_time) - creation_time;
+}
+
+handle_t runner::get_process_handle() {
+    return process_info.hProcess;
+}
+void runner::get_times(unsigned long long *_creation_time, unsigned long long *exit_time, unsigned long long *kernel_time, unsigned long long *user_time) {
+    FILETIME __creation_time;
+    FILETIME _exit_time;
+    FILETIME _kernel_time;
+    FILETIME _user_time;
+
+    GetProcessTimes(get_process_handle(), &__creation_time, &_exit_time, &_kernel_time, &_user_time);
+    if (_creation_time) {
+        *_creation_time = *reinterpret_cast<unsigned long long*>(&__creation_time);
+    }
+    if (exit_time) {
+        *exit_time = *reinterpret_cast<unsigned long long*>(&_exit_time);
+    }
+    if (kernel_time) {
+        *kernel_time = *reinterpret_cast<unsigned long long*>(&_kernel_time);
+    }
+    if (user_time) {
+        *user_time = *reinterpret_cast<unsigned long long*>(&_user_time);
+    }
+}
+void runner::run_process() {
     if (options.debug && !running_async) {
         run_process_async();
         WaitForSingleObject(running_thread, 100);//may stuck here
@@ -355,8 +365,9 @@ void runner::run_process()
         return;
     }
     create_process();
-    if (get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal)
+    if (get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal) {
         return;
+    }
     running = true;
     requisites();
     wait();
@@ -367,12 +378,13 @@ void runner::run_process_async() {
     running_thread = CreateThread(NULL, 0, async_body, this, 0, NULL);
 }
 
-bool runner::wait_for(const unsigned long &interval)
-{
-    if (get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal)
+bool runner::wait_for(const unsigned long &interval) {
+    if (get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal) {
         return true;
-    if (!running_async)
+    }
+    if (!running_async) {
         return false;
+    }
     wait_for_init(interval);
     return WaitForSingleObject(process_info.hProcess, interval) == WAIT_OBJECT_0;
 }

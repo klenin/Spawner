@@ -84,6 +84,7 @@ bool secure_runner::apply_restrictions()
 void secure_runner::create_process()
 {
     runner::create_process();
+    //SetProcessAffinityMask(process_info.hProcess, 1);
     create_restrictions();
     //check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);// may be move this to wait function
 }
@@ -104,11 +105,10 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
     if (restrictions[restriction_processor_time_limit] == restriction_no_limit &&
         restrictions[restriction_user_time_limit] == restriction_no_limit &&
         restrictions[restriction_write_limit] == restriction_no_limit &&
-        restrictions[restriction_idle_time_limit] == restriction_no_limit)
+        restrictions[restriction_idle_time_limit] == restriction_no_limit) {
         return 0;//may be comment this
+    }
 
-    DWORD t;
-    int dt;
     double total_rate = 10000.0;
     LONGLONG last_quad_part = 0;
     bool is_idle = false;
@@ -117,52 +117,51 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
     static const double sec_clocks = (double)1000.0/CLOCKS_PER_SEC;
     rates.push_back(total_rate);
 
-    t = GetTickCount();
-    dt = clock();
+    unsigned long long idle_dt = self->get_time_since_create();
+    unsigned long long dt = 0, idle_time = 0;
 
-    while (1)
-    {
+    while (1) {
         if (!QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL))
             break;
 
         if (restrictions.get_restriction(restriction_write_limit) != restriction_no_limit &&
-            bai.IoInfo.WriteTransferCount > restrictions.get_restriction(restriction_write_limit))
-        {
+            bai.IoInfo.WriteTransferCount > restrictions.get_restriction(restriction_write_limit)) {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT, COMPLETION_KEY, NULL);
             break;
         }
 
         if (restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit &&
-            (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart > SECOND_COEFF * restrictions.get_restriction(restriction_processor_time_limit)) {
+            (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart > 10*restrictions.get_restriction(restriction_processor_time_limit)) {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);
             break;
         }
         if (restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit &&
-            (GetTickCount() - t) > restrictions.get_restriction(restriction_user_time_limit)) {
+            self->get_time_since_create() > 10*restrictions.get_restriction(restriction_user_time_limit)) {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);//freezed
             break;
         }
-        if ((clock() - dt)*sec_clocks > 10.0) {// && bai.BasicInfo.TotalUserTime.QuadPart) {
+        if ((dt=self->get_time_since_create() - idle_dt) > 100000) {//10ms
             //change to time limit
-            double load_ratio = (double)(bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part)/(sec_clocks*(clock() - dt));
+            double load_ratio = (double)(bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part)/dt;
             rates.push_back(load_ratio);// make everything integer
             if (rates.size() >= MAX_RATE_COUNT) {
                 total_rate -= rates[0];
                 rates.erase(rates.begin());
+                //fs << total_rate << " " << self->report.load_ratio << std::endl;
             }
             total_rate += load_ratio;
             if (total_rate < 0.0)
                 total_rate = 0.0;
             self->report.load_ratio = total_rate/rates.size();
             last_quad_part = bai.BasicInfo.TotalUserTime.QuadPart;
-            dt = clock();
+            idle_dt = self->get_time_since_create();
             if (restrictions.get_restriction(restriction_load_ratio) != restriction_no_limit) {
-                if (self->report.load_ratio < 0.01*self->restrictions.get_restriction(restriction_load_ratio)) {
+                if (self->report.load_ratio < self->restrictions.get_restriction(restriction_load_ratio)) {
                     if (!is_idle && restrictions.get_restriction(restriction_idle_time_limit) != restriction_no_limit) {
                         is_idle = true;
-                        t = clock();
+                        idle_time = idle_dt;
                     }
-                    if (sec_clocks*(clock() - t) > restrictions.get_restriction(restriction_idle_time_limit)) {
+                    if ((self->get_time_since_create() - idle_time) > 10*restrictions.get_restriction(restriction_idle_time_limit)) {
                         PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT, COMPLETION_KEY, NULL);//freezed
                         break;
                     }
@@ -290,10 +289,10 @@ void secure_runner::wait()
         };
     } while (!message);
 
-    program_run_time = clock() - program_run_time;
-    report.user_time = (program_run_time*1000)/CLOCKS_PER_SEC;
+    report.user_time = get_time_since_create();
 
     GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
+    //get_times(NULL, &report.user_time, NULL, NULL);
 
     //runner::wait_for(INFINITE); // delete this
     running = false;

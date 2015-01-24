@@ -55,6 +55,9 @@ void settings_parser_c::parse_program() {
 
 void settings_parser_c::add_parser(abstract_parser_c *parser) {
     parsers.push_back(parser);
+	if (position) {
+		parser->invoke_initialization(*this);
+	}
 }
 
 void settings_parser_c::set_dividers(const std::vector<std::string> &d) {
@@ -122,6 +125,9 @@ bool settings_parser_c::parse(int argc, char *argv[]) {
     arg_c = argc;
     arg_v = argv;
     position = 1;
+    for (int i = 0; i < parsers.size(); ++i) {
+		parsers[i]->invoke_initialization(*this);
+	}
 
     while (current_position() < argc && !stopped) {
         for (auto parser = parsers.begin(); parser != parsers.end(); parser++) {
@@ -172,7 +178,7 @@ void settings_parser_c::pop_back() {
 
 
 
-console_argument_parser_c::console_argument_parser_c() {
+console_argument_parser_c::console_argument_parser_c() : abstract_parser_c() {
 }
 bool console_argument_parser_c::parse(abstract_settings_parser_c &parser_object) {
     console_argument_parser_c::parser_object = &parser_object;
@@ -244,6 +250,7 @@ bool console_argument_parser_c::invoke(abstract_settings_parser_c &parser_object
 }
 
 bool console_argument_parser_c::invoke_initialization(abstract_settings_parser_c &parser_object) {
+    initialized = true;
     return true;
 }
 
@@ -251,7 +258,7 @@ std::string console_argument_parser_c::help() { return ""; }
 
 
 
-environment_variable_parser_c::environment_variable_parser_c() {
+environment_variable_parser_c::environment_variable_parser_c() : abstract_parser_c() {
 }
 
 bool environment_variable_parser_c::exists_environment_variable(const std::string &variable) {
@@ -265,6 +272,9 @@ std::string environment_variable_parser_c::get_environment_variable(const std::s
     return buffer;
 }
 bool environment_variable_parser_c::invoke_initialization(abstract_settings_parser_c &parser_object) {
+    if (initialized) {
+        return true;
+    }
     std::map<std::string, abstract_argument_parser_c*> m;
     for (auto i = parameters.begin(); i != parameters.end(); i++) {
         if (exists_environment_variable(i->first)) {
@@ -280,5 +290,6 @@ bool environment_variable_parser_c::invoke_initialization(abstract_settings_pars
             std::cerr << "Invalid parameter value for \"" << i->first << "\" with error: " << error << std::endl;
         }
     }
+    initialized = true;
     return true;
 }
