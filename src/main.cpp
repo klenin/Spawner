@@ -404,6 +404,9 @@ Spawner options:\n\
         console_default_parser->add_argument_parser(c_lst(short_arg("ho")), 
             environment_default_parser->add_argument_parser(c_lst("SP_HIDE_OUTPUT"), new boolean_argument_parser_c(options.hide_output))
         );
+        console_default_parser->add_argument_parser(c_lst(short_arg("sw")), 
+            environment_default_parser->add_argument_parser(c_lst("SP_SHOW_WINDOW"), new inverted_boolean_argument_parser_c(options.hide_gui))
+        );
         console_default_parser->add_argument_parser(c_lst(short_arg("hr")), 
             environment_default_parser->add_argument_parser(c_lst("SP_HIDE_REPORT"), new boolean_argument_parser_c(options.hide_report))
         );
