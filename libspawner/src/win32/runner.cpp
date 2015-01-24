@@ -330,7 +330,12 @@ unsigned long long runner::get_time_since_create() {
     FILETIME current_time;
     GetSystemTime(&current_time_sys);
     SystemTimeToFileTime(&current_time_sys, &current_time);
-    return *reinterpret_cast<unsigned long long*>(&current_time) - creation_time;
+
+    unsigned long long current = *reinterpret_cast<unsigned long long*>(&current_time);
+    if (current < creation_time) {
+        current = creation_time;
+    }
+    return current - creation_time;
 }
 
 handle_t runner::get_process_handle() {
