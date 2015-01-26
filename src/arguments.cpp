@@ -261,33 +261,22 @@ std::string console_argument_parser_c::help() { return ""; }
 environment_variable_parser_c::environment_variable_parser_c() : abstract_parser_c() {
 }
 
-bool environment_variable_parser_c::exists_environment_variable(const std::string &variable) {
-    last_variable_name = variable;
-    return GetEnvironmentVariable(variable.c_str(), buffer, sizeof(buffer));
-}
-std::string environment_variable_parser_c::get_environment_variable(const std::string &variable) {
-    if (last_variable_name != variable) {
-        GetEnvironmentVariable(variable.c_str(), buffer, sizeof(buffer));
-    }
-    return buffer;
-}
 bool environment_variable_parser_c::invoke_initialization(abstract_settings_parser_c &parser_object) {
+	static char buffer[4096];
     if (initialized) {
         return true;
     }
-    std::map<std::string, abstract_argument_parser_c*> m;
+
     for (auto i = parameters.begin(); i != parameters.end(); i++) {
-        if (exists_environment_variable(i->first)) {
-            m[i->first] = i->second;
-        }
-    }
-    for (auto i = m.begin(); i != m.end(); i++) {
-        /// DANGEROUS !!!
-        try {
-            if (!i->second->apply(get_environment_variable(i->first))) {
+        auto result = GetEnvironmentVariable(i->first.c_str(), buffer, sizeof(buffer));
+	    if (result > sizeof(buffer)) {
+            std::cerr << "Invalid parameter value for \"" << i->first << "\" with error: Buffer overflow" << std::endl;
+        } else if (result > 0) {
+            try {
+                i->second->apply(std::string(buffer));
+            } catch (std::string &error) {
+                std::cerr << "Invalid parameter value for \"" << i->first << "\" with error: " << error << std::endl;
             }
-        } catch (std::string &error) {
-            std::cerr << "Invalid parameter value for \"" << i->first << "\" with error: " << error << std::endl;
         }
     }
     initialized = true;

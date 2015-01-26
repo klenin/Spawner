@@ -217,9 +217,6 @@ class environment_variable_parser_c : public abstract_parser_c {
 protected:
     std::map<argument_type_t, std::string> values;
     std::string last_variable_name;
-    char buffer[4096];
-    bool exists_environment_variable(const std::string &variable);
-    std::string get_environment_variable(const std::string &variable);
 public:
     environment_variable_parser_c();
     virtual bool invoke_initialization(abstract_settings_parser_c &parser_object);
