@@ -329,7 +329,7 @@ public:
             if (options.report_file.length())
             {
                 std::ofstream fo(options.report_file.c_str());
-                fo << GenerateSpawnerReport(rep, options, ((secure_runner*)secure_runner_instance)->get_restrictions());
+                fo << report;
                 fo.close();
             }
         }
@@ -752,7 +752,7 @@ public:
             if (options.report_file.length())
             {
                 std::ofstream fo(options.report_file.c_str());
-                fo << report;//GenerateSpawnerReport(rep, options, ((secure_runner*)secure_runner_instance)->get_restrictions());
+                fo << report;
                 fo.close();
             }
         }
