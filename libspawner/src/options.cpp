@@ -1,5 +1,10 @@
 #include "options.h"
 #include <algorithm>
+
+// TODO: use c_list /dev/null || nul system dependent
+const std::string CLEAR_STRING = "nul";
+
+
 void options_class::add_argument(std::string argument) {
     arguments.push_back(argument);
 }
@@ -51,7 +56,12 @@ std::string options_class::format_arguments() const
 
 //TODO! rethink this
 void options_class::add_stdinput(const std::string &name) {
+    //check if file exists
     if (std::find(stdinput.begin(), stdinput.end(), name) != stdinput.end()) {
+        return;
+    }
+    if (name == CLEAR_STRING) {
+        stdinput.clear();
         return;
     }
     stdinput.push_back(name);
@@ -61,10 +71,18 @@ void options_class::add_stdoutput(const std::string &name) {
     if (std::find(stdoutput.begin(), stdoutput.end(), name) != stdoutput.end()) {
         return;
     }
+    if (name == CLEAR_STRING) {
+        stdoutput.clear();
+        return;
+    }
     stdoutput.push_back(name);
 }
 void options_class::add_stderror(const std::string &name) {
     if (std::find(stderror.begin(), stderror.end(), name) != stderror.end()) {
+        return;
+    }
+    if (name == CLEAR_STRING) {
+        stdoutput.clear();
         return;
     }
     stderror.push_back(name);
