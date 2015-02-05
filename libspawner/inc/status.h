@@ -49,6 +49,8 @@ enum exception_t
 enum terminate_reason_t
 {
     terminate_reason_not_terminated = 0x0,
+    terminate_reason_none,
+    terminate_reason_abnormal_exit_process,
     terminate_reason_time_limit,
     terminate_reason_write_limit,
     terminate_reason_memory_limit,
