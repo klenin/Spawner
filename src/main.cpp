@@ -54,9 +54,9 @@ public:
     unit_argument_parser_c(T &value) : base_argument_parser_c<T>(value) {}
     virtual bool set(const std::string &s) {
         try {
-            value = convert(value_t(u, d), s, restriction_no_limit);
+            this->value = convert(value_t(u, d), s, restriction_no_limit);
         } catch(std::string &str) {
-            error = "Value type is not compatible: " + str;
+            this->error = "Value type is not compatible: " + str;
             return false;
         }
         return true;
@@ -75,8 +75,8 @@ public:
         if (!unit_argument_parser_c<restriction_t, unit_time_second, d>::set(s)) {
             return false;
         }
-        if (value == 0 && !accept_zero()) {
-            error = "Time cannot be set to 0";
+        if (this->value == 0 && !accept_zero()) {
+            this->error = "Time cannot be set to 0";
             return false;
         }
         return true;
@@ -137,11 +137,11 @@ public:
     base_boolean_argument_parser_c(T &value) : base_argument_parser_c<T>(value) {}
     virtual bool set(const std::string &s) {
         if (s == "1") {
-            value = true_value();
+            this->value = true_value();
         } else if (s == "0") {
-            value = false_value();
+            this->value = false_value();
         } else {
-            error = "Value type is not compatible";
+            this->error = "Value type is not compatible";
             return false;
         }
         return true;
@@ -601,6 +601,7 @@ public:
     }
 
     std::string json_report(runner *runner_instance) {
+        Json::Value result(Json::arrayValue);
         Json::Value object(Json::objectValue);
         report_class rep = runner_instance->get_report();
         options_class options = runner_instance->get_options();
@@ -681,8 +682,12 @@ public:
         object["TerminateReason"]       = get_terminate_reason(rep.terminate_reason);
 	    object["ExitCode"]              = rep.exit_code;
 	    object["ExitStatus"]            = ExitCodeToString(rep.exit_code);
-        object["SpawnerError"]          = error_list::pop_error();
-        return object.toStyledString();
+        object["SpawnerError"]          = Json::Value(Json::arrayValue);
+        while (error_list::remains()) {
+            object["SpawnerError"].append(error_list::pop_error());
+        }
+        result.append(object);
+        return result.toStyledString();
     }
     virtual bool init() {
         if (!parser.get_program().length()) {
@@ -852,7 +857,7 @@ Spawner options:\n\
             environment_default_parser->add_argument_parser(c_lst("SP_JSON"), new boolean_argument_parser_c(options.json))
         );
 
-        console_default_parser->add_flag_parser(c_lst(long_arg("session")), new string_argument_parser_c(options.session_id));
+        console_default_parser->add_argument_parser(c_lst(long_arg("session")), new string_argument_parser_c(options.session_id));
 
         console_default_parser->add_argument_parser(c_lst(long_arg("separator")), 
             environment_default_parser->add_argument_parser(c_lst("SP_SEPARATOR"), new callback_argument_parser_c<settings_parser_c*, void(settings_parser_c::*)(const std::string&)>(&parser, &settings_parser_c::set_separator))
