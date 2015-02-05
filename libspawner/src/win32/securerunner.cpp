@@ -217,7 +217,6 @@ void secure_runner::free()
 
 void secure_runner::wait()
 {
-    clock_t program_run_time = clock();//TODO:make this global
     DWORD dwNumBytes;
 #ifdef _WIN64
     ULONG_PTR dwKey;
@@ -252,6 +251,7 @@ void secure_runner::wait()
         case JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS:
             message++;
             process_status = process_finished_abnormally;
+            terminate_reason = terminate_reason_abnormal_exit_process;
             break;
         case JOB_OBJECT_MSG_PROCESS_MEMORY_LIMIT:
             message++;
@@ -283,9 +283,6 @@ void secure_runner::wait()
     } while (!message);
 
     GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
-    //get_times(NULL, &report.user_time, NULL, NULL);
-
-    //runner::wait_for(INFINITE); // delete this
     running = false;
 }
 
@@ -321,8 +318,9 @@ report_class secure_runner::get_report()
 {
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
     report.process_status = get_process_status();
-    if (hJob != handle_default_value && get_process_status() != process_spawner_crash)
-    {
+    if (get_process_status() == process_spawner_crash) {
+        report.terminate_reason = terminate_reason_none;
+    } else if (hJob != handle_default_value) {
         if (!QueryInformationJobObject(hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL))
         {
             //throw GetWin32Error("QueryInformationJobObject");

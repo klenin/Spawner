@@ -391,7 +391,11 @@ bool runner::wait_for(const unsigned long &interval) {
         return false;
     }
     wait_for_init(interval);
-    return WaitForSingleObject(process_info.hProcess, interval) == WAIT_OBJECT_0;
+    if (WaitForSingleObject(process_info.hProcess, interval) != WAIT_OBJECT_0) {
+        return false;
+    }
+    WaitForSingleObject(running_thread, interval);
+    return true;
 }
 
 bool runner::wait_for_init(const unsigned long &interval) {
