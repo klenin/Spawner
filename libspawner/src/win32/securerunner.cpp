@@ -112,10 +112,8 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
     double total_rate = 10000.0;
     LONGLONG last_quad_part = 0;
     bool is_idle = false;
-    self->report.load_ratio = 10000.0;
-    std::vector<double> rates;
+    self->report.load_ratio = 0.0;
     static const double sec_clocks = (double)1000.0/CLOCKS_PER_SEC;
-    rates.push_back(total_rate);
 
     unsigned long long idle_dt = self->get_time_since_create();
     unsigned long long dt = 0, idle_time = 0;
@@ -141,20 +139,15 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             break;
         }
         if ((dt=self->get_time_since_create() - idle_dt) > 100000) {//10ms
-            //change to time limit
-            double load_ratio = (double)(bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part)/dt;
-            rates.push_back(load_ratio);// make everything integer
-            if (rates.size() >= MAX_RATE_COUNT) {
-                total_rate -= rates[0];
-                rates.erase(rates.begin());
-                //fs << total_rate << " " << self->report.load_ratio << std::endl;
-            }
-            total_rate += load_ratio;
-            if (total_rate < 0.0)
-                total_rate = 0.0;
-            self->report.load_ratio = total_rate/rates.size();
-            last_quad_part = bai.BasicInfo.TotalUserTime.QuadPart;
             idle_dt = self->get_time_since_create();
+
+            double load_ratio = 10000.0*(double)(bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part)/dt;
+            if (load_ratio < 0.0) {
+                load_ratio = 0.0;
+            }
+            self->report.load_ratio = self->report.load_ratio*0.95 + 0.05*load_ratio;
+
+            last_quad_part = bai.BasicInfo.TotalUserTime.QuadPart;
             if (restrictions.get_restriction(restriction_load_ratio) != restriction_no_limit) {
                 if (self->report.load_ratio < self->restrictions.get_restriction(restriction_load_ratio)) {
                     if (!is_idle && restrictions.get_restriction(restriction_idle_time_limit) != restriction_no_limit) {
@@ -289,8 +282,6 @@ void secure_runner::wait()
         };
     } while (!message);
 
-    report.user_time = get_time_since_create();
-
     GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
     //get_times(NULL, &report.user_time, NULL, NULL);
 
@@ -340,6 +331,8 @@ report_class secure_runner::get_report()
         report.processor_time = bai.BasicInfo.TotalUserTime.QuadPart/10;
         report.kernel_time = bai.BasicInfo.TotalKernelTime.QuadPart/10;
         report.write_transfer_count = bai.IoInfo.WriteTransferCount;
+        report.user_time = get_time_since_create()/10;
+
 
         JOBOBJECT_EXTENDED_LIMIT_INFORMATION xli;
         if (!QueryInformationJobObject(hJob, JobObjectExtendedLimitInformation, &xli, sizeof(xli), NULL))
