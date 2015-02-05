@@ -601,93 +601,92 @@ public:
     }
 
     std::string json_report(runner *runner_instance) {
-        Json::Value result(Json::arrayValue);
-        Json::Value object(Json::objectValue);
-        report_class rep = runner_instance->get_report();
-        options_class options = runner_instance->get_options();
-        restrictions_class restrictions = ((secure_runner*)runner_instance)->get_restrictions();
+        Json::Value report(Json::arrayValue);
+        //for {
+        report_class runner_report = runner_instance->get_report();
+        options_class runner_options = runner_instance->get_options();
+        Json::Value report_item(Json::objectValue);
 
-        object["Application"]           = rep.application_name;
-        object["Parameters"]            = Json::Value(Json::arrayValue);
-        for (size_t i = 0; i < options.get_arguments_count(); ++i) {
-            object["Parameters"].append(options.get_argument(i));
+        report_item["Application"]           = runner_report.application_name;
+        report_item["Arguments"]            = Json::Value(Json::arrayValue);
+        for (size_t i = 0; i < runner_options.get_arguments_count(); ++i) {
+            report_item["Arguments"].append(runner_options.get_argument(i));
         }
-        object["SecurityLevel"]         = (restrictions.get_restriction(restriction_security_limit) == restriction_limited);
-        object["CreateProcessMethod"]   = (options.login==""?"CreateProcess":"WithLogon");
-        object["UserName"]              = rep.login;
 
-        object["UserTimeLimit"] = unit_to_json(
-            restrictions.get_restriction(restriction_processor_time_limit),
-            convert(
-                value_t(unit_time_second, degree_milli), 
-                value_t(unit_time_second), 
-                (long double)restrictions.get_restriction(restriction_processor_time_limit)
-                ),
-            unit_name(unit_time_second)
-        );
-        object["Deadline"] = unit_to_json(
-            restrictions.get_restriction(restriction_user_time_limit),
-            convert(
-                value_t(unit_time_second, degree_milli),
-                value_t(unit_time_second),
-                (long double)restrictions.get_restriction(restriction_user_time_limit)
-                ),
-            unit_name(unit_time_second)
-        );
-        object["MemoryLimit"] = unit_to_json(
-            restrictions.get_restriction(restriction_memory_limit),
-            convert(
-                value_t(unit_memory_byte),
-                value_t(unit_memory_byte, degree_mega),
-                (long double)restrictions.get_restriction(restriction_memory_limit)
-                ),
-            degree_short_name(degree_mega) + unit_short_name(unit_memory_byte)
-        );
-        object["WriteLimit"] = unit_to_json(
-            restrictions.get_restriction(restriction_write_limit),
-            convert(
-                value_t(unit_memory_byte),
-                value_t(unit_memory_byte, degree_mega),
-                (long double)restrictions.get_restriction(restriction_write_limit)
-                ),
-            degree_short_name(degree_mega) + unit_short_name(unit_memory_byte)
-        );
-        object["UserTime"] = unit_to_json(
-            rep.processor_time,
-            convert(
-                value_t(unit_time_second, degree_micro),
-                value_t(unit_time_second),
-                (long double)rep.processor_time/10.0
-                ),
-            unit_name(unit_time_second)
-        );
-        object["PeakMemoryUsed"] = unit_to_json(
-            rep.peak_memory_used,
-            convert(
-                value_t(unit_memory_byte),
-                value_t(unit_memory_byte, degree_mega),
-                (long double)rep.peak_memory_used
-                ),
-            degree_short_name(degree_mega) + unit_short_name(unit_memory_byte)
-        );
-        object["Written"] = unit_to_json(
-            rep.write_transfer_count,
-            convert(
-                value_t(unit_memory_byte),
-                value_t(unit_memory_byte, degree_mega),
-                (long double)rep.write_transfer_count
-                ),
-            degree_short_name(degree_mega) + unit_short_name(unit_memory_byte)
-        );
-        object["TerminateReason"]       = get_terminate_reason(rep.terminate_reason);
-	    object["ExitCode"]              = rep.exit_code;
-	    object["ExitStatus"]            = ExitCodeToString(rep.exit_code);
-        object["SpawnerError"]          = Json::Value(Json::arrayValue);
+        Json::Value limit(Json::objectValue);
+        restrictions_class runner_restrictions = ((secure_runner*)runner_instance)->get_restrictions();
+        struct {
+            char *field;
+            unit_t unit;
+            degrees_enum degree;
+            restriction_kind_t restriction;
+        } restriction_items[] = {
+            { "Time", unit_time_second, degree_micro, restriction_processor_time_limit },
+            { "WallClockTime", unit_time_second, degree_micro, restriction_user_time_limit },
+            { "Memory", unit_memory_byte, degree_default, restriction_memory_limit },
+            { "SecurityLevel", unit_no_unit, degree_default, restriction_security_limit },
+            { "IOBytes", unit_memory_byte, degree_default, restriction_write_limit },
+            { "IdlenessTime", unit_time_second, degree_micro, restriction_idle_time_limit },
+            { "IdlenessProcessorLoad", unit_no_unit, degree_centi, restriction_load_ratio },
+            { NULL, unit_no_unit, degree_default, restriction_max },
+        };
+        for (int i = 0; restriction_items[i].field; ++i) {
+            if (runner_restrictions[restriction_items[i].restriction] == restriction_no_limit) {
+                continue;
+            }
+            if (restriction_items[i].degree == degree_default) {
+                limit[restriction_items[i].field] = runner_restrictions[restriction_items[i].restriction];
+            } else {
+                limit[restriction_items[i].field] = (double)convert(
+                    value_t(restriction_items[i].unit, restriction_items[i].degree),
+                    value_t(restriction_items[i].unit),
+                    (long double)runner_restrictions[restriction_items[i].restriction]
+                );
+            }
+        }
+        
+        Json::Value result(Json::objectValue);
+        struct {
+            char *field;
+            Json::Value value;
+            unit_t unit;
+            degrees_enum degree;
+        } result_items[] = {
+            { "Time", runner_report.processor_time, unit_time_second, degree_micro },
+            { "WallClockTime", runner_report.user_time, unit_time_second, degree_micro },
+            { "Memory", (Json::Value::UInt64)runner_report.peak_memory_used, unit_memory_byte, degree_default },
+            { "BytesWritten", runner_report.write_transfer_count, unit_memory_byte, degree_default },
+            { "KernelTime", runner_report.kernel_time, unit_time_second, degree_micro },
+            { "ProcessorLoad", runner_report.load_ratio, unit_no_unit, degree_centi },
+            { "WorkingDirectory", runner_report.working_directory, unit_no_unit, degree_default },
+            { NULL, 0, unit_no_unit, degree_default },
+        };
+        for (int i = 0; result_items[i].field; ++i) {
+            if (result_items[i].degree == degree_default) {
+                result[result_items[i].field] = result_items[i].value;
+            } else {
+                result[result_items[i].field] = (double)convert(
+                    value_t(result_items[i].unit, result_items[i].degree),
+                    value_t(result_items[i].unit),
+                    (long double)result_items[i].value.asDouble()
+                );
+            }
+        }
+
+        report_item["Limit"] = limit;
+        report_item["Result"] = result;
+        report_item["CreateProcessMethod"]   = (options.login==""?"CreateProcess":"WithLogon");
+        report_item["UserName"]              = runner_report.login;
+
+        report_item["TerminateReason"]       = get_terminate_reason(runner_report.terminate_reason);
+	    report_item["ExitCode"]              = runner_report.exit_code;
+	    report_item["ExitStatus"]            = ExitCodeToString(runner_report.exit_code);
+        report_item["SpawnerError"]          = Json::Value(Json::arrayValue);
         while (error_list::remains()) {
-            object["SpawnerError"].append(error_list::pop_error());
+            report_item["SpawnerError"].append(error_list::pop_error());
         }
-        result.append(object);
-        return result.toStyledString();
+        report.append(report_item);
+        return report.toStyledString();
     }
     virtual bool init() {
         if (!parser.get_program().length()) {
@@ -905,7 +904,7 @@ bool command_handler_c::set_legacy(const std::string &s) {
         return false;
     }
     legacy_set = true;
-    return create_spawner(s);
+    return create_spawner(s) != NULL;
 }
 void command_handler_c::reset() {
     while (parser.parsers_count() > 2) {
