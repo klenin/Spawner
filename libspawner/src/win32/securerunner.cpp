@@ -337,8 +337,8 @@ report_class secure_runner::get_report()
             //throw GetWin32Error("QueryInformationJobObject");
         }
 
-        report.processor_time = bai.BasicInfo.TotalUserTime.QuadPart;
-        report.kernel_time = bai.BasicInfo.TotalKernelTime.QuadPart;
+        report.processor_time = bai.BasicInfo.TotalUserTime.QuadPart/10;
+        report.kernel_time = bai.BasicInfo.TotalKernelTime.QuadPart/10;
         report.write_transfer_count = bai.IoInfo.WriteTransferCount;
 
         JOBOBJECT_EXTENDED_LIMIT_INFORMATION xli;

@@ -169,7 +169,7 @@ std::string GenerateSpawnerReport(const report_class &rep, const options_class &
     osstream << "MemoryLimit:               " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), restrictions.get_restriction(restriction_memory_limit), " (du)", restriction_no_limit) << std::endl;
     osstream << "WriteLimit:                " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), restrictions.get_restriction(restriction_write_limit), " (du)", restriction_no_limit) << std::endl;
     osstream << "----------------------------------------------" << std::endl;
-    osstream << "UserTime:                  " << convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), rep.processor_time/10.0, " (sec)") << std::endl;
+    osstream << "UserTime:                  " << convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), rep.processor_time, " (sec)") << std::endl;
     //osstream << "UserTime:                  " << convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), rep.user_time/10.0, " (sec)") << std::endl;
     osstream << "PeakMemoryUsed:            " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.peak_memory_used, " (Mb)") << std::endl;
     osstream << "Written:                   " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.write_transfer_count, " (Mb)") << std::endl;
