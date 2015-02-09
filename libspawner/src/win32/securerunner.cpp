@@ -1,6 +1,8 @@
 #include <securerunner.h>
 #include <time.h>
 #include <vector>
+#include <inc/error.h>
+
 #ifndef JOB_OBJECT_UILIMIT_ALL
 #define JOB_OBJECT_UILIMIT_ALL                      0x000000FF
 #endif//JOB_OBJECT_UILIMIT_ALL
@@ -76,7 +78,9 @@ bool secure_runner::apply_restrictions()
     //    return false;
 
     if (!AssignProcessToJobObject(hJob, process_info.hProcess)) {
-        DWORD le = GetLastError();
+        //DWORD le = GetLastError();
+        raise_error(*this, "AssignProcessToJobObject");
+        return false;
     }
     return true;
 }
@@ -299,7 +303,10 @@ secure_runner::~secure_runner()
 
 void secure_runner::requisites()
 {
-    apply_restrictions();
+    if (!apply_restrictions()) {
+
+        return;
+    }
 
     runner::requisites();
 
