@@ -39,7 +39,10 @@ void error_list::push_error(const std::string &place)
 			0, // minimum size for output buffer
 			NULL);   // arguments - see note
 	}
-    res << place << " failed with error code " << error_code << ": " << errorText;
+    res << place << " failed with error code " << error_code << ": ";
+    if (errorText) {
+        res << errorText;
+    }
     instance.errors.push_back(res.str());
 }
 
