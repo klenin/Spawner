@@ -82,9 +82,13 @@ size_t settings_parser_c::saved_count() {
 void settings_parser_c::stop() {
     stopped = true;
 }
-char *settings_parser_c::get_next_argument() {
+const char *settings_parser_c::get_next_argument() {
     if (position >= arg_c) {
         return NULL;
+    }
+    if (arg_v[position] == separator) {
+        position++;
+        return SEPARATOR_ARGUMENT.c_str();
     }
     return arg_v[position++];
 }
@@ -102,6 +106,10 @@ void settings_parser_c::clear_parsers() {
         delete (*i);
     }
     parsers.clear();
+}
+void settings_parser_c::clear_program_parser() {
+    program = "";
+    program_arguments.clear();
 }
 
 settings_parser_c::~settings_parser_c() {

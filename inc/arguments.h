@@ -5,6 +5,8 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <memory>
+#include <utility>
 #include <json/json.h>
 #include <inc/compatibility.h>
 
@@ -14,6 +16,8 @@
 #define ARGUMENT() 
 
 typedef char *argument_type_t;
+
+const std::string SEPARATOR_ARGUMENT = "spawner.argument.separator";
 
 
 //unique names for arguments
@@ -46,7 +50,7 @@ public:
 class abstract_settings_parser_c {
 public:
     std::vector<std::string> dividers;
-    virtual char *get_next_argument() = 0;
+    virtual const char *get_next_argument() = 0;
 //    virtual void set_value(argument_type_t argument, const std::string &value) = 0;
 //    virtual void set_init_value(argument_type_t argument, const std::string &value) = 0;
 };
@@ -136,8 +140,6 @@ struct environment_argument_t {
 
 
 //configuration_manager
-#include <memory>
-#include <utility>
 class settings_parser_c: public abstract_settings_parser_c {
 private:
     int position;
@@ -162,6 +164,8 @@ public:
 
     void clear_parsers();
 
+    void clear_program_parser();
+
     //void register_constructors(parser_constructor_t *parser_constructors);
 
     int current_position();
@@ -173,7 +177,7 @@ public:
     void save_current_position(abstract_parser_c *associated_parser);
     abstract_parser_c *pop_saved_parser();
 
-    char *get_next_argument();
+    const char *get_next_argument();
     std::string get_program();
     std::vector<std::string> get_program_arguments();
     void set_separator(const std::string &s);
