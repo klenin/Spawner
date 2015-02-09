@@ -579,12 +579,7 @@ protected:
     options_class options;
     bool runas;
     settings_parser_c &parser;
-    std::string report_file;
-    std::string output_file;
-    std::string error_file;
-    std::string input_file;
-    secure_runner *secure_runner_instance;
-    //std::string program;
+    std::list<secure_runner*> runners;
 
 public:
     spawner_new_c(settings_parser_c &parser): parser(parser), spawner_base_c(), options(session_class::base_session), runas(false) {
@@ -600,15 +595,15 @@ public:
         return object;
     }
 
-    std::string json_report(runner *runner_instance) {
-        Json::Value report(Json::arrayValue);
+    Json::Value json_report(runner *runner_instance) {
+//        Json::Value report(Json::arrayValue);
         //for {
         report_class runner_report = runner_instance->get_report();
         options_class runner_options = runner_instance->get_options();
         Json::Value report_item(Json::objectValue);
 
-        report_item["Application"]           = runner_report.application_name;
-        report_item["Arguments"]            = Json::Value(Json::arrayValue);
+        report_item["Application"] = runner_report.application_name;
+        report_item["Arguments"] = Json::Value(Json::arrayValue);
         for (size_t i = 0; i < runner_options.get_arguments_count(); ++i) {
             report_item["Arguments"].append(runner_options.get_argument(i));
         }
@@ -645,6 +640,27 @@ public:
             }
         }
         
+        Json::Value option(Json::objectValue);
+        struct {
+            char *field;
+            Json::Value value;
+            unit_t unit;
+            degrees_enum degree;
+        } option_items[] = {
+            { "SearchInPath", runner_options.use_cmd, unit_no_unit, degree_default },
+            { NULL, 0, unit_no_unit, degree_default },
+        };
+        for (int i = 0; option_items[i].field; ++i) {
+            if (option_items[i].degree == degree_default) {
+                option[option_items[i].field] = option_items[i].value;
+            } else {
+                option[option_items[i].field] = (double)convert(
+                    value_t(option_items[i].unit, option_items[i].degree),
+                    value_t(option_items[i].unit),
+                    (long double)option_items[i].value.asDouble()
+                );
+            }
+        }
         Json::Value result(Json::objectValue);
         struct {
             char *field;
@@ -673,8 +689,15 @@ public:
             }
         }
 
+        Json::Value std_out(Json::arrayValue);
+        for (uint i = 0; i < runner_options.stdoutput.size(); ++i) {
+            std_out.append(runner_options.stdoutput[i]);
+        }
+
         report_item["Limit"] = limit;
         report_item["Result"] = result;
+        report_item["Options"] = option;
+        report_item["StdOut"] = std_out;
         report_item["CreateProcessMethod"]   = (options.login==""?"CreateProcess":"WithLogon");
         report_item["UserName"]              = runner_report.login;
 
@@ -685,15 +708,19 @@ public:
         while (error_list::remains()) {
             report_item["SpawnerError"].append(error_list::pop_error());
         }
-        report.append(report_item);
-        return report.toStyledString();
+        return report_item;
     }
     virtual bool init() {
+        return init_runner();
+    }
+    bool init_runner() {
         if (!parser.get_program().length()) {
             return false;
+            //throw exception
         }
+        secure_runner *secure_runner_instance;
         options.add_arguments(parser.get_program_arguments());
-        if (options.delegated) {
+        if (options.login.length()) {
             secure_runner_instance = new delegate_runner(parser.get_program(), options, restrictions);
         } else if (options.session_id.length()){
             secure_runner_instance = new delegate_instance_runner(parser.get_program(), options, restrictions);
@@ -727,39 +754,48 @@ public:
             secure_runner_instance->set_pipe(STD_ERROR_PIPE, error);
             secure_runner_instance->set_pipe(STD_INPUT_PIPE, input);
         }
+        runners.push_back(secure_runner_instance);
         return true;
     }
     virtual void run() {
         begin_report();
-        secure_runner_instance->run_process_async();
-        secure_runner_instance->wait_for();
-
+        for (auto i = runners.begin(); i != runners.end(); i++) {
+            (*i)->run_process_async();
+        }
+        for (auto i = runners.begin(); i != runners.end(); i++) {
+            (*i)->wait_for();
+        }
         print_report();
     }
     virtual void print_report() {
-        report_class rep = secure_runner_instance->get_report();
-        options_class options = secure_runner_instance->get_options();
-        std::cout.flush();
-        if (!options.hide_report || options.report_file.length()) {
-            std::string report;
-			if (!options.json) {
-                report = GenerateSpawnerReport(
-                    rep, secure_runner_instance->get_options(), 
-                    secure_runner_instance->get_restrictions()
-                );
-            } else {
-                report = json_report(secure_runner_instance);
-            }
-            if (!options.hide_report) {
-                std::cout << report;
-            }
-            if (options.report_file.length())
-            {
-                std::ofstream fo(options.report_file.c_str());
-                fo << report;
-                fo.close();
+        Json::Value report_object(Json::arrayValue);
+        for (auto i = runners.begin(); i != runners.end(); i++) {
+            report_class rep = (*i)->get_report();
+            options_class options = (*i)->get_options();
+            std::cout.flush();
+            Json::Value report_item = report_object.append(json_report(*i));
+            if (!options.hide_report || options.report_file.length()) {
+                std::string report;
+			    if (!options.json) {
+                    report = GenerateSpawnerReport(
+                        rep, (*i)->get_options(), 
+                        (*i)->get_restrictions()
+                    );
+                } else {
+                    report = report_item.toStyledString();
+                }
+                if (!options.hide_report) {
+                    std::cout << report;
+                }
+                if (options.report_file.length())
+                {
+                    std::ofstream fo(options.report_file.c_str());
+                    fo << report;
+                    fo.close();
+                }
             }
         }
+        std::cout << report_object.toStyledString();
     }
     virtual std::string help() {
         return spawner_base_c::help() + "\
@@ -778,6 +814,12 @@ Spawner options:\n\
 \t-sr:[file]          SP_REPORT_FILE      Ñîõðàíèòü îò÷åò â ôàéë.\n\
 \t-so:[file]          SP_OUTPUT_FILE      Ñîõðàíèòü âûõîäíîé ïîòîê â ôàéë.\n\
 \t-i:[file]           SP_INPUT_FILE       Ïîëó÷èòü âõîäíîé ïîòîê èç ôàéëà. \n";
+    }
+    virtual void on_separator(const std::string &_) {
+        init_runner();
+        parser.clear_program_parser();
+        options = options_class(session_class::base_session);
+        restrictions = restrictions_class();
     }
     virtual void init_arguments() {
     
@@ -861,6 +903,10 @@ Spawner options:\n\
         console_default_parser->add_argument_parser(c_lst(long_arg("separator")), 
             environment_default_parser->add_argument_parser(c_lst("SP_SEPARATOR"), new callback_argument_parser_c<settings_parser_c*, void(settings_parser_c::*)(const std::string&)>(&parser, &settings_parser_c::set_separator))
         );
+
+
+
+        console_default_parser->add_flag_parser(c_lst(SEPARATOR_ARGUMENT), new callback_argument_parser_c<spawner_new_c*, void(spawner_new_c::*)(const std::string&)>(&(*this), &spawner_new_c::on_separator));
 
         //ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("program")), c_lst("SP_PROGRAM"),   options.session_id, STRING_CONVERT);
 
