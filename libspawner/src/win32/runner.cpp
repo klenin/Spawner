@@ -74,7 +74,7 @@ bool runner::init_process_with_logon(char *cmd, const char *wd) {
     siw.hStdOutput = si.hStdOutput;
     siw.hStdError = si.hStdError;
     siw.wShowWindow = si.wShowWindow;
-    siw.lpDesktop = L"";
+    siw.lpDesktop = NULL;//L"";
     std::string run_program = program;
     if (force_program.length())
         run_program = force_program;
@@ -88,11 +88,14 @@ bool runner::init_process_with_logon(char *cmd, const char *wd) {
     DWORD creation_flags = CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW;
 
     HANDLE token = NULL;
-    if (!LogonUserW(login, NULL, password, LOGON32_LOGON_SERVICE, LOGON32_PROVIDER_DEFAULT, &token)) {
-        return false;
-    }
-    if (!CreateProcessAsUserW(token, wprogram, wcmd, NULL, NULL, TRUE, creation_flags, NULL, wwd, &siw, &process_info)) {
-        if (!options.use_cmd || !CreateProcessAsUserW(token, NULL, wcmd, NULL, NULL, TRUE, creation_flags, NULL, wwd, &siw, &process_info)) {
+    if ( !CreateProcessWithLogonW(login, NULL, password, 0,
+        wprogram, wcmd, creation_flags,
+        NULL, wwd, &siw, &process_info) )
+    {
+        if (!options.use_cmd || !CreateProcessWithLogonW(login, NULL, password, 0,
+            NULL, wcmd, creation_flags,
+            NULL, wwd, &siw, &process_info) )
+        {
             ReleaseMutex(main_job_object_access_mutex);
             raise_error(*this, "CreateProcessWithLogonW");
             delete[] login;
@@ -185,19 +188,21 @@ void runner::create_process() {
     }
     cmd = new char [command_line.size()+1];
     strcpy(cmd, command_line.c_str());
-    if (options.login != "" && init_process_with_logon(cmd, wd))
-    {
+    if (options.login == "") {
+        //IMPORTANT: if logon option selected & failed signalize it
+        DWORD len = MAX_USER_NAME;
+        char user_name[MAX_USER_NAME];
+        if (GetUserNameA(user_name, &len)) {//error here is not critical
+            report.login = user_name;
+        }
+    } else {
         report.login = options.login;
+        running = init_process_with_logon(cmd, wd);
         ReleaseSemaphore(init_semaphore, 10, NULL);
         delete[] cmd;
         return;
     }
-    //IMPORTANT: if logon option selected & failed signalize it
-    DWORD len = MAX_USER_NAME;
-    char user_name[MAX_USER_NAME];
 
-    if (GetUserNameA(user_name, &len))//error here is not critical
-        report.login = user_name;
 
     //std::cout << cmd;
     running = init_process(cmd, wd);
@@ -375,6 +380,9 @@ void runner::run_process() {
     }
     running = true;
     requisites();
+    if (get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal) {
+        return;
+    }
     wait();
 }
 
