@@ -579,8 +579,7 @@ protected:
     options_class options;
     bool runas;
     settings_parser_c &parser;
-    std::list<secure_runner*> runners;
-
+    std::vector<secure_runner*> runners;
 public:
     spawner_new_c(settings_parser_c &parser): parser(parser), spawner_base_c(), options(session_class::base_session), runas(false) {
     }
@@ -711,7 +710,61 @@ public:
         return report_item;
     }
     virtual bool init() {
-        return init_runner();
+        if (!init_runner()) {
+            return false;
+        }
+        for (auto i = runners.begin(); i != runners.end(); i++) {
+            options_class runner_options = (*i)->get_options();
+            struct {
+                std::vector<std::string> &streams;
+                pipes_t pipe_type;
+            } streams[] = {
+                { runner_options.stdinput, STD_INPUT_PIPE },
+                { runner_options.stdoutput, STD_OUTPUT_PIPE },
+                { runner_options.stderror, STD_ERROR_PIPE },
+            };
+            for (int k = 0; k < 3; ++k) {
+                auto stream_item = streams[k];
+                for (auto j = stream_item.streams.begin(); j != stream_item.streams.end(); j++) {
+                    if ((*j)[0] != '*') {
+                        continue;
+                    }
+                    size_t pos = (*j).find(".");
+                    if (pos == std::string::npos) {
+                        //error
+                        return false;
+                    }
+                    size_t index = stoi((*j).substr(1, pos - 1), nullptr, 10);
+                    std::string stream = (*j).substr(pos + 1);
+                    if (index > runners.size()) {
+                        //error
+                        return false;
+                    }
+                    pipes_t pipe_type;
+                    if (stream == "stderr") {
+                        pipe_type = STD_ERROR_PIPE;
+                    } else if (stream == "stdin") {
+                        pipe_type = STD_INPUT_PIPE;
+                    } else if (stream == "stdout") {
+                        pipe_type = STD_OUTPUT_PIPE;
+                    } else {
+                        return false;
+                    }
+                    secure_runner *target_runner = runners[index];
+                    duplex_buffer_class *buffer = new duplex_buffer_class();
+                    if (stream_item.pipe_type == STD_INPUT_PIPE && pipe_type != STD_INPUT_PIPE) {
+                        static_cast<input_pipe_class*>((*i)->get_pipe(stream_item.pipe_type))->add_input_buffer(buffer);
+                        static_cast<output_pipe_class*>(target_runner->get_pipe(pipe_type))->add_output_buffer(buffer);
+                    } else if (stream_item.pipe_type != STD_INPUT_PIPE && pipe_type == STD_INPUT_PIPE) {
+                        static_cast<input_pipe_class*>(target_runner->get_pipe(pipe_type))->add_input_buffer(buffer);
+                        static_cast<output_pipe_class*>((*i)->get_pipe(stream_item.pipe_type))->add_output_buffer(buffer);
+                    } else {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
     bool init_runner() {
         if (!parser.get_program().length()) {
@@ -798,7 +851,7 @@ public:
         std::cout << report_object.toStyledString();
     }
     virtual std::string help() {
-        return spawner_base_c::help() + "\
+        return parser.help();/*spawner_base_c::help() + "\
 Spawner options:\n\
 \t Argument            Environment variable     Description\n\
 \t-ml:[n]             SP_MEMORY_LIMIT     Ìàêñèìàëüíûé îáúåì âèðòóàëüíîé ïàìÿòè, âûäåëåííûé ïðîöåññó (â Mb).\n\
@@ -813,7 +866,7 @@ Spawner options:\n\
 \t-ho:[0|1]           SP_HIDE_OUTPUT      Íå ïîêàçûâàòü âûõîäíîé ïîòîê (STDOUT) ïðèëîæåíèÿ.\n\
 \t-sr:[file]          SP_REPORT_FILE      Ñîõðàíèòü îò÷åò â ôàéë.\n\
 \t-so:[file]          SP_OUTPUT_FILE      Ñîõðàíèòü âûõîäíîé ïîòîê â ôàéë.\n\
-\t-i:[file]           SP_INPUT_FILE       Ïîëó÷èòü âõîäíîé ïîòîê èç ôàéëà. \n";
+\t-i:[file]           SP_INPUT_FILE       Ïîëó÷èòü âõîäíîé ïîòîê èç ôàéëà. \n";*/
     }
     virtual void on_separator(const std::string &_) {
         init_runner();
@@ -830,7 +883,7 @@ Spawner options:\n\
 
         console_default_parser->add_argument_parser(c_lst(short_arg("tl")), 
             environment_default_parser->add_argument_parser(c_lst("SP_TIME_LIMIT"), new microsecond_argument_parser_c(restrictions[restriction_processor_time_limit]))
-        );
+        )->set_description("Time limit");
         console_default_parser->add_argument_parser(c_lst(short_arg("d")), 
             environment_default_parser->add_argument_parser(c_lst("SP_DEADLINE"), new microsecond_argument_parser_c(restrictions[restriction_user_time_limit]))
         );
@@ -921,14 +974,15 @@ void command_handler_c::add_default_parser() {
     console_argument_parser_c *console_default_parser = new console_argument_parser_c();
     environment_variable_parser_c *environment_default_parser = new environment_variable_parser_c();
 
-    console_default_parser->add_flag_parser(c_lst(short_arg("h"), long_arg("help")), new boolean_argument_parser_c(show_help));
+    console_default_parser->add_flag_parser(c_lst(short_arg("h"), long_arg("help")), new boolean_argument_parser_c(show_help))
+        ->set_description("Show help");
     console_default_parser->add_argument_parser(
         c_lst(long_arg("legacy")), 
         new function_argument_parser_c<command_handler_c*, spawner_base_c*(command_handler_c::*)(const std::string&)>(
             this, 
             &command_handler_c::create_spawner
         )
-    )->default_error = environment_default_parser->add_argument_parser(
+    )->set_description("Spawner interface")->default_error = environment_default_parser->add_argument_parser(
         c_lst("SP_LEGACY"), 
         new function_argument_parser_c<command_handler_c*, spawner_base_c*(command_handler_c::*)(const std::string&)>(
             this, 
