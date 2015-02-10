@@ -38,6 +38,7 @@ abstract_argument_parser_c *abstract_parser_c::add_argument_parser(const std::ve
     for (auto i = params.begin(); i != params.end(); i++) {
         parameters[*i] = argument_parser->reference();
     }
+    parsers[argument_parser] = params;
     return argument_parser;
 }
 
@@ -88,7 +89,7 @@ const char *settings_parser_c::get_next_argument() {
     }
     if (arg_v[position] == separator) {
         position++;
-        return SEPARATOR_ARGUMENT.c_str();
+        return SEPARATOR_ARGUMENT;
     }
     return arg_v[position++];
 }
@@ -181,6 +182,13 @@ void settings_parser_c::pop_back() {
     parsers.pop_back();
 }
 
+std::string settings_parser_c::help() {
+    std::string result;
+    for (auto parser = parsers.begin(); parser != parsers.end(); parser++) {
+        result += (*parser)->help(this);
+    }
+    return result;
+}
 
 
 
@@ -262,7 +270,31 @@ bool console_argument_parser_c::invoke_initialization(abstract_settings_parser_c
     return true;
 }
 
-std::string console_argument_parser_c::help() { return ""; }
+std::string console_argument_parser_c::help(abstract_settings_parser_c *parser) {
+    std::ostringstream res;
+    std::string dividers = " ";
+    if (parser->dividers.size()) {
+        dividers = parser->dividers[0];
+    }
+    for (auto i = parsers.begin(); i != parsers.end(); i++) {
+        //iterating over all arguments
+        for (auto j = i->second.begin(); j != i->second.end(); j++) {
+            if (j != i->second.begin()) {
+                res << ", ";
+            }
+            if (*j == SEPARATOR_ARGUMENT) {
+                res << "--[separator]";
+            } else {
+                res << *j;
+            }
+            if (!is_flag[*j]) {
+                res << dividers << i->first->value_description();
+            }
+        }
+        res << std::endl << "\t" << i->first->description() << std::endl;
+    }
+    return res.str();
+}
 
 
 
@@ -289,4 +321,19 @@ bool environment_variable_parser_c::invoke_initialization(abstract_settings_pars
     }
     initialized = true;
     return true;
+}
+
+std::string environment_variable_parser_c::help(abstract_settings_parser_c *parser) {
+    std::ostringstream res;
+    for (auto i = parsers.begin(); i != parsers.end(); i++) {
+        //iterating over all arguments
+        for (auto j = i->second.begin(); j != i->second.end(); j++) {
+            if (j != i->second.begin()) {
+                res << ", ";
+            }
+            res << *j << "=" << i->first->value_description();
+        }
+        res << std::endl << "\t" << i->first->description() << std::endl;
+    }
+    return res.str();
 }

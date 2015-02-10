@@ -17,7 +17,7 @@
 
 typedef char *argument_type_t;
 
-const std::string SEPARATOR_ARGUMENT = "spawner.argument.separator";
+static const char *SEPARATOR_ARGUMENT = "spawner.argument.separator";
 
 
 //unique names for arguments
@@ -51,6 +51,7 @@ class abstract_settings_parser_c {
 public:
     std::vector<std::string> dividers;
     virtual const char *get_next_argument() = 0;
+    virtual std::string help() = 0;
 //    virtual void set_value(argument_type_t argument, const std::string &value) = 0;
 //    virtual void set_init_value(argument_type_t argument, const std::string &value) = 0;
 };
@@ -68,6 +69,7 @@ private:
     unsigned int reference_count;
 protected:
     std::string default_error;
+    std::string description_string;
 public:
     abstract_argument_parser_c() : reference_count(0) {}
     virtual void after() {}
@@ -75,6 +77,9 @@ public:
     virtual bool apply(const std::string &s) = 0;
     void dereference() { reference_count--; if (!reference_count) delete this; }
     abstract_argument_parser_c *reference() { reference_count++; return this; }
+    std::string value_description() { return "[value]"; }
+    std::string description() { return description_string; }
+    abstract_argument_parser_c *set_description(const std::string &_description) { description_string = _description; return this; }
 };
 
 template<typename T>
@@ -97,6 +102,7 @@ public:
 class abstract_parser_c {
 protected:
     std::map<std::string, abstract_argument_parser_c*> parameters;
+    std::map<abstract_argument_parser_c*, std::vector<std::string>> parsers;
     abstract_argument_parser_c *current_argument_parser;
     bool initialized;
 public:
@@ -107,7 +113,7 @@ public:
     virtual abstract_argument_parser_c *add_argument_parser(const std::vector<std::string> &params, abstract_argument_parser_c *argument_parser);
     virtual bool parse(abstract_settings_parser_c &parser_object) {return false;}
     virtual bool invoke(abstract_settings_parser_c &parser_object) {return false;}
-    virtual std::string help() { return ""; }
+    virtual std::string help(abstract_settings_parser_c *parser) { return ""; }
 };
 
 
@@ -187,6 +193,7 @@ public:
 
     size_t parsers_count();
     void pop_back();
+    virtual std::string help();
 };
 
 
@@ -214,7 +221,7 @@ public:
     virtual parsing_state_e process_value(const char *argument);
     virtual bool invoke(abstract_settings_parser_c &parser_object);
     virtual bool invoke_initialization(abstract_settings_parser_c &parser_object);
-    virtual std::string help();
+    virtual std::string help(abstract_settings_parser_c *parser);
 };
 
 class environment_variable_parser_c : public abstract_parser_c {
@@ -224,6 +231,7 @@ protected:
 public:
     environment_variable_parser_c();
     virtual bool invoke_initialization(abstract_settings_parser_c &parser_object);
+    virtual std::string help(abstract_settings_parser_c *parser);
 };
 
 
