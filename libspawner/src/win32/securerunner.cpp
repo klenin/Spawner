@@ -41,6 +41,15 @@ bool secure_runner::create_restrictions() {
             JOB_OBJECT_LIMIT_PROCESS_MEMORY | JOB_OBJECT_LIMIT_JOB_MEMORY;
     }
 
+	if (restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit)
+	{
+		restriction_t r = restrictions.get_restriction(restriction_processor_time_limit) * 10;
+		joeli.BasicLimitInformation.PerJobUserTimeLimit.QuadPart = r;
+		joeli.BasicLimitInformation.PerProcessUserTimeLimit.QuadPart = r;
+		joeli.BasicLimitInformation.LimitFlags |=
+			JOB_OBJECT_LIMIT_JOB_TIME | JOB_OBJECT_LIMIT_PROCESS_TIME;
+	}
+
     SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, &joeli, sizeof(joeli));
     le = GetLastError();
 
@@ -132,17 +141,13 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             break;
         }
 
-        if (restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit &&
-            (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart > 10*restrictions.get_restriction(restriction_processor_time_limit)) {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);
-            break;
-        }
         if (restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit &&
-            self->get_time_since_create() > 10*restrictions.get_restriction(restriction_user_time_limit)) {
+            self->get_time_since_create() > 10 * restrictions.get_restriction(restriction_user_time_limit)) {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);//freezed
             break;
         }
-        if ((dt=self->get_time_since_create() - idle_dt) > 100000) {//10ms
+
+        if ((dt = self->get_time_since_create() - idle_dt) > 100000) {//10ms
             idle_dt = self->get_time_since_create();
 
             double load_ratio = 10000.0*(double)(bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part)/dt;
