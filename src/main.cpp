@@ -828,10 +828,11 @@ public:
             report_class rep = (*i)->get_report();
             options_class options = (*i)->get_options();
             std::cout.flush();
-            Json::Value report_item = report_object.append(json_report(*i));
+            Json::Value report_item = json_report(*i);
             if (!options.hide_report || options.report_file.length()) {
                 std::string report;
-			    if (!options.json) {
+                report_object.append(json_report(*i));
+			    if (!options.json && runners.size() == 1) {
                     report = GenerateSpawnerReport(
                         rep, (*i)->get_options(), 
                         (*i)->get_restrictions()
@@ -850,7 +851,9 @@ public:
                 }
             }
         }
-        std::cout << report_object.toStyledString();
+        if (runners.size() > 1) {
+            std::cout << report_object.toStyledString();
+        }
     }
     virtual std::string help() {
         return parser.help();/*spawner_base_c::help() + "\
