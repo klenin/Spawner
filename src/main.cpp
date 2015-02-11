@@ -580,8 +580,9 @@ protected:
     bool runas;
     settings_parser_c &parser;
     std::vector<secure_runner*> runners;
+    size_t order;
 public:
-    spawner_new_c(settings_parser_c &parser): parser(parser), spawner_base_c(), options(session_class::base_session), runas(false) {
+    spawner_new_c(settings_parser_c &parser): parser(parser), spawner_base_c(), options(session_class::base_session), runas(false), order(0) {
     }
     Json::Value unit_to_json(restriction_t real_value, double value, const std::string &units) {
         if (real_value == restriction_no_limit) {
@@ -772,6 +773,7 @@ public:
             //throw exception
         }
         secure_runner *secure_runner_instance;
+        options.session << order++ << time(NULL);
         options.add_arguments(parser.get_program_arguments());
         if (options.login.length()) {
             secure_runner_instance = new delegate_runner(parser.get_program(), options, restrictions);
