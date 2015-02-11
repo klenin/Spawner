@@ -292,7 +292,7 @@ void secure_runner::wait()
 
 secure_runner::secure_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions): 
     runner(program, options), restrictions(restrictions),
-    hIOCP(handle_default_value), hJob(handle_default_value), check_thread(handle_default_value)
+    hIOCP(handle_default_value), hJob(handle_default_value), check_thread(handle_default_value), terminate_reason(terminate_reason_not_terminated)
 {
 }
 
@@ -316,20 +316,20 @@ void secure_runner::requisites()
     //create in another thread waiting function
 }
 
-terminate_reason_t secure_runner::get_terminate_reason()
-{
+terminate_reason_t secure_runner::get_terminate_reason() {
+    if (terminate_reason == terminate_reason_not_terminated && get_exit_code() != 0) {
+        return terminate_reason_abnormal_exit_process;
+    }
     return terminate_reason;
 }
 
-report_class secure_runner::get_report()
-{
+report_class secure_runner::get_report() {
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
     report.process_status = get_process_status();
     if (get_process_status() == process_spawner_crash) {
         report.terminate_reason = terminate_reason_none;
     } else if (hJob != handle_default_value) {
-        if (!QueryInformationJobObject(hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL))
-        {
+        if (!QueryInformationJobObject(hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL)) {
             //throw GetWin32Error("QueryInformationJobObject");
         }
 
@@ -340,8 +340,7 @@ report_class secure_runner::get_report()
 
 
         JOBOBJECT_EXTENDED_LIMIT_INFORMATION xli;
-        if (!QueryInformationJobObject(hJob, JobObjectExtendedLimitInformation, &xli, sizeof(xli), NULL))
-        {
+        if (!QueryInformationJobObject(hJob, JobObjectExtendedLimitInformation, &xli, sizeof(xli), NULL)) {
             //throw GetWin32Error("QueryInformationJobObject");
         }
 
