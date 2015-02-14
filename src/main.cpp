@@ -577,12 +577,17 @@ class spawner_new_c: public spawner_base_c {
 protected:
     restrictions_class restrictions;
     options_class options;
+    restrictions_class base_restrictions;
+    options_class base_options;
     bool runas;
+    bool base_initialized;
     settings_parser_c &parser;
     std::vector<secure_runner*> runners;
     size_t order;
 public:
-    spawner_new_c(settings_parser_c &parser): parser(parser), spawner_base_c(), options(session_class::base_session), runas(false), order(0) {
+    spawner_new_c(settings_parser_c &parser) : 
+        parser(parser), spawner_base_c(), options(session_class::base_session), base_options(session_class::base_session), 
+        runas(false), order(0), base_initialized(false) {
     }
     Json::Value unit_to_json(restriction_t real_value, double value, const std::string &units) {
         if (real_value == restriction_no_limit) {
@@ -711,7 +716,7 @@ public:
         return report_item;
     }
     virtual bool init() {
-        if (!init_runner()) {
+        if (!init_runner() || !runners.size()) {
             return false;
         }
         for (auto i = runners.begin(); i != runners.end(); i++) {
@@ -769,7 +774,13 @@ public:
     }
     bool init_runner() {
         if (!parser.get_program().length()) {
-            return false;
+            if (base_initialized) {
+                return false;
+            }
+            base_options = options;
+            base_restrictions = restrictions;
+            base_initialized = true;
+            return true;
             //throw exception
         }
         secure_runner *secure_runner_instance;
@@ -824,20 +835,25 @@ public:
     }
     virtual void print_report() {
         Json::Value report_object(Json::arrayValue);
+        // sp99 legacy
         for (auto i = runners.begin(); i != runners.end(); i++) {
             report_class rep = (*i)->get_report();
             options_class options = (*i)->get_options();
             std::cout.flush();
-            Json::Value report_item = json_report(*i);
             if (!options.hide_report || options.report_file.length()) {
                 std::string report;
-                report_object.append(json_report(*i));
-			    if (!options.json && runners.size() == 1) {
+                Json::Value report_item = json_report(*i);
+                report_object.append(report_item);
+                if (runners.size() != 1) {
+                    continue;
+                }
+                if (!options.json) {
                     report = GenerateSpawnerReport(
-                        rep, (*i)->get_options(), 
-                        (*i)->get_restrictions()
-                    );
-                } else {
+                                rep, (*i)->get_options(),
+                                (*i)->get_restrictions()
+                            );
+                }
+                else {
                     report = report_item.toStyledString();
                 }
                 if (!options.hide_report) {
@@ -851,33 +867,26 @@ public:
                 }
             }
         }
-        if (runners.size() > 1) {
-            std::cout << report_object.toStyledString();
+        if (base_options.json) {
+            std::string report = report_object.toStyledString();
+            if (base_options.report_file.length()) {
+                std::ofstream fo(base_options.report_file.c_str());
+                fo << report;
+                fo.close();
+            }
+            if (!options.hide_report) {
+                std::cout << report;
+            }
         }
     }
     virtual std::string help() {
-        return parser.help();/*spawner_base_c::help() + "\
-Spawner options:\n\
-\t Argument            Environment variable     Description\n\
-\t-ml:[n]             SP_MEMORY_LIMIT     Ìàêñèìàëüíûé îáúåì âèðòóàëüíîé ïàìÿòè, âûäåëåííûé ïðîöåññó (â Mb).\n\
-\t-tl:[n]             SP_TIME_LIMIT       Ìàêñèìàëüíîå âðåìÿ âûïîëíåíèÿ ïðîöåññà â ïîëüçîâàòåëüñêîì ðåæèìå (â ñåê).\n\
-\t-d:[n]              SP_DEADLINE         Ëèìèò ôèçè÷åñêîãî âðåìåíè, âûäåëåííîãî ïðîöåññó (â ñåê).\n\
-\t-wl:[n]             SP_WRITE_LIMIT      Ìàêñèìàëüíûé îáúåì äàííûõ, êîòîðûé ìîæåò áûòü çàïèñàí ïðîöåññîì (â Mb).\n\
-\t-u:[user@domain]    SP_USER             Èìÿ ïîëüçîâàòåëÿ â ôîðìàòå: User[@Domain]\n\
-\t-p:[password]       SP_PASSWORD         Ïàðîëü.\n\
-\t-runas:[0|1]        SP_RUNAS            Èñïîëüçîâàòü ñåðâèñ RunAs äëÿ çàïóñêà ïðîöåññà.\n\
-\t-s:[n]              SP_SECURITY_LEVEL   Óðîâåíü áåçîïàñíîñòè. Ìîæåò ïðèíèìàòü çíà÷åíèÿ 0 èëè 1.\n\
-\t-hr:[0|1]           SP_HIDE_REPORT      Íå ïîêàçûâàòü îò÷åò.\n\
-\t-ho:[0|1]           SP_HIDE_OUTPUT      Íå ïîêàçûâàòü âûõîäíîé ïîòîê (STDOUT) ïðèëîæåíèÿ.\n\
-\t-sr:[file]          SP_REPORT_FILE      Ñîõðàíèòü îò÷åò â ôàéë.\n\
-\t-so:[file]          SP_OUTPUT_FILE      Ñîõðàíèòü âûõîäíîé ïîòîê â ôàéë.\n\
-\t-i:[file]           SP_INPUT_FILE       Ïîëó÷èòü âõîäíîé ïîòîê èç ôàéëà. \n";*/
+        return parser.help();
     }
     virtual void on_separator(const std::string &_) {
         init_runner();
         parser.clear_program_parser();
-        options = options_class(session_class::base_session);
-        restrictions = restrictions_class();
+        options = options_class(base_options);
+        restrictions = restrictions_class(base_restrictions);
     }
     virtual void init_arguments() {
     
@@ -915,10 +924,11 @@ Spawner options:\n\
             environment_default_parser->add_argument_parser(c_lst("SP_PASSWORD"), new string_argument_parser_c(options.password))
         );
 
-        console_default_parser->add_argument_parser(c_lst(short_arg("sr")), 
+        console_default_parser->add_argument_parser(c_lst(short_arg("sr")),
             environment_default_parser->add_argument_parser(c_lst("SP_REPORT_FILE"), new string_argument_parser_c(options.report_file))
         );
-        console_default_parser->add_argument_parser(c_lst(short_arg("so"), long_arg("out")), 
+
+        console_default_parser->add_argument_parser(c_lst(short_arg("so"), long_arg("out")),
             environment_default_parser->add_argument_parser(c_lst("SP_OUTPUT_FILE"), new options_callback_argument_parser_c(&options, &options_class::add_stdoutput))
         );
         console_default_parser->add_argument_parser(c_lst(short_arg("i"), long_arg("in")), 
