@@ -51,9 +51,14 @@ std::string error_list::pop_error()
     if (!error_list::remains())
         return "<none>";
     std::string res = instance.errors.front();
-    instance.errors.pop_front();
+    //instance.errors.pop_front();
     return res;
 }
+
+std::vector<std::string> error_list::get_errors() {
+    return instance.errors;
+}
+
 
 bool error_list::remains()
 {

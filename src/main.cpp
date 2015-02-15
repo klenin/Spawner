@@ -716,8 +716,9 @@ public:
         rapidjson_write(ExitCodeToString(runner_report.exit_code).c_str());
         rapidjson_write("SpawnerError");
         writer.StartArray();
-        while (error_list::remains()) {
-            rapidjson_write(error_list::pop_error().c_str());
+        std::vector<std::string> errors = error_list::get_errors();
+        for (int i = 0; i < errors.size(); i++) {
+            rapidjson_write(errors[i].c_str());
         }
         writer.EndArray();
         writer.EndObject();
