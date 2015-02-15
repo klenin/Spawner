@@ -33,7 +33,7 @@ public:
     unsigned long long kernel_time;
     // options subset
     std::string application_name;
-    std::string login;
+    std::wstring login;
     std::string working_directory;
 };
 

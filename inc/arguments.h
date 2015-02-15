@@ -7,7 +7,6 @@
 #include <vector>
 #include <memory>
 #include <utility>
-#include <json/json.h>
 #include <inc/compatibility.h>
 
 #define min_def(x, y)((x)<(y)?(x):(y))

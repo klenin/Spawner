@@ -102,7 +102,7 @@ const handle_t handle_default_value = INVALID_HANDLE_VALUE;
 #endif//_WIN32
 
 wchar_t *a2w(const char *str);
-
+char *w2a(const wchar_t *str);
 
 
 #ifndef uint

@@ -191,12 +191,12 @@ void runner::create_process() {
     if (options.login == "") {
         //IMPORTANT: if logon option selected & failed signalize it
         DWORD len = MAX_USER_NAME;
-        char user_name[MAX_USER_NAME];
-        if (GetUserNameA(user_name, &len)) {//error here is not critical
+        wchar_t user_name[MAX_USER_NAME];
+        if (GetUserNameW(user_name, &len)) {//error here is not critical
             report.login = user_name;
         }
     } else {
-        report.login = options.login;
+        report.login = a2w(options.login.c_str());
         running = init_process_with_logon(cmd, wd);
         ReleaseSemaphore(init_semaphore, 10, NULL);
         delete[] cmd;

@@ -5,6 +5,9 @@
 
 #include <sp.h>
 #include <inc/compatibility.h>
+#include <rapidjson/rapidjson.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/prettywriter.h>
 
 class string_argument_parser_c : public base_argument_parser_c<std::string> {
 public:
@@ -589,31 +592,27 @@ public:
         parser(parser), spawner_base_c(), options(session_class::base_session), base_options(session_class::base_session), 
         runas(false), order(0), base_initialized(false) {
     }
-    Json::Value unit_to_json(restriction_t real_value, double value, const std::string &units) {
-        if (real_value == restriction_no_limit) {
-            return "Infinity";
-        }
-        Json::Value object(Json::objectValue);
-        object["real_value"] = real_value;
-        object["value"] = value;
-        object["units"] = units;
-        return object;
-    }
 
-    Json::Value json_report(runner *runner_instance) {
-//        Json::Value report(Json::arrayValue);
+    void json_report(runner *runner_instance, rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > &writer) {
+        writer.StartObject();
+
         //for {
         report_class runner_report = runner_instance->get_report();
         options_class runner_options = runner_instance->get_options();
-        Json::Value report_item(Json::objectValue);
-
-        report_item["Application"] = runner_report.application_name;
-        report_item["Arguments"] = Json::Value(Json::arrayValue);
+        //temporary
+#define rapidjson_write(x) (writer.String(a2w(x)))
+        rapidjson_write("Application");
+        rapidjson_write(runner_report.application_name.c_str());
+        rapidjson_write("Arguments");
+        writer.StartArray();
         for (size_t i = 0; i < runner_options.get_arguments_count(); ++i) {
-            report_item["Arguments"].append(runner_options.get_argument(i));
+            rapidjson_write(runner_options.get_argument(i).c_str());
         }
+        writer.EndArray();
 
-        Json::Value limit(Json::objectValue);
+        rapidjson_write("Limit");
+        writer.StartObject();
+
         restrictions_class runner_restrictions = ((secure_runner*)runner_instance)->get_restrictions();
         struct {
             char *field;
@@ -634,86 +633,94 @@ public:
             if (runner_restrictions[restriction_items[i].restriction] == restriction_no_limit) {
                 continue;
             }
+            rapidjson_write(restriction_items[i].field);
             if (restriction_items[i].degree == degree_default) {
-                limit[restriction_items[i].field] = runner_restrictions[restriction_items[i].restriction];
+                writer.Uint64(runner_restrictions[restriction_items[i].restriction]);
             } else {
-                limit[restriction_items[i].field] = (double)convert(
+                writer.Double((double)convert(
                     value_t(restriction_items[i].unit, restriction_items[i].degree),
                     value_t(restriction_items[i].unit),
                     (long double)runner_restrictions[restriction_items[i].restriction]
-                );
+                ));
             }
         }
-        
-        Json::Value option(Json::objectValue);
+        writer.EndObject();
+
+        rapidjson_write("Options");
+        writer.StartObject();
+        rapidjson_write("SearchInPath");
+        writer.Bool(runner_options.use_cmd);
+        writer.EndObject();
+
+        rapidjson_write("Result");
+        writer.StartObject();
         struct {
             char *field;
-            Json::Value value;
-            unit_t unit;
-            degrees_enum degree;
-        } option_items[] = {
-            { "SearchInPath", runner_options.use_cmd, unit_no_unit, degree_default },
-            { NULL, 0, unit_no_unit, degree_default },
-        };
-        for (int i = 0; option_items[i].field; ++i) {
-            if (option_items[i].degree == degree_default) {
-                option[option_items[i].field] = option_items[i].value;
-            } else {
-                option[option_items[i].field] = (double)convert(
-                    value_t(option_items[i].unit, option_items[i].degree),
-                    value_t(option_items[i].unit),
-                    (long double)option_items[i].value.asDouble()
-                );
-            }
-        }
-        Json::Value result(Json::objectValue);
-        struct {
-            char *field;
-            Json::Value value;
+            uint64_t value;
             unit_t unit;
             degrees_enum degree;
         } result_items[] = {
             { "Time", runner_report.processor_time, unit_time_second, degree_micro },
             { "WallClockTime", runner_report.user_time, unit_time_second, degree_micro },
-            { "Memory", (Json::Value::UInt64)runner_report.peak_memory_used, unit_memory_byte, degree_default },
+            { "Memory", runner_report.peak_memory_used, unit_memory_byte, degree_default },
             { "BytesWritten", runner_report.write_transfer_count, unit_memory_byte, degree_default },
             { "KernelTime", runner_report.kernel_time, unit_time_second, degree_micro },
             { "ProcessorLoad", runner_report.load_ratio, unit_no_unit, degree_centi },
-            { "WorkingDirectory", runner_report.working_directory, unit_no_unit, degree_default },
             { NULL, 0, unit_no_unit, degree_default },
         };
         for (int i = 0; result_items[i].field; ++i) {
+            rapidjson_write(result_items[i].field);
             if (result_items[i].degree == degree_default) {
-                result[result_items[i].field] = result_items[i].value;
-            } else {
-                result[result_items[i].field] = (double)convert(
+                writer.Uint64(result_items[i].value);
+            }
+            else {
+                writer.Double((double)convert(
                     value_t(result_items[i].unit, result_items[i].degree),
                     value_t(result_items[i].unit),
-                    (long double)result_items[i].value.asDouble()
-                );
+                    (long double)result_items[i].value
+                    ));
             }
         }
+        rapidjson_write("WorkingDirectory");
+        rapidjson_write(runner_report.working_directory.c_str());
+        writer.EndObject();
 
-        Json::Value std_out(Json::arrayValue);
+        rapidjson_write("StdOut");
+        writer.StartArray();
         for (uint i = 0; i < runner_options.stdoutput.size(); ++i) {
-            std_out.append(runner_options.stdoutput[i]);
+            rapidjson_write(runner_options.stdoutput[i].c_str());
         }
+        writer.EndArray();
+        rapidjson_write("StdErr");
+        writer.StartArray();
+        for (uint i = 0; i < runner_options.stderror.size(); ++i) {
+            rapidjson_write(runner_options.stderror[i].c_str());
+        }
+        writer.EndArray();
+        rapidjson_write("StdIn");
+        writer.StartArray();
+        for (uint i = 0; i < runner_options.stdinput.size(); ++i) {
+            rapidjson_write(runner_options.stdinput[i].c_str());
+        }
+        writer.EndArray();
 
-        report_item["Limit"] = limit;
-        report_item["Result"] = result;
-        report_item["Options"] = option;
-        report_item["StdOut"] = std_out;
-        report_item["CreateProcessMethod"]   = (options.login==""?"CreateProcess":"WithLogon");
-        report_item["UserName"]              = runner_report.login;
-
-        report_item["TerminateReason"]       = get_terminate_reason(runner_report.terminate_reason);
-	    report_item["ExitCode"]              = runner_report.exit_code;
-	    report_item["ExitStatus"]            = ExitCodeToString(runner_report.exit_code);
-        report_item["SpawnerError"]          = Json::Value(Json::arrayValue);
+        rapidjson_write("CreateProcessMethod");
+        rapidjson_write(options.login == "" ? "CreateProcess" : "WithLogon");
+        rapidjson_write("UserName");
+        writer.String(runner_report.login.c_str());
+        rapidjson_write("TerminateReason");
+        rapidjson_write(get_terminate_reason(runner_report.terminate_reason).c_str());
+        rapidjson_write("ExitCode");
+        writer.Uint(runner_report.exit_code);
+        rapidjson_write("ExitStatus");
+        rapidjson_write(ExitCodeToString(runner_report.exit_code).c_str());
+        rapidjson_write("SpawnerError");
+        writer.StartArray();
         while (error_list::remains()) {
-            report_item["SpawnerError"].append(error_list::pop_error());
+            rapidjson_write(error_list::pop_error().c_str());
         }
-        return report_item;
+        writer.EndArray();
+        writer.EndObject();
     }
     virtual bool init() {
         if (!init_runner() || !runners.size()) {
@@ -834,7 +841,9 @@ public:
         print_report();
     }
     virtual void print_report() {
-        Json::Value report_object(Json::arrayValue);
+        rapidjson::StringBuffer s;
+        rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_writer(s);
+        report_writer.StartArray();
         // sp99 legacy
         for (auto i = runners.begin(); i != runners.end(); i++) {
             report_class rep = (*i)->get_report();
@@ -842,8 +851,7 @@ public:
             std::cout.flush();
             if (!options.hide_report || options.report_file.length()) {
                 std::string report;
-                Json::Value report_item = json_report(*i);
-                report_object.append(report_item);
+                json_report(*i, report_writer);
                 if (runners.size() != 1) {
                     continue;
                 }
@@ -854,7 +862,13 @@ public:
                             );
                 }
                 else {
-                    report = report_item.toStyledString();
+                    rapidjson::StringBuffer sub_report;
+                    rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_item_writer(sub_report);
+                    report_item_writer.StartArray();
+                    json_report(*i, report_item_writer);
+                    report_item_writer.EndArray();
+                    report = sub_report.GetString();
+                    //report_item["test"] = "Привет";
                 }
                 if (!options.hide_report) {
                     std::cout << report;
@@ -867,8 +881,9 @@ public:
                 }
             }
         }
-        if (base_options.json) {
-            std::string report = report_object.toStyledString();
+        report_writer.EndArray();
+        if (base_options.json && runners.size() > 1) {
+            std::string report = s.GetString();
             if (base_options.report_file.length()) {
                 std::ofstream fo(base_options.report_file.c_str());
                 fo << report;
