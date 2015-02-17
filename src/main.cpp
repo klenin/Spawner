@@ -201,6 +201,7 @@ protected:
     }
 public:
     spawner_base_c(){}
+    virtual ~spawner_base_c() {}
     virtual void begin_report() {}
     virtual void run(int argc, char *argv[]){}
     virtual std::string help() {
@@ -222,6 +223,7 @@ public:
     bool show_help;
     spawner_base_c *spawner;
     command_handler_c();
+    ~command_handler_c();
     void reset();
     bool parse(int argc, char *argv[]);
     spawner_base_c *create_spawner(const std::string &s);
@@ -253,6 +255,11 @@ public:
     virtual void init_std_streams() {
         if (!options.hide_output) {
             options.add_stdoutput("std");
+        }
+    }
+    virtual ~spawner_old_c() {
+        if (secure_runner_instance) {
+            delete secure_runner_instance;
         }
     }
     virtual bool init() {
@@ -591,6 +598,11 @@ public:
     spawner_new_c(settings_parser_c &parser) : 
         parser(parser), spawner_base_c(), options(session_class::base_session), base_options(session_class::base_session), 
         runas(false), order(0), base_initialized(false) {
+    }
+    ~spawner_new_c() {
+        for (auto i = runners.begin(); i != runners.end(); i++) {
+            delete (*i);
+        }
     }
 
     void json_report(runner *runner_instance, rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > &writer) {
@@ -1028,6 +1040,11 @@ command_handler_c::command_handler_c(): spawner(NULL), show_help(false), legacy_
     add_default_parser();
     if (!spawner) {
         create_spawner("sp00");
+    }
+}
+command_handler_c::~command_handler_c() {
+    if (spawner) {
+        delete spawner;
     }
 }
 bool command_handler_c::set_legacy(const std::string &s) {

@@ -39,7 +39,7 @@ protected:
     static thread_return_t async_body(thread_param_t param);
 public:
     runner(const std::string &program, const options_class &options);
-    ~runner();
+    virtual ~runner();
     unsigned long get_exit_code();
     virtual process_status_t get_process_status();
     exception_t get_exception();
