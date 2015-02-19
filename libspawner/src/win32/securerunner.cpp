@@ -287,6 +287,7 @@ void secure_runner::wait()
     } while (!message);
 
     GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
+    report.user_time = get_time_since_create() / 10;
     running = false;
 }
 
@@ -336,7 +337,6 @@ report_class secure_runner::get_report() {
         report.processor_time = bai.BasicInfo.TotalUserTime.QuadPart/10;
         report.kernel_time = bai.BasicInfo.TotalKernelTime.QuadPart/10;
         report.write_transfer_count = bai.IoInfo.WriteTransferCount;
-        report.user_time = get_time_since_create()/10;
 
 
         JOBOBJECT_EXTENDED_LIMIT_INFORMATION xli;
