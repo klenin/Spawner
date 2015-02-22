@@ -47,14 +47,10 @@ public:
         return 0;
     }
 };
-#include <iostream>
 class duplex_buffer_class: public input_buffer_class, public output_buffer_class {
 protected:
-    std::ostringstream buffer;
-    std::queue<std::string> _buffer;
-    std::string __buffer;
-    handle_t mutex;
-    handle_t semaphore;
+    handle_t in;
+    handle_t out;
 public:
     duplex_buffer_class();
     virtual bool readable();

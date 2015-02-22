@@ -1,4 +1,5 @@
 #include <buffer.h>
+#include <error.h>
 
 buffer_class::buffer_class(): buffer_size(BUFFER_SIZE) {
 }
@@ -21,8 +22,9 @@ output_buffer_class::output_buffer_class(const size_t &buffer_size_param): buffe
 
 
 duplex_buffer_class::duplex_buffer_class(): input_buffer_class(), output_buffer_class() {
-    mutex = CreateMutex(NULL, FALSE, NULL);
-    semaphore = CreateSemaphore(NULL, 0, 1, NULL);
+    if (!CreatePipe(&in, &out, NULL, 0)) {
+        //raise_error(*this, "CreatePipe");
+    }
 }
 
 bool duplex_buffer_class::readable() {
@@ -34,45 +36,15 @@ bool duplex_buffer_class::writeable() {
 }
 
 size_t duplex_buffer_class::read(void *data, size_t size) {
-    WaitForSingleObject(semaphore, 0);
-
-    //*
-    while (true) {
-        WaitForSingleObject(mutex, infinite);
-        if (__buffer.length())
-            break;
-        ReleaseMutex(mutex);
-    }
-    //*/
-    //std::cout << "locked " << (unsigned int)__buffer.length() << std::endl;
-    uint len = 0;
-    uint sz = min_def(__buffer.length(), size);
-    memcpy(data, __buffer.c_str(), sz);
-    __buffer = __buffer.substr(sz);
-
-    if (__buffer.length()) {
-        LONG cnt;
-        ReleaseSemaphore(semaphore, 1, &cnt);
-    }
-    ReleaseMutex(mutex);
-
-    return sz;
+    DWORD bytes_read;
+    ReadFile(in, data, size, &bytes_read, NULL);
+    return bytes_read;
 }
 
 size_t duplex_buffer_class::write(void *data, size_t size) {
-    WaitForSingleObject(mutex, infinite);
-    __buffer += (char*)data;
-    if (__buffer.length() > 0) {
-        LONG cnt;
-        DWORD error;
-        WaitForSingleObject(semaphore, 0);
-        ReleaseSemaphore(semaphore, 1, &cnt);
-
-        error = GetLastError();
-    }
-    ReleaseMutex(mutex);
-        
-    return size;
+    DWORD bytes_written;
+    WriteFile(out, data, size, &bytes_written, NULL);
+    return bytes_written;
 }
 
 
@@ -172,7 +144,6 @@ input_stdin_buffer_class::input_stdin_buffer_class(const size_t &buffer_size_par
 bool input_stdin_buffer_class::readable() {
     return (stream != handle_default_value);
 }
-#include <iostream>
 size_t input_stdin_buffer_class::read(void *data, size_t size) {
     size_t result = protected_read(data, size);
 

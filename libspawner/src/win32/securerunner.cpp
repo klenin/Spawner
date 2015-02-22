@@ -286,7 +286,8 @@ void secure_runner::wait()
         };
     } while (!message);
 
-    GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
+    //GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
+    WaitForSingleObject(process_info.hProcess, infinite);
     report.user_time = get_time_since_create() / 10;
     running = false;
 }

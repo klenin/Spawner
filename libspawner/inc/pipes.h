@@ -35,7 +35,7 @@ public:
     pipe_class();
     pipe_class(const std_pipe_t &pipe_type);
     void close_pipe();
-    ~pipe_class();
+    virtual ~pipe_class();
     size_t write(void *data, size_t size);
     size_t read(void *data, size_t size);
     virtual bool bufferize();
@@ -55,6 +55,7 @@ protected:
     static thread_return_t writing_buffer(thread_param_t param);
 public:
     input_pipe_class();
+    virtual ~input_pipe_class();
     input_pipe_class(input_buffer_class *input_buffer_param);
     input_pipe_class(std::vector<input_buffer_class *> input_buffer_param);
     virtual void add_input_buffer(input_buffer_class *input_buffer_param);
@@ -69,6 +70,7 @@ protected:
     static thread_return_t reading_buffer(thread_param_t param);
 public:
     output_pipe_class();
+    virtual ~output_pipe_class();
     output_pipe_class(output_buffer_class *output_buffer_param);
     output_pipe_class(std::vector<output_buffer_class *> output_buffer_param);
     virtual void add_output_buffer(output_buffer_class *output_buffer_param);

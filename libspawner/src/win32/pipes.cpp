@@ -72,11 +72,29 @@ size_t pipe_class::write(void *data, size_t size)
 size_t pipe_class::read(void *data, size_t size)
 {
     DWORD dwRead;
+    static DWORD total = 0;
+    DWORD bytesAvailable = 0;
+    /*
+    */
+    size_t i = 0;
+    /*while (bytesAvailable <= size) {
+        PeekNamedPipe(readPipe, NULL, size, NULL, &bytesAvailable, NULL);
+        if (bytesAvailable && i > 5) {
+            break;
+        }
+        i++;
+        Sleep(1);
+    }/**/
+    //DWORD e;
+    //std::cout << "r:" <<WaitCommEvent(readPipe, &e, NULL) << GetLastError std::endl;
+    //std::cout << e << std::endl;
     if (!ReadFile(readPipe, data, size, &dwRead, NULL))
     {
         //raise_error(*this, "ReadFile");
         return 0;
     }
+    total += dwRead;
+    //        std::cout << total << " ";
     return dwRead;
 }
 
@@ -176,6 +194,10 @@ input_pipe_class::input_pipe_class(input_buffer_class *input_buffer_param):
     input_buffers.push_back(input_buffer_param);
 }
 
+input_pipe_class::~input_pipe_class() {
+    TerminateThread(buffer_thread, 0);
+}
+
 input_pipe_class::input_pipe_class(std::vector<input_buffer_class *> input_buffer_param): 
     pipe_class(PIPE_INPUT), input_buffers(input_buffer_param) {
 }
@@ -207,12 +229,14 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
 {
     output_pipe_class *self = (output_pipe_class*)param;
 	if (self->readPipe == INVALID_HANDLE_VALUE) {
+        std::cout << "fail";
 		return 0;
 	}
     //if debug show some message
 
     for (uint i = 0; i < self->output_buffers.size(); ++i) {
 	    if (!self->output_buffers[i]->writeable()) {
+            std::cout << "fail";
 			return 0;
 		}
 	}
@@ -235,6 +259,7 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
         }
         ReleaseMutex(self->reading_mutex);
     }
+            std::cout << "fail";
     return 0;
 }
 
@@ -246,7 +271,11 @@ output_pipe_class::output_pipe_class(output_buffer_class *output_buffer_param):
 	output_buffers.push_back(output_buffer_param);
 }
 
-output_pipe_class::output_pipe_class(std::vector<output_buffer_class *> output_buffer_param): 
+output_pipe_class::~output_pipe_class() {
+    TerminateThread(buffer_thread, 0);
+}
+
+output_pipe_class::output_pipe_class(std::vector<output_buffer_class *> output_buffer_param) :
     pipe_class(PIPE_OUTPUT), output_buffers(output_buffer_param)
 {}
 
