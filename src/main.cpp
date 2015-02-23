@@ -804,7 +804,7 @@ public:
             //throw exception
         }
         secure_runner *secure_runner_instance;
-        options.session << order++ << time(NULL);
+        options.session << order++ << time(NULL) << runner::get_current_time();
         options.add_arguments(parser.get_program_arguments());
         if (options.login.length()) {
             secure_runner_instance = new delegate_runner(parser.get_program(), options, restrictions);
@@ -860,14 +860,14 @@ public:
         // sp99 legacy
         for (auto i = runners.begin(); i != runners.end(); i++) {
             report_class rep = (*i)->get_report();
-            options_class options = (*i)->get_options();
+            options_class options_item = (*i)->get_options();
             std::cout.flush();
-            if (!options.hide_report || options.report_file.length()) {
+            if (!options_item.hide_report || options_item.report_file.length()) {
                 std::string report;
                 json_report(*i, report_writer);
-                if (!options.json) {
+                if (!options_item.json) {
                     report = GenerateSpawnerReport(
-                                rep, (*i)->get_options(),
+                                rep, options_item,
                                 (*i)->get_restrictions()
                             );
                 }
@@ -878,14 +878,13 @@ public:
                     json_report(*i, report_item_writer);
                     report_item_writer.EndArray();
                     report = sub_report.GetString();
-                    //report_item["test"] = "Привет";
                 }
-                if (!options.hide_report && !runners.size()) {
+                if (!options_item.hide_report && !runners.size()) {
                     std::cout << report;
                 }
-                if (options.report_file.length())
+                if (options_item.report_file.length())
                 {
-                    std::ofstream fo(options.report_file.c_str());
+                    std::ofstream fo(options_item.report_file.c_str());
                     fo << report;
                     fo.close();
                 }
@@ -899,7 +898,7 @@ public:
                 fo << report;
                 fo.close();
             }
-            if (!options.hide_report) {
+            if (!base_options.hide_report) {
                 std::cout << report;
             }
         }

@@ -331,16 +331,20 @@ report_class runner::get_report() {
 }
 
 unsigned long long runner::get_time_since_create() {
+    unsigned long long current = runner::get_current_time();
+    if (current < creation_time) {
+        current = creation_time;
+    }
+    return current - creation_time;
+}
+
+unsigned long long runner::get_current_time() {
     SYSTEMTIME current_time_sys;
     FILETIME current_time;
     GetSystemTime(&current_time_sys);
     SystemTimeToFileTime(&current_time_sys, &current_time);
 
-    unsigned long long current = *reinterpret_cast<unsigned long long*>(&current_time);
-    if (current < creation_time) {
-        current = creation_time;
-    }
-    return current - creation_time;
+    return *reinterpret_cast<unsigned long long*>(&current_time);
 }
 
 handle_t runner::get_process_handle() {

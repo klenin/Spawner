@@ -59,44 +59,6 @@ public:
     virtual size_t write(void *data, size_t size);
 };
 
-class output_stream_buffer_class: public output_buffer_class {
-private:
-    std::queue<std::string> incoming, shadow_incoming;
-    handle_t write_mutex;
-    double last_write_time;
-public:
-    output_stream_buffer_class(const size_t &buffer_size_param): output_buffer_class(buffer_size_param) {
-        write_mutex = CreateMutex(NULL, FALSE, NULL);
-        if (!write_mutex) {
-            //error
-        }
-    }
-    virtual bool writeable() {
-        return true;
-    }
-    bool ready() {
-        return incoming.size() != 0;
-    }
-    std::string stock() {
-        std::string result;
-        while (incoming.size()) {
-            result += incoming.front();
-            incoming.pop();
-        }
-        return result;
-    }
-    virtual size_t write(void *data, size_t size) {
-        WaitForSingleObject(write_mutex, INFINITE);
-
-        std::string s((char*)data,size);
-        incoming.push(s);
-        last_write_time = (double)clock()/CLOCKS_PER_SEC;
-        ReleaseMutex(write_mutex);
-        return size;
-    }
-
-};
-
 class input_stream_buffer_class: public input_buffer_class {
 protected:
     bool ready;

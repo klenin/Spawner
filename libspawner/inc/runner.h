@@ -48,6 +48,7 @@ public:
     options_class get_options() const;
     virtual report_class get_report();
     virtual unsigned long long get_time_since_create();
+    static unsigned long long get_current_time();
     virtual handle_t get_process_handle();
     virtual void get_times(unsigned long long *_creation_time, unsigned long long *exit_time, unsigned long long *kernel_time, unsigned long long *user_time);
 
