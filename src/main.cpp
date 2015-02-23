@@ -865,9 +865,6 @@ public:
             if (!options.hide_report || options.report_file.length()) {
                 std::string report;
                 json_report(*i, report_writer);
-                if (runners.size() != 1) {
-                    continue;
-                }
                 if (!options.json) {
                     report = GenerateSpawnerReport(
                                 rep, (*i)->get_options(),
@@ -883,7 +880,7 @@ public:
                     report = sub_report.GetString();
                     //report_item["test"] = "Привет";
                 }
-                if (!options.hide_report) {
+                if (!options.hide_report && !runners.size()) {
                     std::cout << report;
                 }
                 if (options.report_file.length())
