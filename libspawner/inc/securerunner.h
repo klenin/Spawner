@@ -14,7 +14,6 @@ protected:
     thread_t check_thread, completition;
     std::list<handle_t> threads;
 
-    process_status_t process_status;
     terminate_reason_t terminate_reason;
 
     virtual bool create_restrictions();

@@ -112,21 +112,21 @@ bool pipe_class::bufferize()
     }
     return true;
 }
-
-void pipe_class::wait()
-{
-    if (reading_mutex == handle_default_value || buffer_thread == handle_default_value)
-        return;
-    WaitForSingleObject(reading_mutex, INFINITE);
-}
+//
+//void pipe_class::wait()
+//{
+//    if (reading_mutex == handle_default_value || buffer_thread == handle_default_value)
+//        return;
+//    WaitForSingleObject(reading_mutex, INFINITE);
+//}
 
 void pipe_class::finish()
 {
-    if (reading_mutex != handle_default_value)
-    {
+    WaitForSingleObject(buffer_thread, 10000);
+    /*{
         WaitForSingleObject(reading_mutex, INFINITE);
         ReleaseMutex(reading_mutex);
-    }
+    }*/
     if (buffer_thread && buffer_thread != INVALID_HANDLE_VALUE) {
         TerminateThread(buffer_thread, 0);
         buffer_thread = INVALID_HANDLE_VALUE;
@@ -229,14 +229,12 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
 {
     output_pipe_class *self = (output_pipe_class*)param;
 	if (self->readPipe == INVALID_HANDLE_VALUE) {
-        std::cout << "fail";
 		return 0;
 	}
     //if debug show some message
 
     for (uint i = 0; i < self->output_buffers.size(); ++i) {
 	    if (!self->output_buffers[i]->writeable()) {
-            std::cout << "fail";
 			return 0;
 		}
 	}
@@ -259,7 +257,6 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
         }
         ReleaseMutex(self->reading_mutex);
     }
-            std::cout << "fail";
     return 0;
 }
 

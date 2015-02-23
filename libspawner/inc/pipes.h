@@ -39,7 +39,7 @@ public:
     size_t write(void *data, size_t size);
     size_t read(void *data, size_t size);
     virtual bool bufferize();
-    void wait();
+//    void wait();
     void finish();
     /* think about safer way of reading from pipe */
     void wait_for_pipe(const unsigned int &ms_time);
