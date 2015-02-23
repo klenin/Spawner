@@ -3,7 +3,6 @@
 
 #include <inc/session.h>
 
-#include <string>
 #include <list>
 #include <vector>
 // hide_gui - creates process with hidden flag turned on
@@ -12,9 +11,11 @@
 
 class options_class
 {
+protected:
     std::list<std::string> arguments;
 public:
     session_class session;
+    options_class(const options_class &options);
     options_class(const session_class &session_param): 
         hide_gui(true), silent_errors(true), debug(false), secure_token(false), use_cmd(false), session(session_param), 
         delegated(false), hide_report(false), hide_output(false), json(false) {}
@@ -46,7 +47,7 @@ public:
     bool debug;
     bool json;
     bool delegated;
-	bool secure_token;
+    bool secure_token;
     bool silent_errors;
     bool use_cmd;// uses environment paths to find application
 };
