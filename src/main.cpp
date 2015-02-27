@@ -879,7 +879,7 @@ public:
                     report_item_writer.EndArray();
                     report = sub_report.GetString();
                 }
-                if (!options_item.hide_report && !runners.size()) {
+                if (!options_item.hide_report && runners.size() == 1) {
                     std::cout << report;
                 }
                 if (options_item.report_file.length())

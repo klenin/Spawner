@@ -308,7 +308,7 @@ bool environment_variable_parser_c::invoke_initialization(abstract_settings_pars
     }
 
     for (auto i = parameters.begin(); i != parameters.end(); i++) {
-        auto result = GetEnvironmentVariable(i->first.c_str(), buffer, sizeof(buffer));
+        auto result = GetEnvironmentVariableA(i->first.c_str(), buffer, sizeof(buffer));
 	    if (result > sizeof(buffer)) {
             std::cerr << "Invalid parameter value for \"" << i->first << "\" with error: Buffer overflow" << std::endl;
         } else if (result > 0) {
