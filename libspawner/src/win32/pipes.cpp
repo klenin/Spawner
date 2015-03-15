@@ -39,13 +39,13 @@ bool pipe_class::create_pipe() {
 
 void pipe_class::close_pipe()
 {
-    finish();
     if (pipe_type == PIPE_INPUT) {
         CloseHandleSafe(readPipe);
     }
     if (pipe_type == PIPE_OUTPUT) {
         CloseHandleSafe(writePipe);
     }
+    finish();
 }
 
 pipe_class::~pipe_class()
@@ -122,13 +122,13 @@ bool pipe_class::bufferize()
 
 void pipe_class::finish()
 {
-    WaitForSingleObject(buffer_thread, 10000);
+    //WaitForSingleObject(buffer_thread, 10000);
     /*{
         WaitForSingleObject(reading_mutex, INFINITE);
         ReleaseMutex(reading_mutex);
     }*/
     if (buffer_thread && buffer_thread != INVALID_HANDLE_VALUE) {
-        TerminateThread(buffer_thread, 0);
+        //TerminateThread(buffer_thread, 0);
         buffer_thread = INVALID_HANDLE_VALUE;
     }
     //CloseHandleSafe(buffer_thread);
@@ -195,7 +195,7 @@ input_pipe_class::input_pipe_class(input_buffer_class *input_buffer_param):
 }
 
 input_pipe_class::~input_pipe_class() {
-    TerminateThread(buffer_thread, 0);
+    //TerminateThread(buffer_thread, 0);
 }
 
 input_pipe_class::input_pipe_class(std::vector<input_buffer_class *> input_buffer_param): 
@@ -245,7 +245,7 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
         if (bytes_count == 0) {
             break;
         }
-        WaitForSingleObject(self->reading_mutex, INFINITE);
+        //WaitForSingleObject(self->reading_mutex, INFINITE);
         if (bytes_count != 0)
         {
             if (bytes_count < BUFFER_SIZE) {
@@ -255,7 +255,7 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
 				self->output_buffers[i]->write(data, bytes_count);
 			}
         }
-        ReleaseMutex(self->reading_mutex);
+        //ReleaseMutex(self->reading_mutex);
     }
     return 0;
 }
@@ -269,7 +269,7 @@ output_pipe_class::output_pipe_class(output_buffer_class *output_buffer_param):
 }
 
 output_pipe_class::~output_pipe_class() {
-    TerminateThread(buffer_thread, 0);
+    //TerminateThread(buffer_thread, 0);
 }
 
 output_pipe_class::output_pipe_class(std::vector<output_buffer_class *> output_buffer_param) :

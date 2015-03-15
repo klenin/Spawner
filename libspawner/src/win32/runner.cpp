@@ -407,6 +407,7 @@ bool runner::wait_for(const unsigned long &interval) {
         return false;
     }
     WaitForSingleObject(running_thread, interval);
+    CloseHandleSafe(running_thread);
     return true;
 }
 

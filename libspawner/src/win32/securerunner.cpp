@@ -214,7 +214,7 @@ void secure_runner::free()
     CloseHandleSafe(hJob);
     //CloseHandleSafe(check_thread);
     if (check_thread && check_thread != INVALID_HANDLE_VALUE) {
-        TerminateThread(check_thread, 0);
+        //TerminateThread(check_thread, 0);
         check_thread = INVALID_HANDLE_VALUE;
     }
 }
@@ -286,8 +286,8 @@ void secure_runner::wait()
         };
     } while (!message);
 
-    //GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
-    WaitForSingleObject(process_info.hProcess, infinite);
+    GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
+    //WaitForSingleObject(process_info.hProcess, infinite);
     report.user_time = get_time_since_create() / 10;
     running = false;
 }
