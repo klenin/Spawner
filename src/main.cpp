@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <algorithm>
 
 #include <sp.h>
 #include <inc/compatibility.h>
@@ -15,6 +16,27 @@ public:
     virtual bool set(const std::string &s) {
         value = s;
         return true;
+    }
+};
+
+class environment_mode_argument_parser_c : public string_argument_parser_c {
+public:
+    environment_mode_argument_parser_c(std::string &mode) : string_argument_parser_c(mode) {}
+    virtual bool set(const std::string &m) {
+        std::vector<std::string> acceptables = {
+            "inherit",
+            "user-default",
+        };
+
+        if (find(acceptables.begin(), acceptables.end(), m) != acceptables.end()) {
+            value = m;
+        
+            return true;
+        } else {
+            error = "Wrong value: " + m + " (must be \"inherit\" or \"user-default\")";
+            
+            return false;
+        }
     }
 };
 
@@ -950,6 +972,14 @@ public:
 
         console_default_parser->add_argument_parser(c_lst(short_arg("sr")),
             environment_default_parser->add_argument_parser(c_lst("SP_REPORT_FILE"), new string_argument_parser_c(options.report_file))
+        );
+
+        console_default_parser->add_argument_parser(c_lst(short_arg("env")),
+            environment_default_parser->add_argument_parser(c_lst("SP_CLEAR_ENV"), new environment_mode_argument_parser_c(options.environmentMode))
+        );
+
+        console_default_parser->add_argument_parser(c_lst(short_arg("D")),
+            new options_callback_argument_parser_c(&options, &options_class::add_environment_variable)
         );
 
         console_default_parser->add_argument_parser(c_lst(short_arg("so"), long_arg("out")),

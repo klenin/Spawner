@@ -1,7 +1,16 @@
 #include <inc/runner.h>
 #include <inc/error.h>
 
+#ifdef _MSC_VER
+#pragma comment(lib, "Userenv")
+#endif
+
 #include <iostream>
+#include <fstream>
+#include <vector>
+#include <WinBase.h>
+#include <UserEnv.h>
+
 const size_t MAX_USER_NAME = 1024;
 
 handle_t runner::main_job_object = handle_default_value;
@@ -29,20 +38,112 @@ void runner::set_allow_breakaway(bool allow) {
     allow_breakaway = allow;
 }
 
+void runner::copy_environment(TCHAR* dest, const WCHAR* source) const {
+    int written = 0;
+
+    for (WCHAR* env = (WCHAR*)source; *env != '\0';)
+    {
+        TCHAR* ansi = w2a((const WCHAR*)env);
+
+        strcpy(dest, ansi);
+
+        int bytes = strlen(ansi) + 1;
+
+        written += bytes;
+        env += bytes;
+        dest += bytes;
+    }
+    
+    *dest = '\0';
+}
+
+runner::env_vars_list_t runner::read_environment(const WCHAR* source) const
+{
+    env_vars_list_t vars;
+
+    for (WCHAR* env = (WCHAR*)source; *env != '\0';)
+    {
+        std::string envStr(w2a((const WCHAR*)env));
+
+        int pos = envStr.find("=");
+
+        vars.push_back(make_pair(envStr.substr(0, pos), envStr.substr(pos + 1)));
+
+        env += envStr.length() + 1;
+    }
+
+    return vars;
+}
+
+runner::env_vars_list_t runner::set_environment_for_process() const
+{
+    auto curr_vars = read_environment(GetEnvironmentStringsW());
+
+    if (options.environmentMode == "user-default")
+    {
+        LPVOID envBlock = NULL;
+
+        CreateEnvironmentBlock(&envBlock, NULL, FALSE);
+
+        auto default_vars = read_environment((WCHAR*)envBlock);
+
+        DestroyEnvironmentBlock(envBlock);
+
+        for (auto i = default_vars.cbegin(); i != default_vars.cend(); ++i)
+        {
+            SetEnvironmentVariableA(i->first.c_str(), i->second.c_str());
+        }
+
+        for (auto i = curr_vars.cbegin(); i != curr_vars.cend(); ++i)
+        {
+            if (find(default_vars.cbegin(), default_vars.cend(), *i) == default_vars.cend())
+            {
+                SetEnvironmentVariableA(i->first.c_str(), NULL);
+            }
+        }
+    }
+
+    for (auto i = options.environmentVars.cbegin(); i != options.environmentVars.cend(); ++i) {
+        SetEnvironmentVariableA(i->first.c_str(), i->second.c_str());
+    }
+
+    return curr_vars;
+}
+
+void runner::restore_original_environment(const runner::env_vars_list_t& original) const
+{
+    auto curr_vars = read_environment(GetEnvironmentStringsW());
+
+    for (auto i = original.cbegin(); i != original.cend(); ++i)
+    {
+        SetEnvironmentVariableA(i->first.c_str(), i->second.c_str());
+    }
+
+    for (auto i = curr_vars.cbegin(); i != curr_vars.cend(); ++i)
+    {
+        if (find(original.cbegin(), original.cend(), *i) == original.cend())
+        {
+            SetEnvironmentVariableA(i->first.c_str(), NULL);
+        }
+    }
+}
+
 bool runner::init_process(char *cmd, const char *wd) {
     WaitForSingleObject(main_job_object_access_mutex, infinite);
     set_allow_breakaway(true);
+
+   // LPVOID penv = createEnvironmentForProcess();
+    env_vars_list_t original = set_environment_for_process();
 
     std::string run_program = program;
     if (force_program.length())
         run_program = force_program;
     if ( !CreateProcess(run_program.c_str(),
-        cmd,
-        NULL, NULL,
-        TRUE,
-        process_creation_flags,
-        NULL, wd,
-        &si, &process_info) ) {
+            cmd, NULL, NULL,
+            TRUE,
+            process_creation_flags,
+            NULL, wd,
+            &si, &process_info) ) {
         if (!options.use_cmd || !CreateProcess(NULL,
                 cmd,
                 NULL, NULL,
@@ -50,12 +151,14 @@ bool runner::init_process(char *cmd, const char *wd) {
                 process_creation_flags,
                 NULL, wd,
                 &si, &process_info) ) {
-                ReleaseMutex(main_job_object_access_mutex);
-                raise_error(*this, "CreateProcess");
-                return false;
+            ReleaseMutex(main_job_object_access_mutex);
+            restore_original_environment(original);
+            raise_error(*this, "CreateProcess");
+            return false;
         }
     }
     ReleaseMutex(main_job_object_access_mutex);
+    restore_original_environment(original);
 
     get_times(&creation_time, NULL, NULL, NULL);
     return true;
@@ -88,6 +191,9 @@ bool runner::init_process_with_logon(char *cmd, const char *wd) {
     DWORD creation_flags = CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW;
 
     HANDLE token = NULL;
+
+    auto original = set_environment_for_process();
+    
     if ( !CreateProcessWithLogonW(login, NULL, password, 0,
         wprogram, wcmd, creation_flags,
         NULL, wwd, &siw, &process_info) )
@@ -103,6 +209,8 @@ bool runner::init_process_with_logon(char *cmd, const char *wd) {
             delete[] wprogram;
             delete[] wcmd;
             delete[] wwd;
+            restore_original_environment(original);
+            
             return false;
         }
     }
@@ -114,6 +222,7 @@ bool runner::init_process_with_logon(char *cmd, const char *wd) {
     delete[] wprogram;
     delete[] wcmd;
     delete[] wwd;
+    restore_original_environment(original);
 
     get_times(&creation_time, NULL, NULL, NULL);
 
