@@ -26,6 +26,7 @@ public:
         std::vector<std::string> acceptables = {
             "inherit",
             "user-default",
+            "clear",
         };
 
         if (find(acceptables.begin(), acceptables.end(), m) != acceptables.end()) {
@@ -33,7 +34,7 @@ public:
         
             return true;
         } else {
-            error = "Wrong value: " + m + " (must be \"inherit\" or \"user-default\")";
+            error = "Wrong value: " + m + " (must be \"inherit\", \"clear\" or \"user-default\")";
             
             return false;
         }

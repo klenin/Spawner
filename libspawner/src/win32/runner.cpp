@@ -102,6 +102,13 @@ runner::env_vars_list_t runner::set_environment_for_process() const
             }
         }
     }
+    else if (options.environmentMode == "clear")
+    {
+        for (auto i = curr_vars.cbegin(); i != curr_vars.cend(); ++i)
+        {
+            SetEnvironmentVariableA(i->first.c_str(), NULL);
+        }
+    }
 
     for (auto i = options.environmentVars.cbegin(); i != options.environmentVars.cend(); ++i) {
         SetEnvironmentVariableA(i->first.c_str(), i->second.c_str());
