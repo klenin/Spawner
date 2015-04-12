@@ -17,6 +17,9 @@ options_class::options_class(const options_class &options) : session(options.ses
     for (auto i = options.arguments.begin(); i != options.arguments.end(); i++) {
         arguments.push_back(*i);
     }
+    
+    environmentVars = options.environmentVars;
+    environmentMode = options.environmentMode;
 }
 
 void options_class::add_argument(std::string argument) {
@@ -101,6 +104,22 @@ void options_class::add_stderror(const std::string &name) {
     }
     stderror.push_back(name);
 }
+
+void options_class::add_environment_variable(const std::string &envStr) {
+    std::string name, val;
+    int pos = find(envStr.begin(), envStr.end(), '=') - envStr.begin();
+    int l = envStr.length();
+
+    if (pos == 0 || pos == l || pos == l - 1) {
+        // throw exception
+    }
+
+    name = envStr.substr(0, pos);
+    val = envStr.substr(pos + 1);
+
+    environmentVars.push_back(std::make_pair(name, val));
+}
+
 //TODO! rethink this
 void options_class::clear_stdinput() {
     stdinput.clear();

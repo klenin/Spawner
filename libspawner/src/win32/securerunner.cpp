@@ -319,10 +319,11 @@ void secure_runner::requisites()
 }
 
 terminate_reason_t secure_runner::get_terminate_reason() {
-    return terminate_reason;
     if (terminate_reason == terminate_reason_not_terminated && get_exit_code() != 0) {
         return terminate_reason_abnormal_exit_process;
     }
+
+    return terminate_reason;
 }
 
 report_class secure_runner::get_report() {

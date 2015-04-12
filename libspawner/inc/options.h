@@ -18,13 +18,14 @@ public:
     options_class(const options_class &options);
     options_class(const session_class &session_param): 
         hide_gui(true), silent_errors(true), debug(false), secure_token(false), use_cmd(false), session(session_param), 
-        delegated(false), hide_report(false), hide_output(false), json(false) {}
+        delegated(false), hide_report(false), hide_output(false), json(false), environmentMode("inherit") {}
     void add_argument(std::string argument);
     void add_arguments(const std::vector<std::string> &arguments_a);
     void push_argument_front(std::string argument);
     void add_stdinput(const std::string &name);
     void add_stdoutput(const std::string &name);
     void add_stderror(const std::string &name);
+    void add_environment_variable(const std::string &envStr);
     void clear_stdinput();
     void clear_stdoutput();
     void clear_stderror();
@@ -40,6 +41,7 @@ public:
     std::vector<std::string> stdinput;
     std::vector<std::string> stdoutput;
     std::vector<std::string> stderror;
+    std::list< std::pair< std::string, std::string > > environmentVars;
     std::string report_file;//bad, need many values but this causes many outputs if environment variable and command line argument both present
     bool hide_gui;
     bool hide_report;
@@ -50,6 +52,7 @@ public:
     bool secure_token;
     bool silent_errors;
     bool use_cmd;// uses environment paths to find application
+    std::string environmentMode;
 };
 
 
