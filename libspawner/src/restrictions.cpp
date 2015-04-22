@@ -15,7 +15,8 @@ const restriction_cell restriction_identifiers[] = {
     {restriction_write_limit         , "RESTRICTION_WRITE_LIMIT"         , ""},
     {restriction_load_ratio          , "RESTRICTION_LOAD_RATIO"          , ""},
     {restriction_idle_time_limit     , "RESTRICTION_IDLE_TIME_LIMIT"     , ""},
-    {restriction_max                 , "RESTRICTION_MAX"                 , ""}
+    {restriction_processes_count_limit, "RESTRICTION_PROCESSES_COUNT_LIMIT", ""},
+    { restriction_max, "RESTRICTION_MAX", "" }
 };
 
 restrictions_class::restrictions_class()

@@ -56,6 +56,7 @@ enum terminate_reason_t
     terminate_reason_user_time_limit,
     terminate_reason_load_ratio_limit,
     terminate_reason_debug_event,
+    terminate_reason_created_process,
 };
 
 #endif//_WIN32
