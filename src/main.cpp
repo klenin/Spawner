@@ -1002,11 +1002,11 @@ public:
         console_default_parser->add_argument_parser(c_lst(short_arg("hr")), 
             environment_default_parser->add_argument_parser(c_lst("SP_HIDE_REPORT"), new boolean_argument_parser_c(options.hide_report))
         );
-
         console_default_parser->add_argument_parser(c_lst(short_arg("sw")), 
             environment_default_parser->add_argument_parser(c_lst("SP_SHOW_WINDOW"), new inverted_boolean_argument_parser_c(options.hide_gui))
         );
 
+        console_default_parser->add_argument_parser(c_lst(short_arg("only-process")), new time_argument_parser_c<degree_default>(restrictions[restriction_processes_count_limit]));
         console_default_parser->add_argument_parser(c_lst(long_arg("debug")), 
             environment_default_parser->add_argument_parser(c_lst("SP_DEBUG"), new boolean_argument_parser_c(options.debug))
         );

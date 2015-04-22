@@ -106,10 +106,13 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
     restrictions_class restrictions = self->restrictions;
 
-    if (restrictions[restriction_processor_time_limit] == restriction_no_limit &&
+    if (
+        restrictions[restriction_processor_time_limit] == restriction_no_limit &&
         restrictions[restriction_user_time_limit] == restriction_no_limit &&
         restrictions[restriction_write_limit] == restriction_no_limit &&
-        restrictions[restriction_idle_time_limit] == restriction_no_limit) {
+        restrictions[restriction_idle_time_limit] == restriction_no_limit &&
+        restrictions[restriction_processes_count_limit] == restriction_no_limit
+        ) {
         return 0;//may be comment this
     }
 
@@ -166,6 +169,14 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
                     is_idle = false;
                 }
             }
+        }
+        if (
+            restrictions.get_restriction(restriction_processes_count_limit) != restriction_no_limit
+            && bai.BasicInfo.TotalProcesses > restrictions.get_restriction(restriction_processes_count_limit)
+            )
+        {
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_COUNT_LIMIT, COMPLETION_KEY, NULL);
+            break;
         }
         Sleep(1);
     }
@@ -279,6 +290,12 @@ void secure_runner::wait()
             message++;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_load_ratio_limit;
+            process_status = process_finished_terminated;
+            break;
+        case JOB_OBJECT_MSG_PROCESS_COUNT_LIMIT:
+            message++;
+            TerminateJobObject(hJob, 0);
+            terminate_reason = terminate_reason_created_process;
             process_status = process_finished_terminated;
             break;
         default:
