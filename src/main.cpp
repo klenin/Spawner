@@ -199,17 +199,17 @@ protected:
     std::vector<runner*> runners;
     std::map<std::string, runner*> runner_alias;
     output_buffer_class *create_output_buffer(const std::string &name, const pipes_t &pipe_type, const size_t buffer_size = 4096) {
-	    output_buffer_class *output_buffer = NULL;
-	    if (name == "std") {
+        output_buffer_class *output_buffer = NULL;
+        if (name == "std") {
             unsigned int color = FOREGROUND_BLUE | FOREGROUND_GREEN;
             if (pipe_type == STD_ERROR_PIPE) {
                 color = FOREGROUND_RED | FOREGROUND_INTENSITY;
             }
-		    output_buffer = new output_stdout_buffer_class(4096, color);
+            output_buffer = new output_stdout_buffer_class(4096, color);
         } else if (name[0] == '*') {
-	    } else if (name.length()) {
-		    output_buffer = new output_file_buffer_class(name, 4096);
-	    }
+        } else if (name.length()) {
+            output_buffer = new output_file_buffer_class(name, 4096);
+        }
         return output_buffer;
     }
     input_buffer_class *create_input_buffer(const std::string &name, const size_t buffer_size = 4096) {
@@ -320,19 +320,19 @@ public:
                 if (buffer) {
                     output->add_output_buffer(buffer);
                 }
-		    }
+            }
             for (uint i = 0; i < options.stderror.size(); ++i) {
                 output_buffer_class *buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
                 if (buffer) {
                     error->add_output_buffer(buffer);
                 }
-		    }
+            }
             for (uint i = 0; i < options.stdinput.size(); ++i) {
                 input_buffer_class *buffer = create_input_buffer(options.stdinput[i]);
                 if (buffer) {
                     input->add_input_buffer(buffer);
                 }
-		    }
+            }
             secure_runner_instance->set_pipe(STD_OUTPUT_PIPE, output);
             secure_runner_instance->set_pipe(STD_ERROR_PIPE, error);
             secure_runner_instance->set_pipe(STD_INPUT_PIPE, input);
@@ -846,19 +846,19 @@ public:
                 if (buffer) {
                     output->add_output_buffer(buffer);
                 }
-		    }
+            }
             for (uint i = 0; i < options.stderror.size(); ++i) {
                 output_buffer_class *buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
                 if (buffer) {
                     error->add_output_buffer(buffer);
                 }
-		    }
+            }
             for (uint i = 0; i < options.stdinput.size(); ++i) {
                 input_buffer_class *buffer = create_input_buffer(options.stdinput[i]);
                 if (buffer) {
                     input->add_input_buffer(buffer);
                 }
-		    }
+            }
             secure_runner_instance->set_pipe(STD_OUTPUT_PIPE, output);
             secure_runner_instance->set_pipe(STD_ERROR_PIPE, error);
             secure_runner_instance->set_pipe(STD_INPUT_PIPE, input);

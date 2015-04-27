@@ -56,9 +56,9 @@ void settings_parser_c::parse_program() {
 
 void settings_parser_c::add_parser(abstract_parser_c *parser) {
     parsers.push_back(parser);
-	if (position) {
-		parser->invoke_initialization(*this);
-	}
+    if (position) {
+        parser->invoke_initialization(*this);
+    }
 }
 
 void settings_parser_c::set_dividers(const std::vector<std::string> &d) {
@@ -135,8 +135,8 @@ bool settings_parser_c::parse(int argc, char *argv[]) {
     arg_v = argv;
     position = 1;
     for (int i = 0; i < parsers.size(); ++i) {
-		parsers[i]->invoke_initialization(*this);
-	}
+        parsers[i]->invoke_initialization(*this);
+    }
 
     while (current_position() < argc && !stopped) {
         for (auto parser = parsers.begin(); parser != parsers.end(); parser++) {
@@ -302,14 +302,14 @@ environment_variable_parser_c::environment_variable_parser_c() : abstract_parser
 }
 
 bool environment_variable_parser_c::invoke_initialization(abstract_settings_parser_c &parser_object) {
-	static char buffer[4096];
+    static char buffer[4096];
     if (initialized) {
         return true;
     }
 
     for (auto i = parameters.begin(); i != parameters.end(); i++) {
         auto result = GetEnvironmentVariableA(i->first.c_str(), buffer, sizeof(buffer));
-	    if (result > sizeof(buffer)) {
+        if (result > sizeof(buffer)) {
             std::cerr << "Invalid parameter value for \"" << i->first << "\" with error: Buffer overflow" << std::endl;
         } else if (result > 0) {
             try {

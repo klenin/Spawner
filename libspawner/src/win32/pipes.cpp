@@ -228,16 +228,16 @@ pipe_t input_pipe_class::get_pipe()
 thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
 {
     output_pipe_class *self = (output_pipe_class*)param;
-	if (self->readPipe == INVALID_HANDLE_VALUE) {
-		return 0;
-	}
+    if (self->readPipe == INVALID_HANDLE_VALUE) {
+        return 0;
+    }
     //if debug show some message
 
     for (uint i = 0; i < self->output_buffers.size(); ++i) {
-	    if (!self->output_buffers[i]->writeable()) {
-			return 0;
-		}
-	}
+        if (!self->output_buffers[i]->writeable()) {
+            return 0;
+        }
+    }
     for (;;)
     {
         char data[BUFFER_SIZE];
@@ -251,9 +251,9 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
             if (bytes_count < BUFFER_SIZE) {
                 data[bytes_count] = 0;
             }
-			for (uint i = 0; i < self->output_buffers.size(); ++i) {
-				self->output_buffers[i]->write(data, bytes_count);
-			}
+            for (uint i = 0; i < self->output_buffers.size(); ++i) {
+                self->output_buffers[i]->write(data, bytes_count);
+            }
         }
         //ReleaseMutex(self->reading_mutex);
     }
@@ -265,7 +265,7 @@ output_pipe_class::output_pipe_class(): pipe_class(PIPE_OUTPUT)
 output_pipe_class::output_pipe_class(output_buffer_class *output_buffer_param): 
     pipe_class(PIPE_OUTPUT)
 {
-	output_buffers.push_back(output_buffer_param);
+    output_buffers.push_back(output_buffer_param);
 }
 
 output_pipe_class::~output_pipe_class() {

@@ -16,23 +16,23 @@ void load_open_job_object() {
 
 void CloseHandleSafe_debug(HANDLE &handle, char *file, unsigned int line)
 {
-	try {
-		if (handle == handle_default_value || handle == NULL)
-			return;
-		CloseHandle(handle);
-	} catch (...) {
-		std::ofstream log_file("C:\\CATS\\cats-judge\\log.log", std::ofstream::app);
-		log_file << file << ":" << line << " " << handle << std::endl;
-	}
-	handle = handle_default_value;
+    try {
+        if (handle == handle_default_value || handle == NULL)
+            return;
+        CloseHandle(handle);
+    } catch (...) {
+        std::ofstream log_file("C:\\CATS\\cats-judge\\log.log", std::ofstream::app);
+        log_file << file << ":" << line << " " << handle << std::endl;
+    }
+    handle = handle_default_value;
 }
 
 void CloseHandleSafe_real(HANDLE &handle)
 {
-	if (handle == handle_default_value || handle == NULL)
-		return;
-	CloseHandle(handle);
-	handle = handle_default_value;
+    if (handle == handle_default_value || handle == NULL)
+        return;
+    CloseHandle(handle);
+    handle = handle_default_value;
 }
 
 wchar_t *a2w(const char *str)

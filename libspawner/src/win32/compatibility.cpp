@@ -87,7 +87,7 @@ void SetRestriction(restrictions_class &restrictions, const restriction_kind_t &
             break;
         default:
             return;
-	}
+    }
     restrictions.set_restriction(restriction_kind, restriction_value);
 
 }
@@ -173,7 +173,7 @@ std::string GenerateSpawnerReport(const report_class &rep, const options_class &
     osstream << "PeakMemoryUsed:            " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.peak_memory_used, " (Mb)") << std::endl;
     osstream << "Written:                   " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.write_transfer_count, " (Mb)") << std::endl;
     osstream << "TerminateReason:           " << get_terminate_reason(rep.terminate_reason) << std::endl;
-	osstream << "ExitStatus:                " << ExitCodeToString(rep.exit_code) << std::endl;
+    osstream << "ExitStatus:                " << ExitCodeToString(rep.exit_code) << std::endl;
     osstream << "----------------------------------------------" << std::endl;
     osstream << "SpawnerError:              " << error_list::pop_error() << std::endl;
     return osstream.str();

@@ -6,9 +6,9 @@
 class CRestriction
 {
 public:
-	CRestriction(/*argument*/);
-	static void GetRestrictionList(/*arguments*/);
-	virtual void ApplyRestriction(/*process*/) = 0;
+    CRestriction(/*argument*/);
+    static void GetRestrictionList(/*arguments*/);
+    virtual void ApplyRestriction(/*process*/) = 0;
 
 };
 

@@ -4,11 +4,11 @@
 class CProcess
 {
 public:
-	CProcess(/*arguments*/);
-	void SetRestrictions(/*restrictions*/);
-	void SetArguments(); // ?!
-	int Run();
-	~CProcess();
+    CProcess(/*arguments*/);
+    void SetRestrictions(/*restrictions*/);
+    void SetArguments(); // ?!
+    int Run();
+    ~CProcess();
 };
 
 

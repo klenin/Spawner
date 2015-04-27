@@ -35,7 +35,7 @@ void spawner_c::init_options_from_arguments(options_class &options, const argume
         options.json = true;
     }
     if (argument_set.argument_exists(SP_CMD)) {
-	    options.use_cmd = true;
+        options.use_cmd = true;
     }
     if (argument_set.argument_exists(SP_DELEGATED)) {
         options.delegated = true;
@@ -59,17 +59,17 @@ void spawner_c::init_options_from_arguments(options_class &options, const argume
 }
 
 output_buffer_class *spawner_c::create_output_buffer(const std::string &name, const pipes_t &pipe_type, const size_t buffer_size) {
-	output_buffer_class *output_buffer = NULL;
-	if (name == "std") {
+    output_buffer_class *output_buffer = NULL;
+    if (name == "std") {
         unsigned int color = FOREGROUND_BLUE | FOREGROUND_GREEN;
         if (pipe_type == STD_ERROR_PIPE) {
             color = FOREGROUND_RED | FOREGROUND_INTENSITY;
         }
-		output_buffer = new output_stdout_buffer_class(4096, color);
+        output_buffer = new output_stdout_buffer_class(4096, color);
     } else if (name[0] == '*') {
-	} else if (name.length()) {
-		output_buffer = new output_file_buffer_class(name, 4096);
-	}
+    } else if (name.length()) {
+        output_buffer = new output_file_buffer_class(name, 4096);
+    }
     return output_buffer;
 }
 
@@ -130,7 +130,7 @@ runner *spawner_c::create_runner(session_class &session, const argument_set_c &a
             met_stdout = false;
             options.clear_stdoutput();
         }
-	}
+    }
     if (!options.hide_output && !met_stdout) {
         options.add_stdoutput("std");
     }
@@ -141,13 +141,13 @@ runner *spawner_c::create_runner(session_class &session, const argument_set_c &a
         if (!argument_set.get_argument(SP_ERROR_FILE, i).length()) {
             options.clear_stderror();
         }
-	}
+    }
     for (uint i = 0; i < argument_set.get_argument_count(SP_INPUT_FILE); ++i) {
         options.add_stdinput(argument_set.get_argument(SP_INPUT_FILE, i));
         if (!argument_set.get_argument(SP_INPUT_FILE, i).length()) {
             options.clear_stdinput();
         }
-	}
+    }
 
     secure_runner *secure_runner_instance;
     if (options.delegated) {
@@ -167,19 +167,19 @@ runner *spawner_c::create_runner(session_class &session, const argument_set_c &a
             if (buffer) {
                 output->add_output_buffer(buffer);
             }
-		}
+        }
         for (uint i = 0; i < options.stderror.size(); ++i) {
             output_buffer_class *buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
             if (buffer) {
                 error->add_output_buffer(buffer);
             }
-		}
+        }
         for (uint i = 0; i < options.stdinput.size(); ++i) {
             input_buffer_class *buffer = create_input_buffer(options.stdinput[i]);
             if (buffer) {
                 input->add_input_buffer(buffer);
             }
-		}
+        }
         secure_runner_instance->set_pipe(STD_OUTPUT_PIPE, output);
         secure_runner_instance->set_pipe(STD_ERROR_PIPE, error);
         secure_runner_instance->set_pipe(STD_INPUT_PIPE, input);
@@ -387,8 +387,8 @@ std::string spawner_c::json_report(runner *runner_instance) {
     //object["PeakMemoryUsed"]        = convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.peak_memory_used, " (Mb)");
     //object["Written"]               = convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.write_transfer_count, " (Mb)");
     object["TerminateReason"]       = get_terminate_reason(rep.terminate_reason);
-	object["ExitCode"]              = rep.exit_code;
-	object["ExitStatus"]            = ExitCodeToString(rep.exit_code);
+    object["ExitCode"]              = rep.exit_code;
+    object["ExitStatus"]            = ExitCodeToString(rep.exit_code);
     object["SpawnerError"]          = error_list::pop_error();
     return object.toStyledString();
 }*/
