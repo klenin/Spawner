@@ -304,25 +304,24 @@ void runner::create_process() {
     }
     cmd = new char [command_line.size()+1];
     strcpy(cmd, command_line.c_str());
-    if (options.login == "") {
+
+    bool withLogon = options.login != "";
+
+    if (withLogon) {
+        report.login = a2w(options.login.c_str());
+    } else {
         //IMPORTANT: if logon option selected & failed signalize it
         DWORD len = MAX_USER_NAME;
         wchar_t user_name[MAX_USER_NAME];
         if (GetUserNameW(user_name, &len)) {//error here is not critical
             report.login = user_name;
         }
-    } else {
-        report.login = a2w(options.login.c_str());
-        running = init_process_with_logon(cmd, wd);
-        ReleaseSemaphore(init_semaphore, 10, NULL);
-        delete[] cmd;
-        return;
     }
 
-    //std::cout << cmd;
-    running = init_process(cmd, wd);
+    running = withLogon ? init_process_with_logon(cmd, wd) : init_process(cmd, wd);
 
     ReleaseSemaphore(init_semaphore, 10, NULL);
+
     delete[] cmd;
 }
 
