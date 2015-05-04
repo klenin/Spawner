@@ -239,69 +239,61 @@ void secure_runner::wait()
     DWORD dwKey;
 #endif
     LPOVERLAPPED completedOverlapped;
-    int message = 0;
+    bool waiting;
     do
     {
+        waiting = false;
+
         GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
 
         switch (dwNumBytes)
         {
-        case JOB_OBJECT_MSG_NEW_PROCESS:
-            break;
         case JOB_OBJECT_MSG_END_OF_PROCESS_TIME:
-            message++;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_time_limit;
             process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT:
-            message++;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_write_limit;
             process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_EXIT_PROCESS:
-            message++;
             break;
         case JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS:
-            message++;
             process_status = process_finished_abnormally;
             terminate_reason = terminate_reason_abnormal_exit_process;
             break;
         case JOB_OBJECT_MSG_PROCESS_MEMORY_LIMIT:
-            message++;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_memory_limit;
             process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_JOB_MEMORY_LIMIT:
-            message++;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_memory_limit;
             process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT:
-            message++;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_user_time_limit;
             process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT:
-            message++;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_load_ratio_limit;
             process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_PROCESS_COUNT_LIMIT:
-            message++;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_created_process;
             process_status = process_finished_terminated;
             break;
         default:
+            waiting = true;
             break;
         };
-    } while (!message);
+    } while (waiting);
 
     GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
     //WaitForSingleObject(process_info.hProcess, infinite);
