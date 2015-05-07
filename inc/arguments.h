@@ -1,13 +1,13 @@
-#ifndef _SPAWNER_ARGUMENTS_
-#define _SPAWNER_ARGUMENTS_
+#pragma once
 
-//#include <algorithm>
 #include <string>
 #include <map>
 #include <vector>
 #include <memory>
 #include <utility>
-#include <inc/compatibility.h>
+
+#include "inc/compatibility.h"
+#include "inc/uconvert.h"
 
 #define min_def(x, y)((x)<(y)?(x):(y))
 #define max_def(x, y)((x)>(y)?(x):(y))
@@ -226,4 +226,188 @@ public:
     virtual std::string help(abstract_settings_parser_c *parser);
 };
 
-#endif//_SPAWNER_ARGUMENTS_
+class string_argument_parser_c : public base_argument_parser_c < std::string > {
+public:
+    string_argument_parser_c(std::string &value) : base_argument_parser_c<std::string>(value) {}
+    virtual bool set(const std::string &s) {
+        value = s;
+        return true;
+    }
+};
+
+class environment_mode_argument_parser_c : public string_argument_parser_c {
+public:
+    environment_mode_argument_parser_c(std::string &mode) : string_argument_parser_c(mode) {}
+    virtual bool set(const std::string &m) {
+        std::vector<std::string> acceptables = {
+            "inherit",
+            "user-default",
+            "clear",
+        };
+
+        if (find(acceptables.begin(), acceptables.end(), m) != acceptables.end()) {
+            value = m;
+
+            return true;
+        }
+        else {
+            error = "Wrong value: " + m + " (must be \"inherit\", \"clear\" or \"user-default\")";
+
+            return false;
+        }
+    }
+};
+
+template<typename O, typename C>
+class callback_argument_parser_c : public string_argument_parser_c {
+private:
+    O o;
+    C c;
+    std::string v;
+public:
+    callback_argument_parser_c(O o, C c) : o(o), c(c), string_argument_parser_c(v) {}
+    virtual bool set(const std::string &s) {
+        (o->*c)(s);
+        return true;
+    }
+};
+
+template<typename O, typename C>
+class function_argument_parser_c : public string_argument_parser_c {
+private:
+    O o;
+    C c;
+    std::string v;
+public:
+    function_argument_parser_c(O o, C c) : o(o), c(c), string_argument_parser_c(v) {}
+    virtual bool set(const std::string &s) {
+        if ((o->*c)(s)) {
+            return true;
+        }
+        error = default_error;
+        return false;
+    }
+};
+
+typedef callback_argument_parser_c<options_class*, void(options_class::*)(const std::string&)> options_callback_argument_parser_c;
+
+template<typename T, unit_t u, degrees_enum d>
+class unit_argument_parser_c : public base_argument_parser_c < T > {
+public:
+    unit_argument_parser_c(T &value) : base_argument_parser_c<T>(value) {}
+    virtual bool set(const std::string &s) {
+        try {
+            this->value = convert(value_t(u, d), s, restriction_no_limit);
+        }
+        catch (std::string &str) {
+            this->error = "Value type is not compatible: " + str;
+            return false;
+        }
+        return true;
+    }
+};
+
+template<degrees_enum d>
+class time_argument_parser_c : public unit_argument_parser_c < restriction_t, unit_time_second, d > {
+protected:
+    virtual bool accept_zero() {
+        return false;
+    }
+public:
+    time_argument_parser_c(restriction_t &value) : unit_argument_parser_c<restriction_t, unit_time_second, d>(value) {}
+    virtual bool set(const std::string &s) {
+        if (!unit_argument_parser_c<restriction_t, unit_time_second, d>::set(s)) {
+            return false;
+        }
+        if (this->value == 0 && !accept_zero()) {
+            this->error = "Time cannot be set to 0";
+            return false;
+        }
+        return true;
+    }
+};
+
+typedef time_argument_parser_c<degree_milli> millisecond_argument_parser_c;
+typedef time_argument_parser_c<degree_micro> microsecond_argument_parser_c;
+
+class byte_argument_parser_c : public unit_argument_parser_c < restriction_t, unit_memory_byte, degree_default > {
+protected:
+    virtual bool accept_zero() {
+        return false;
+    }
+public:
+    byte_argument_parser_c(restriction_t &value) : unit_argument_parser_c<restriction_t, unit_memory_byte, degree_default>(value) {}
+    virtual bool set(const std::string &s) {
+        if (!unit_argument_parser_c<restriction_t, unit_memory_byte, degree_default>::set(s)) {
+            return false;
+        }
+        if (value == 0 && !accept_zero()) {
+            error = "Memory cannot be set to 0";
+            return false;
+        }
+        return true;
+    }
+};
+
+class percent_argument_parser_c : public unit_argument_parser_c < restriction_t, unit_no_unit, degree_m4 > {
+protected:
+    virtual bool accept_zero() {
+        return false;
+    }
+public:
+    percent_argument_parser_c(restriction_t &value) : unit_argument_parser_c<restriction_t, unit_no_unit, degree_m4>(value) {}
+    virtual bool set(const std::string &s) {
+        if (!unit_argument_parser_c<restriction_t, unit_no_unit, degree_m4>::set(s)) {
+            return false;
+        }
+        if (value == 0 && !accept_zero()) {
+            error = "Ratio cannot be set to 0";
+            return false;
+        }
+        return true;
+    }
+};
+
+template<typename T, bool inverted = false>
+class base_boolean_argument_parser_c : public base_argument_parser_c < T > {
+protected:
+    virtual T true_value() {
+        return !inverted;
+    }
+    virtual T false_value() {
+        return inverted;
+    }
+public:
+    base_boolean_argument_parser_c(T &value) : base_argument_parser_c<T>(value) {}
+    virtual bool set(const std::string &s) {
+        if (s == "1") {
+            this->value = true_value();
+        }
+        else if (s == "0") {
+            this->value = false_value();
+        }
+        else {
+            this->error = "Value type is not compatible";
+            return false;
+        }
+        return true;
+    }
+};
+
+typedef base_boolean_argument_parser_c<bool> boolean_argument_parser_c;
+typedef base_boolean_argument_parser_c<bool, true> inverted_boolean_argument_parser_c;
+
+class bool_restriction_argument_parser_c : public base_boolean_argument_parser_c < restriction_t > {
+public:
+    bool_restriction_argument_parser_c(restriction_t &value) : base_boolean_argument_parser_c<restriction_t>(value) {}
+protected:
+    virtual restriction_t true_value() {
+        return restriction_limited;
+    }
+    virtual restriction_t false_value() {
+        return restriction_no_limit;
+    }
+};
+
+class function_restriction_argument_parser_c : public abstract_argument_parser_c {
+};
