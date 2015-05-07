@@ -159,7 +159,7 @@ bool runner::init_process(char *cmd, const char *wd) {
                 &si, &process_info) ) {
             ReleaseMutex(main_job_object_access_mutex);
             restore_original_environment(original);
-            raise_error(*this, "CreateProcess");
+            raise_error(*this, "CreateProcess \"" + run_program + "\"");
             return false;
         }
     }
