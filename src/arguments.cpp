@@ -27,7 +27,6 @@ compact_list_c::operator std::vector<std::string>() const {
     return vector();
 }
 
-
 abstract_parser_c::~abstract_parser_c() {
     for (auto i = parameters.begin(); i != parameters.end(); i++) {
         i->second->dereference();
@@ -41,7 +40,6 @@ abstract_argument_parser_c *abstract_parser_c::add_argument_parser(const std::ve
     parsers[argument_parser] = params;
     return argument_parser;
 }
-
 
 bool settings_parser_c::is_program() {
     return (position < arg_c && arg_v[position][0] != '-');
@@ -190,10 +188,6 @@ std::string settings_parser_c::help() {
     return result;
 }
 
-
-
-
-
 console_argument_parser_c::console_argument_parser_c() : abstract_parser_c() {
 }
 bool console_argument_parser_c::parse(abstract_settings_parser_c &parser_object) {
@@ -295,8 +289,6 @@ std::string console_argument_parser_c::help(abstract_settings_parser_c *parser) 
     }
     return res.str();
 }
-
-
 
 environment_variable_parser_c::environment_variable_parser_c() : abstract_parser_c() {
 }

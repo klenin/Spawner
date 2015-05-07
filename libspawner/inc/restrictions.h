@@ -18,7 +18,6 @@ enum restriction_kind_t
 
 typedef unsigned int restriction_t;
 
-
 const restriction_t restriction_no_limit = 0xffffffff;
 const restriction_t restriction_limited  = 0x00000001;
 //TODO move source to platform independent .cpp
@@ -33,7 +32,5 @@ struct restrictions_class
     //void create_restriction_objects(const session_class &session, handle_t *job, handle_t *completition_port);
     static restriction_kind_t restriction_by_name(const std::string &name);
 };
-
-
 
 #endif//_SPAWNER_RESTRICTIONS_H_

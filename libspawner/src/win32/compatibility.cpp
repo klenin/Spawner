@@ -4,7 +4,7 @@
 #include <sstream>
 #include <stdlib.h>
 
-std::string ExitCodeToString(const unsigned int &code) { 
+std::string ExitCodeToString(const unsigned int &code) {
     switch (code) {
         case STATUS_ACCESS_VIOLATION:
             return "AccessViolation";
@@ -141,7 +141,6 @@ void ReadEnvironmentVariables(options_class &options, restrictions_class &restri
         options.report_file = buffer;
     }
 
-
     if (GetEnvironmentVariable("SP_OUTPUT_FILE", buffer, sizeof(buffer))) {
         options.stdoutput.push_back(buffer);
     }
@@ -154,7 +153,6 @@ void ReadEnvironmentVariables(options_class &options, restrictions_class &restri
         options.stdinput.push_back(buffer);
     }
 }
-
 
 std::string GenerateSpawnerReport(const report_class &rep, const options_class &options, const restrictions_class &restrictions) {
     std::ostringstream osstream;

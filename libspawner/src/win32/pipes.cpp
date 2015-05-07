@@ -8,16 +8,16 @@ input_buffer_class dummy_input_buffer;
 output_buffer_class dummy_output_buffer;
 //move this to separate function
 
-pipe_class::pipe_class(): pipe_type(PIPE_UNDEFINED), buffer_thread(handle_default_value), 
+pipe_class::pipe_class(): pipe_type(PIPE_UNDEFINED), buffer_thread(handle_default_value),
     reading_mutex(handle_default_value), readPipe(handle_default_value), writePipe(handle_default_value) {
     create_pipe();
 }
-pipe_class::pipe_class(const std_pipe_t &pipe_type): pipe_type(pipe_type), buffer_thread(handle_default_value), 
+pipe_class::pipe_class(const std_pipe_t &pipe_type): pipe_type(pipe_type), buffer_thread(handle_default_value),
     reading_mutex(handle_default_value), readPipe(handle_default_value), writePipe(handle_default_value) {
     create_pipe();
 }
 
-pipe_t pipe_class::input_pipe() { 
+pipe_t pipe_class::input_pipe() {
     return readPipe;
 }
 
@@ -27,10 +27,10 @@ pipe_t pipe_class::output_pipe() {
 
 bool pipe_class::create_pipe() {
     SECURITY_ATTRIBUTES saAttr;
-    saAttr.nLength = sizeof(SECURITY_ATTRIBUTES); 
-    saAttr.bInheritHandle = TRUE; 
-    saAttr.lpSecurityDescriptor = NULL; 
-    
+    saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+    saAttr.bInheritHandle = TRUE;
+    saAttr.lpSecurityDescriptor = NULL;
+
     if (!CreatePipe(&readPipe, &writePipe, &saAttr, 0)) {
         raise_error(*this, "CreatePipe");
         return false;
@@ -98,14 +98,13 @@ size_t pipe_class::read(void *data, size_t size)
     return dwRead;
 }
 
-
 bool pipe_class::bufferize()
 {
     if (buffer_thread != handle_default_value)
     {
         //trying to bufferize twice
         return false;
-    }        
+    }
     if (reading_mutex == handle_default_value)
     {
         reading_mutex = CreateMutex(NULL, FALSE, NULL);
@@ -156,9 +155,6 @@ pipe_t pipe_class::get_pipe()
     return 0;
 }
 
-
-
-
 thread_return_t input_pipe_class::writing_buffer(thread_param_t param) {
     input_pipe_class *self = (input_pipe_class*)param;
 
@@ -189,7 +185,7 @@ thread_return_t input_pipe_class::writing_buffer(thread_param_t param) {
 input_pipe_class::input_pipe_class(): pipe_class(PIPE_INPUT) {
 }
 
-input_pipe_class::input_pipe_class(input_buffer_class *input_buffer_param): 
+input_pipe_class::input_pipe_class(input_buffer_class *input_buffer_param):
     pipe_class(PIPE_INPUT) {
     input_buffers.push_back(input_buffer_param);
 }
@@ -198,7 +194,7 @@ input_pipe_class::~input_pipe_class() {
     //TerminateThread(buffer_thread, 0);
 }
 
-input_pipe_class::input_pipe_class(std::vector<input_buffer_class *> input_buffer_param): 
+input_pipe_class::input_pipe_class(std::vector<input_buffer_class *> input_buffer_param):
     pipe_class(PIPE_INPUT), input_buffers(input_buffer_param) {
 }
 
@@ -223,7 +219,6 @@ pipe_t input_pipe_class::get_pipe()
 {
     return input_pipe();
 }
-
 
 thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
 {
@@ -262,7 +257,7 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
 
 output_pipe_class::output_pipe_class(): pipe_class(PIPE_OUTPUT)
 {}
-output_pipe_class::output_pipe_class(output_buffer_class *output_buffer_param): 
+output_pipe_class::output_pipe_class(output_buffer_class *output_buffer_param):
     pipe_class(PIPE_OUTPUT)
 {
     output_buffers.push_back(output_buffer_param);

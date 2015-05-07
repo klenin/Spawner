@@ -71,10 +71,6 @@ static OPEN_JOB_OBJECT OpenJobObjectA;
 #endif
 #endif//OpenJobObject
 
-
-
-
-
 typedef PROCESS_INFORMATION process_info_t;
 typedef HANDLE pipe_t;
 typedef STARTUPINFO startupinfo_t;
@@ -82,12 +78,9 @@ typedef DWORD process_id;
 
 const DWORD PROCESS_CREATION_FLAGS = (CREATE_SUSPENDED | /*CREATE_PRESERVE_CODE_AUTHZ_LEVEL | */CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB);
 
-
-
 #define CloseHandleSafe(handle) (CloseHandleSafe_debug(handle, __FILE__, __LINE__))
 void CloseHandleSafe_debug(HANDLE &handle, char *file, unsigned int line);
 void CloseHandleSafe_real(HANDLE &handle);
-
 
 const unsigned long exit_code_ok = 0;
 const unsigned long exit_code_still_active = STILL_ACTIVE;
@@ -103,7 +96,6 @@ const handle_t handle_default_value = INVALID_HANDLE_VALUE;
 
 wchar_t *a2w(const char *str);
 char *w2a(const wchar_t *str);
-
 
 #ifndef uint
 typedef unsigned int uint_32;

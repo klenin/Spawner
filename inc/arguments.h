@@ -12,12 +12,11 @@
 #define min_def(x, y)((x)<(y)?(x):(y))
 #define max_def(x, y)((x)>(y)?(x):(y))
 
-#define ARGUMENT() 
+#define ARGUMENT()
 
 typedef char *argument_type_t;
 
 static const char *SEPARATOR_ARGUMENT = "spawner.argument.separator";
-
 
 //unique names for arguments
 
@@ -115,8 +114,6 @@ public:
     virtual std::string help(abstract_settings_parser_c *parser) { return ""; }
 };
 
-
-
 struct console_argument_parser_settings_t {
     compact_list_c dividers;
 };
@@ -142,7 +139,6 @@ struct environment_argument_t {
 
 #define short_arg(x) ((std::string("-")+x).c_str())
 #define long_arg(x) ((std::string("--")+x).c_str())
-
 
 //configuration_manager
 class settings_parser_c: public abstract_settings_parser_c {
@@ -195,9 +191,6 @@ public:
     virtual std::string help();
 };
 
-
-
-
 class console_argument_parser_c : public abstract_parser_c {
 protected:
     enum parsing_state_e {
@@ -232,15 +225,5 @@ public:
     virtual bool invoke_initialization(abstract_settings_parser_c &parser_object);
     virtual std::string help(abstract_settings_parser_c *parser);
 };
-
-
-
-
-
-
-
-
-
-
 
 #endif//_SPAWNER_ARGUMENTS_

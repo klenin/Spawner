@@ -13,13 +13,11 @@ input_buffer_class::input_buffer_class(): buffer_class(BUFFER_SIZE) {
 input_buffer_class::input_buffer_class(const size_t &buffer_size_param): buffer_class(buffer_size_param) {
 }
 
-
 output_buffer_class::output_buffer_class(): buffer_class(BUFFER_SIZE) {
 }
 
 output_buffer_class::output_buffer_class(const size_t &buffer_size_param): buffer_class(buffer_size_param) {
 }
-
 
 duplex_buffer_class::duplex_buffer_class(): input_buffer_class(), output_buffer_class() {
     if (!CreatePipe(&in, &out, NULL, 0)) {
@@ -47,9 +45,6 @@ size_t duplex_buffer_class::write(void *data, size_t size) {
     return bytes_written;
 }
 
-
-
-
 handle_buffer_class::handle_buffer_class(): stream(handle_default_value) {
 }
 
@@ -70,10 +65,9 @@ handle_buffer_class::~handle_buffer_class() {
     CloseHandleSafe(stream);
 }
 
-
 input_file_buffer_class::input_file_buffer_class(): input_buffer_class(), handle_buffer_class() {
 }
-input_file_buffer_class::input_file_buffer_class(const std::string &file_name, const size_t &buffer_size_param): 
+input_file_buffer_class::input_file_buffer_class(const std::string &file_name, const size_t &buffer_size_param):
     input_buffer_class(), handle_buffer_class() {
     handle_t handle = CreateFile(file_name.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (true){}
@@ -88,7 +82,7 @@ size_t input_file_buffer_class::read(void *data, size_t size) {
 
 output_file_buffer_class::output_file_buffer_class(): output_buffer_class(), handle_buffer_class() {
 }
-output_file_buffer_class::output_file_buffer_class(const std::string &file_name, const size_t &buffer_size_param = BUFFER_SIZE): 
+output_file_buffer_class::output_file_buffer_class(const std::string &file_name, const size_t &buffer_size_param = BUFFER_SIZE):
     output_buffer_class(buffer_size_param), handle_buffer_class() {
     handle_t handle = CreateFile(file_name.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (true){}
@@ -101,10 +95,9 @@ size_t output_file_buffer_class::write(void *data, size_t size) {
     return protected_write(data, size);
 }
 
-
 output_stdout_buffer_class::output_stdout_buffer_class(): output_buffer_class(), handle_buffer_class() {
 }
-output_stdout_buffer_class::output_stdout_buffer_class(const size_t &buffer_size_param, const unsigned int &color_param): 
+output_stdout_buffer_class::output_stdout_buffer_class(const size_t &buffer_size_param, const unsigned int &color_param):
     output_buffer_class(buffer_size_param), handle_buffer_class(), color(color_param) {
     handle_t handle = GetStdHandle(STD_OUTPUT_HANDLE);
     if (true){}
@@ -118,7 +111,7 @@ size_t output_stdout_buffer_class::write(void *data, size_t size) {
         WORD attributes = color;
         if (!SetConsoleTextAttribute(stream, attributes))
         {
-        //    throw GetWin32Error("SetConsoleTextAttribute");     
+        //    throw GetWin32Error("SetConsoleTextAttribute");
         }
     }
     size_t result = protected_write(data, size);
@@ -126,16 +119,15 @@ size_t output_stdout_buffer_class::write(void *data, size_t size) {
         WORD attributes = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
         if (!SetConsoleTextAttribute(stream, attributes))
         {
-        //    throw GetWin32Error("SetConsoleTextAttribute");     
+        //    throw GetWin32Error("SetConsoleTextAttribute");
         }
     }
     return result;
 }
 
-
 input_stdin_buffer_class::input_stdin_buffer_class(): input_buffer_class(), handle_buffer_class() {
 }
-input_stdin_buffer_class::input_stdin_buffer_class(const size_t &buffer_size_param): 
+input_stdin_buffer_class::input_stdin_buffer_class(const size_t &buffer_size_param):
     input_buffer_class(buffer_size_param), handle_buffer_class() {
     handle_t handle = GetStdHandle(STD_INPUT_HANDLE);
     if (true){}

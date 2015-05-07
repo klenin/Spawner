@@ -14,7 +14,6 @@ spawner_c::spawner_c(int argc, char *argv[]): arguments(argc, argv), state(spawn
 spawner_c::~spawner_c() {
 }
 
-
 void spawner_c::init_options_from_arguments(options_class &options, const argument_set_c &argument_set) {
     if (argument_set.argument_exists(SP_WORKING_DIRECTORY))
         options.working_directory = argument_set.get_argument(SP_WORKING_DIRECTORY);
@@ -39,10 +38,10 @@ void spawner_c::init_options_from_arguments(options_class &options, const argume
     }
     if (argument_set.argument_exists(SP_DELEGATED)) {
         options.delegated = true;
-    } 
+    }
     if (argument_set.argument_exists(SP_DELEGATED_SESSION)) {
         options.session_id = argument_set.get_argument(SP_DELEGATED_SESSION);
-    } 
+    }
     if (argument_set.argument_exists(SP_REPORT_FILE)) {
         options.report_file = argument_set.get_argument(SP_REPORT_FILE);
     }
@@ -104,7 +103,7 @@ runner *spawner_c::create_runner(session_class &session, const argument_set_c &a
         {SP_LOAD_RATIO, restriction_load_ratio},
         {SP_IDLE_TIME_LIMIT, restriction_idle_time_limit},
     };
-    const uint restriction_bindings_count = 
+    const uint restriction_bindings_count =
         sizeof(restriction_bindings)/(sizeof(spawner_arguments) + sizeof(restriction_kind_t));
 
     for (uint i = 0; i < restriction_bindings_count; ++i) {
@@ -215,7 +214,7 @@ void spawner_c::init() {
                 duplex_buffer_class *buffer = new duplex_buffer_class();
                 static_cast<input_pipe_class*>(r->get_pipe(STD_INPUT_PIPE))->add_input_buffer(buffer);
                 static_cast<output_pipe_class*>(target_runner->get_pipe(output_pipe))->add_output_buffer(buffer);
-                
+
             }
         }
         for (uint j = 0; j < options.stdoutput.size(); ++j) {
@@ -229,7 +228,7 @@ void spawner_c::init() {
                 duplex_buffer_class *buffer = new duplex_buffer_class();
                 static_cast<input_pipe_class*>(runners[id]->get_pipe(STD_INPUT_PIPE))->add_input_buffer(buffer);
                 static_cast<output_pipe_class*>(r->get_pipe(STD_OUTPUT_PIPE))->add_output_buffer(buffer);
-                
+
             }
         }
         for (uint j = 0; j < options.stderror.size(); ++j) {
@@ -243,7 +242,7 @@ void spawner_c::init() {
                 duplex_buffer_class *buffer = new duplex_buffer_class();
                 static_cast<input_pipe_class*>(runners[id]->get_pipe(STD_INPUT_PIPE))->add_input_buffer(buffer);
                 static_cast<output_pipe_class*>(r->get_pipe(STD_ERROR_PIPE))->add_output_buffer(buffer);
-                
+
             }
         }
     }
@@ -269,7 +268,7 @@ bool spawner_c::run() {
             std::string report;
             if (!options.json) {
                 report = GenerateSpawnerReport(
-                    rep, runner_instance->get_options(), 
+                    rep, runner_instance->get_options(),
                     ((secure_runner*)runner_instance)->get_restrictions()
                 );
             } else {
@@ -320,8 +319,8 @@ std::string spawner_c::json_report(runner *runner_instance) {
     object["UserTimeLimit"] = unit_to_json(
         restrictions.get_restriction(restriction_processor_time_limit),
         convert(
-            value_t(unit_time_second, degree_milli), 
-            value_t(unit_time_second), 
+            value_t(unit_time_second, degree_milli),
+            value_t(unit_time_second),
             (long double)restrictions.get_restriction(restriction_processor_time_limit)
             ),
         unit_name(unit_time_second)

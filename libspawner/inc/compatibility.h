@@ -1,7 +1,6 @@
 #ifndef _SPAWNER_COMPATIBILITY_H_
 #define _SPAWNER_COMPATIBILITY_H_
 
-
 #include <inc/platform.h>
 #include <inc/options.h>
 #include <inc/restrictions.h>

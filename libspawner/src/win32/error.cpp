@@ -14,13 +14,13 @@ void error_list::push_error(const std::string &place)
         FORMAT_MESSAGE_FROM_SYSTEM
         // allocate buffer on local heap for error text
         |FORMAT_MESSAGE_ALLOCATE_BUFFER
-        // Important! will fail otherwise, since we're not 
+        // Important! will fail otherwise, since we're not
         // (and CANNOT) pass insertion parameters
-        |FORMAT_MESSAGE_IGNORE_INSERTS,  
+        |FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL,    // unused with FORMAT_MESSAGE_FROM_SYSTEM
         error_code,
         MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),//SUBLANG_DEFAULT),
-        (LPTSTR)&errorText,  // output 
+        (LPTSTR)&errorText,  // output
         0, // minimum size for output buffer
         NULL);   // arguments - see note
     if (!errorText) {
@@ -29,13 +29,13 @@ void error_list::push_error(const std::string &place)
             FORMAT_MESSAGE_FROM_SYSTEM
             // allocate buffer on local heap for error text
             |FORMAT_MESSAGE_ALLOCATE_BUFFER
-            // Important! will fail otherwise, since we're not 
+            // Important! will fail otherwise, since we're not
             // (and CANNOT) pass insertion parameters
-            |FORMAT_MESSAGE_IGNORE_INSERTS,  
+            |FORMAT_MESSAGE_IGNORE_INSERTS,
             NULL,    // unused with FORMAT_MESSAGE_FROM_SYSTEM
             error_code,
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),//SUBLANG_DEFAULT),
-            (LPTSTR)&errorText,  // output 
+            (LPTSTR)&errorText,  // output
             0, // minimum size for output buffer
             NULL);   // arguments - see note
     }
@@ -58,7 +58,6 @@ std::string error_list::pop_error()
 std::vector<std::string> error_list::get_errors() {
     return instance.errors;
 }
-
 
 bool error_list::remains()
 {

@@ -1,7 +1,6 @@
 /*#ifndef _SPAWNER_H_
 #define _SPAWNER_H_
 
-
 enum spawner_state_e {
     spawner_state_ok,
     spawner_state_show_help,
@@ -25,6 +24,5 @@ public:
     bool run();
     std::string json_report(runner *runner_instance);
 };
-
 
 #endif//_SPAWNER_H_*/

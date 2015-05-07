@@ -53,7 +53,7 @@ void runner::copy_environment(TCHAR* dest, const WCHAR* source) const {
         env += bytes;
         dest += bytes;
     }
-    
+
     *dest = '\0';
 }
 
@@ -200,7 +200,7 @@ bool runner::init_process_with_logon(char *cmd, const char *wd) {
     HANDLE token = NULL;
 
     auto original = set_environment_for_process();
-    
+
     if ( !CreateProcessWithLogonW(login, NULL, password, 0,
         wprogram, wcmd, creation_flags,
         NULL, wwd, &siw, &process_info) )
@@ -217,7 +217,7 @@ bool runner::init_process_with_logon(char *cmd, const char *wd) {
             delete[] wcmd;
             delete[] wwd;
             restore_original_environment(original);
-            
+
             return false;
         }
     }
@@ -257,7 +257,7 @@ void runner::create_process() {
     }
     si.lpDesktop = "";
     process_creation_flags = PROCESS_CREATION_FLAGS;
- 
+
     if (options.hide_gui)
     {
         si.dwFlags |= STARTF_USESHOWWINDOW;
@@ -318,7 +318,6 @@ void runner::create_process() {
         delete[] cmd;
         return;
     }
-
 
     //std::cout << cmd;
     running = init_process(cmd, wd);

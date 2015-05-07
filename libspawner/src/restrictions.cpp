@@ -53,4 +53,3 @@ restriction_kind_t restrictions_class::restriction_by_name(const std::string &na
     return restriction_max;
 }
 
-

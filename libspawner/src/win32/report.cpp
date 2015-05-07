@@ -1,6 +1,6 @@
 #include "report.h"
 
-struct map_cell 
+struct map_cell
 {
     unsigned long key;
     const char *name;

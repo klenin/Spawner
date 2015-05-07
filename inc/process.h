@@ -11,5 +11,4 @@ public:
     ~CProcess();
 };
 
-
 #endif//_PROCESS_H_

@@ -13,7 +13,6 @@ void load_open_job_object() {
 }
 #endif//OPEN_JOB_OBJECT_DYNAMIC_LOAD
 
-
 void CloseHandleSafe_debug(HANDLE &handle, char *file, unsigned int line)
 {
     try {

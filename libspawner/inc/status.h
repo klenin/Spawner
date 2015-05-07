@@ -3,7 +3,6 @@
 
 #include "platform.h"
 
-
 enum process_status_t
 {
     process_still_active        = 0x2, //b 0000 0010
