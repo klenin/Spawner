@@ -82,9 +82,9 @@ unsigned long convert(const value_t &from, const value_t &to, const unsigned lon
 
 long double convert(const value_t &from, const value_t &to, const long double &val)
 {
-    unsigned int from_unit_index = get_unit_index(from.unit_type), 
+    unsigned int from_unit_index = get_unit_index(from.unit_type),
         to_unit_index = get_unit_index(to.unit_type);
-    unsigned int from_degree_index = get_degree_index(from.degree_type), 
+    unsigned int from_degree_index = get_degree_index(from.degree_type),
         to_degree_index = get_degree_index(to.degree_type);
 
     if ((from.unit_type & unit_time) != (to.unit_type & unit_time) || (from.unit_type & unit_memory) != (to.unit_type & unit_memory))
@@ -200,7 +200,7 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
     if (v.length() > 0) {
         size_t len = v.length(), index = 0, degree_index = 0, unit_index = 0;
         for (degree_index = 1; degree_index < degrees_count; degree_index++) {
-            while (index < len && index < strlen(degree_descriptions[degree_index].short_name) && 
+            while (index < len && index < strlen(degree_descriptions[degree_index].short_name) &&
                 v[index]==degree_descriptions[degree_index].short_name[index]) {
                 index++;
             }
@@ -211,7 +211,7 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
         }
         int old_index = index;
         for (unit_index = 1; unit_index < units_count; unit_index++) {
-            while (index < len && index-old_index < strlen(unit_descriptions[unit_index].short_name) && 
+            while (index < len && index-old_index < strlen(unit_descriptions[unit_index].short_name) &&
                 v[index]==unit_descriptions[unit_index].short_name[index - old_index]) {
                 index++;
             }
@@ -240,7 +240,6 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
             return default_value;
         }
     }
-
 
     double result = abs(convert(from, to, value));
     return (unsigned long)result;

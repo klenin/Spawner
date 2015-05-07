@@ -3,7 +3,6 @@
 
 const char *SPAWNER_PROGRAM = "sp.exe";
 
-
 delegate_runner::delegate_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions):
     secure_runner(program, options, restrictions)
 {
@@ -47,8 +46,6 @@ void delegate_runner::create_process() {
     secure_runner::create_process();
 
 }
-
-
 
 delegate_instance_runner::delegate_instance_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions):
     secure_runner(program, options, restrictions){

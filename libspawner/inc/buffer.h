@@ -94,8 +94,6 @@ public:
     }
 };
 
-
-
 class handle_buffer_class {
 protected:
     handle_t stream;
@@ -106,7 +104,6 @@ public:
     handle_buffer_class();
     ~handle_buffer_class();
 };
-
 
 class input_file_buffer_class: public input_buffer_class, protected handle_buffer_class {
 public:
@@ -133,7 +130,6 @@ public:
     virtual bool writeable();
     virtual size_t write(void *data, size_t size);
 };
-
 
 class input_stdin_buffer_class: public input_buffer_class, protected handle_buffer_class {
 protected:

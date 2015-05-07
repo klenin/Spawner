@@ -5,7 +5,6 @@
 #include <inc/md5/md5.h>
 #include <sstream>
 
-
 class session_class {
 private:
     md5_state_t md5_state;
@@ -27,7 +26,5 @@ public:
     }
 
 };
-
-
 
 #endif//_SPAWNER_SESSION_H_

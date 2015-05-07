@@ -292,7 +292,7 @@ void secure_runner::wait()
     running = false;
 }
 
-secure_runner::secure_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions): 
+secure_runner::secure_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions):
     runner(program, options), restrictions(restrictions),
     hIOCP(handle_default_value), hJob(handle_default_value), check_thread(handle_default_value), terminate_reason(terminate_reason_not_terminated)
 {
@@ -339,7 +339,6 @@ report_class secure_runner::get_report() {
         report.processor_time = bai.BasicInfo.TotalUserTime.QuadPart/10;
         report.kernel_time = bai.BasicInfo.TotalKernelTime.QuadPart/10;
         report.write_transfer_count = bai.IoInfo.WriteTransferCount;
-
 
         JOBOBJECT_EXTENDED_LIMIT_INFORMATION xli;
         if (!QueryInformationJobObject(hJob, JobObjectExtendedLimitInformation, &xli, sizeof(xli), NULL)) {

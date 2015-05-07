@@ -1,6 +1,6 @@
 #include "report.h"
 
-struct map_cell 
+struct map_cell
 {
     unsigned long key;
     const char *name;
@@ -84,16 +84,16 @@ struct terminate_reason_description
 };
 
 const terminate_reason_description terminate_reason_descriptions[] = {
-	{terminate_reason_not_terminated,           "ExitProcess"},//TERMINATE_REASON_NOT_TERMINATED"},
+    {terminate_reason_not_terminated,           "ExitProcess"},//TERMINATE_REASON_NOT_TERMINATED"},
     {terminate_reason_none,                     "<none>"},//TERMINATE_REASON_NOT_TERMINATED"},
-	{terminate_reason_abnormal_exit_process,    "AbnormalExitProcess"},//TERMINATE_REASON_NOT_TERMINATED"},
+    {terminate_reason_abnormal_exit_process,    "AbnormalExitProcess"},//TERMINATE_REASON_NOT_TERMINATED"},
     {terminate_reason_time_limit,               "TimeLimitExceeded"},//"TERMINATE_REASON_TIME_LIMIT"},
     {terminate_reason_write_limit,              "WriteLimitExceeded"},//"TERMINATE_REASON_WRITE_LIMIT"},
     {terminate_reason_memory_limit,             "MemoryLimitExceeded"},//"TERMINATE_REASON_MEMORY_LIMIT"},
     {terminate_reason_user_time_limit,          "TimeLimitExceeded"},//"TERMINATE_REASON_USER_TIME_LIMIT"},
     {terminate_reason_load_ratio_limit,         "IdleTimeLimitExceeded"},//"TERMINATE_REASON_LOAD_RATIO_LIMIT"},
     {terminate_reason_debug_event,              "DebugEvent"},//"TERMINATE_REASON_DEBUG_EVENT"},
-	{terminate_reason_not_terminated,			NULL}
+    {terminate_reason_not_terminated,            NULL}
 };
 
 unsigned int get_exception_index(exception_t exception)
@@ -151,13 +151,13 @@ std::string get_status_text(process_status_t process_status)
 }
 std::string get_terminate_reason(terminate_reason_t terminate_reason)
 {
-	int i = 0;
-	while (terminate_reason_descriptions[i].name) {
-		if (terminate_reason_descriptions[i].terminate_reason == terminate_reason) {
-			return terminate_reason_descriptions[i].name;
-		}
-		i++;
-	}
+    int i = 0;
+    while (terminate_reason_descriptions[i].name) {
+        if (terminate_reason_descriptions[i].terminate_reason == terminate_reason) {
+            return terminate_reason_descriptions[i].name;
+        }
+        i++;
+    }
     return terminate_reason_descriptions[0].name;
 }
 

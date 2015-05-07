@@ -4,7 +4,7 @@
 #include <sstream>
 #include <stdlib.h>
 
-std::string ExitCodeToString(const unsigned int &code) { 
+std::string ExitCodeToString(const unsigned int &code) {
     switch (code) {
         case STATUS_ACCESS_VIOLATION:
             return "AccessViolation";
@@ -87,7 +87,7 @@ void SetRestriction(restrictions_class &restrictions, const restriction_kind_t &
             break;
         default:
             return;
-	}
+    }
     restrictions.set_restriction(restriction_kind, restriction_value);
 
 }
@@ -141,7 +141,6 @@ void ReadEnvironmentVariables(options_class &options, restrictions_class &restri
         options.report_file = buffer;
     }
 
-
     if (GetEnvironmentVariable("SP_OUTPUT_FILE", buffer, sizeof(buffer))) {
         options.stdoutput.push_back(buffer);
     }
@@ -154,7 +153,6 @@ void ReadEnvironmentVariables(options_class &options, restrictions_class &restri
         options.stdinput.push_back(buffer);
     }
 }
-
 
 std::string GenerateSpawnerReport(const report_class &rep, const options_class &options, const restrictions_class &restrictions) {
     std::ostringstream osstream;
@@ -173,7 +171,7 @@ std::string GenerateSpawnerReport(const report_class &rep, const options_class &
     osstream << "PeakMemoryUsed:            " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.peak_memory_used, " (Mb)") << std::endl;
     osstream << "Written:                   " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.write_transfer_count, " (Mb)") << std::endl;
     osstream << "TerminateReason:           " << get_terminate_reason(rep.terminate_reason) << std::endl;
-	osstream << "ExitStatus:                " << ExitCodeToString(rep.exit_code) << std::endl;
+    osstream << "ExitStatus:                " << ExitCodeToString(rep.exit_code) << std::endl;
     osstream << "----------------------------------------------" << std::endl;
     osstream << "SpawnerError:              " << error_list::pop_error() << std::endl;
     return osstream.str();

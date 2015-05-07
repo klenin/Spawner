@@ -17,7 +17,7 @@ options_class::options_class(const options_class &options) : session(options.ses
     for (auto i = options.arguments.begin(); i != options.arguments.end(); i++) {
         arguments.push_back(*i);
     }
-    
+
     environmentVars = options.environmentVars;
     environmentMode = options.environmentMode;
 }
@@ -60,7 +60,6 @@ std::string options_class::get_argument(const size_t &index) const {
 size_t options_class::get_arguments_count() const {
     return arguments.size();
 }
-
 
 std::string options_class::format_arguments() const
 {

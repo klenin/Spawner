@@ -31,7 +31,6 @@ public:
     secure_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions);
     ~secure_runner();
 
-
     terminate_reason_t get_terminate_reason();
 
     restrictions_class get_restrictions() const;

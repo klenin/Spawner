@@ -11,5 +11,4 @@
 #include <inc/session.h>
 #include <inc/delegate.h>
 
-
 #endif//_SPAWNER_H_
