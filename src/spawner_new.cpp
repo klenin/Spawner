@@ -243,32 +243,32 @@ bool spawner_new_c::init_runner()
         secure_runner_instance = new secure_runner(parser.get_program(), options, restrictions);
     }
 
-        {//if (!options.session_id.length()) {
-            output_pipe_class *output = new output_pipe_class();
-            output_pipe_class *error = new output_pipe_class();
-            input_pipe_class *input = new input_pipe_class();
-            for (uint i = 0; i < options.stdoutput.size(); ++i) {
-                output_buffer_class *buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
-                if (buffer) {
-                    output->add_output_buffer(buffer);
-                }
+    {//if (!options.session_id.length()) {
+        output_pipe_class *output = new output_pipe_class();
+        output_pipe_class *error = new output_pipe_class();
+        input_pipe_class *input = new input_pipe_class();
+        for (uint i = 0; i < options.stdoutput.size(); ++i) {
+            output_buffer_class *buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
+            if (buffer) {
+                output->add_output_buffer(buffer);
             }
-            for (uint i = 0; i < options.stderror.size(); ++i) {
-                output_buffer_class *buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
-                if (buffer) {
-                    error->add_output_buffer(buffer);
-                }
-            }
-            for (uint i = 0; i < options.stdinput.size(); ++i) {
-                input_buffer_class *buffer = create_input_buffer(options.stdinput[i]);
-                if (buffer) {
-                    input->add_input_buffer(buffer);
-                }
-            }
-            secure_runner_instance->set_pipe(STD_OUTPUT_PIPE, output);
-            secure_runner_instance->set_pipe(STD_ERROR_PIPE, error);
-            secure_runner_instance->set_pipe(STD_INPUT_PIPE, input);
         }
+        for (uint i = 0; i < options.stderror.size(); ++i) {
+            output_buffer_class *buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
+            if (buffer) {
+                error->add_output_buffer(buffer);
+            }
+        }
+        for (uint i = 0; i < options.stdinput.size(); ++i) {
+            input_buffer_class *buffer = create_input_buffer(options.stdinput[i]);
+            if (buffer) {
+                input->add_input_buffer(buffer);
+            }
+        }
+        secure_runner_instance->set_pipe(STD_OUTPUT_PIPE, output);
+        secure_runner_instance->set_pipe(STD_ERROR_PIPE, error);
+        secure_runner_instance->set_pipe(STD_INPUT_PIPE, input);
+    }
     runners.push_back(secure_runner_instance);
     return true;
 }

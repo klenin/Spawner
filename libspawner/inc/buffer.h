@@ -43,7 +43,7 @@ public:
     virtual bool writeable() {
         return false;
     }
-    virtual size_t write(void *data, size_t size) {
+    virtual size_t write(const void *data, size_t size) {
         return 0;
     }
 };
@@ -56,7 +56,7 @@ public:
     virtual bool readable();
     virtual bool writeable();
     virtual size_t read(void *data, size_t size);
-    virtual size_t write(void *data, size_t size);
+    virtual size_t write(const void *data, size_t size);
 };
 
 class input_stream_buffer_class: public input_buffer_class {
@@ -98,7 +98,7 @@ class handle_buffer_class {
 protected:
     handle_t stream;
     size_t protected_read(void *data, size_t size);
-    size_t protected_write(void *data, size_t size);
+    size_t protected_write(const void *data, size_t size);
     void init_handle(handle_t stream_arg);
 public:
     handle_buffer_class();
@@ -118,7 +118,7 @@ public:
     output_file_buffer_class();
     output_file_buffer_class(const std::string &file_name, const size_t &buffer_size_param);
     virtual bool writeable();
-    virtual size_t write(void *data, size_t size);
+    virtual size_t write(const void *data, size_t size);
 };
 
 class output_stdout_buffer_class: public output_buffer_class, protected handle_buffer_class {
@@ -128,7 +128,7 @@ public:
     output_stdout_buffer_class();
     output_stdout_buffer_class(const size_t &buffer_size_param = BUFFER_SIZE, const unsigned int &color_param = 0);
     virtual bool writeable();
-    virtual size_t write(void *data, size_t size);
+    virtual size_t write(const void *data, size_t size);
 };
 
 class input_stdin_buffer_class: public input_buffer_class, protected handle_buffer_class {

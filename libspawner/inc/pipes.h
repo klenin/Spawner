@@ -36,7 +36,7 @@ public:
     pipe_class(const std_pipe_t &pipe_type);
     void close_pipe();
     virtual ~pipe_class();
-    size_t write(void *data, size_t size);
+    size_t write(const void *data, size_t size);
     size_t read(void *data, size_t size);
     virtual bool bufferize();
 //    void wait();

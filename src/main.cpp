@@ -28,39 +28,53 @@ public:
 };
 
 void command_handler_c::add_default_parser() {
-    console_argument_parser_c *console_default_parser = new console_argument_parser_c();
-    environment_variable_parser_c *environment_default_parser = new environment_variable_parser_c();
+    console_argument_parser_c *console_default_parser =
+        new console_argument_parser_c();
+    environment_variable_parser_c *environment_default_parser =
+        new environment_variable_parser_c();
 
-    console_default_parser->add_flag_parser(c_lst(short_arg("h"), long_arg("help")), new boolean_argument_parser_c(show_help))
+    console_default_parser->add_flag_parser(c_lst(short_arg("h"), long_arg("help")),
+        new boolean_argument_parser_c(show_help))
         ->set_description("Show help");
+
     console_default_parser->add_argument_parser(
         c_lst(long_arg("legacy")),
-        new function_argument_parser_c<command_handler_c*, spawner_base_c*(command_handler_c::*)(const std::string&)>(
-            this,
-            &command_handler_c::create_spawner
-        )
-    )->set_description("Spawner interface")->default_error = environment_default_parser->add_argument_parser(
-        c_lst("SP_LEGACY"),
-        new function_argument_parser_c<command_handler_c*, spawner_base_c*(command_handler_c::*)(const std::string&)>(
-            this,
-            &command_handler_c::create_spawner
-        )
-    )->default_error = "Invalid value for legacy argument.";
+        new function_argument_parser_c<command_handler_c*,
+            spawner_base_c*(command_handler_c::*)(const std::string&)>(
+                this,
+                &command_handler_c::create_spawner
+            )
+    )->set_description("Spawner interface")->default_error =
+        environment_default_parser->add_argument_parser(
+            c_lst("SP_LEGACY"),
+            new function_argument_parser_c<command_handler_c*,
+                spawner_base_c*(command_handler_c::*)(const std::string&)>(
+                    this,
+                    &command_handler_c::create_spawner
+                )
+        )->default_error = "Invalid value for legacy argument.";
 
     add_parser(console_default_parser);
     add_parser(environment_default_parser);
 }
-command_handler_c::command_handler_c(): spawner(NULL), show_help(false), legacy_set(false) {
+
+command_handler_c::command_handler_c()
+    : spawner(NULL)
+    , show_help(false)
+    , legacy_set(false) {
+
     add_default_parser();
     if (!spawner) {
         create_spawner("sp00");
     }
 }
+
 command_handler_c::~command_handler_c() {
     if (spawner) {
         delete spawner;
     }
 }
+
 bool command_handler_c::set_legacy(const std::string &s) {
     if (legacy_set) {
         return false;
@@ -68,12 +82,14 @@ bool command_handler_c::set_legacy(const std::string &s) {
     legacy_set = true;
     return create_spawner(s) != NULL;
 }
+
 void command_handler_c::reset() {
     while (parser.parsers_count() > 2) {
         parser.pop_back();
     }
     parser.set_dividers(c_lst("=").vector());
 }
+
 spawner_base_c *command_handler_c::create_spawner(const std::string &s) {
     reset();
     if (spawner) {
@@ -94,6 +110,7 @@ spawner_base_c *command_handler_c::create_spawner(const std::string &s) {
 
     return spawner;
 }
+
 void command_handler_c::add_parser(abstract_parser_c *p) {
     parser.add_parser(p);
     if (!p->invoke_initialization(parser)) {

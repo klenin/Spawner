@@ -8,12 +8,23 @@ input_buffer_class dummy_input_buffer;
 output_buffer_class dummy_output_buffer;
 //move this to separate function
 
-pipe_class::pipe_class(): pipe_type(PIPE_UNDEFINED), buffer_thread(handle_default_value),
-    reading_mutex(handle_default_value), readPipe(handle_default_value), writePipe(handle_default_value) {
+pipe_class::pipe_class()
+    : pipe_type(PIPE_UNDEFINED)
+    , buffer_thread(handle_default_value)
+    , reading_mutex(handle_default_value)
+    , readPipe(handle_default_value)
+    , writePipe(handle_default_value) {
+
     create_pipe();
 }
-pipe_class::pipe_class(const std_pipe_t &pipe_type): pipe_type(pipe_type), buffer_thread(handle_default_value),
-    reading_mutex(handle_default_value), readPipe(handle_default_value), writePipe(handle_default_value) {
+
+pipe_class::pipe_class(const std_pipe_t &pipe_type)
+    : pipe_type(pipe_type)
+    , buffer_thread(handle_default_value)
+    , reading_mutex(handle_default_value)
+    , readPipe(handle_default_value)
+    , writePipe(handle_default_value) {
+
     create_pipe();
 }
 
@@ -53,7 +64,7 @@ pipe_class::~pipe_class()
     close_pipe();
 }
 
-size_t pipe_class::write(void *data, size_t size)
+size_t pipe_class::write(const void *data, size_t size)
 {
     DWORD dwWritten;
     if (!WriteFile(writePipe, data, size, &dwWritten, NULL))// || dwWritten != size

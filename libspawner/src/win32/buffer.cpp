@@ -39,7 +39,7 @@ size_t duplex_buffer_class::read(void *data, size_t size) {
     return bytes_read;
 }
 
-size_t duplex_buffer_class::write(void *data, size_t size) {
+size_t duplex_buffer_class::write(const void *data, size_t size) {
     DWORD bytes_written;
     WriteFile(out, data, size, &bytes_written, NULL);
     return bytes_written;
@@ -53,7 +53,7 @@ size_t handle_buffer_class::protected_read(void *data, size_t size) {
     ReadFile(stream, data, size, &bytes_read, NULL);
     return bytes_read;
 }
-size_t handle_buffer_class::protected_write(void *data, size_t size) {
+size_t handle_buffer_class::protected_write(const void *data, size_t size) {
     DWORD bytes_written = 0;
     WriteFile(stream, data, size, &bytes_written, NULL);
     return bytes_written;
@@ -91,7 +91,7 @@ output_file_buffer_class::output_file_buffer_class(const std::string &file_name,
 bool output_file_buffer_class::writeable() {
     return (stream != handle_default_value);
 }
-size_t output_file_buffer_class::write(void *data, size_t size) {
+size_t output_file_buffer_class::write(const void *data, size_t size) {
     return protected_write(data, size);
 }
 
@@ -106,7 +106,7 @@ output_stdout_buffer_class::output_stdout_buffer_class(const size_t &buffer_size
 bool output_stdout_buffer_class::writeable() {
     return (stream != handle_default_value);
 }
-size_t output_stdout_buffer_class::write(void *data, size_t size) {
+size_t output_stdout_buffer_class::write(const void *data, size_t size) {
     if (color) {
         WORD attributes = color;
         if (!SetConsoleTextAttribute(stream, attributes))
