@@ -201,18 +201,26 @@ bool spawner_new_c::init()
                     return false;
                 }
                 runner *target_runner = runners[index];
-                duplex_buffer_class *buffer = new duplex_buffer_class();
+                std::shared_ptr<duplex_buffer_class> buffer = std::make_shared<duplex_buffer_class>();
+                input_pipe_class* input_pipe = NULL;
+                output_pipe_class* output_pipe = NULL;
+
                 if (stream_item.pipe_type == STD_INPUT_PIPE && pipe_type != STD_INPUT_PIPE) {
-                    static_cast<input_pipe_class*>((*i)->get_pipe(stream_item.pipe_type))->add_input_buffer(buffer);
-                    static_cast<output_pipe_class*>(target_runner->get_pipe(pipe_type))->add_output_buffer(buffer);
+
+                    input_pipe = static_cast<input_pipe_class*>((*i)->get_pipe(stream_item.pipe_type));
+                    output_pipe = static_cast<output_pipe_class*>(target_runner->get_pipe(pipe_type));
                 }
                 else if (stream_item.pipe_type != STD_INPUT_PIPE && pipe_type == STD_INPUT_PIPE) {
-                    static_cast<input_pipe_class*>(target_runner->get_pipe(pipe_type))->add_input_buffer(buffer);
-                    static_cast<output_pipe_class*>((*i)->get_pipe(stream_item.pipe_type))->add_output_buffer(buffer);
+
+                    input_pipe = static_cast<input_pipe_class*>(target_runner->get_pipe(pipe_type));
+                    output_pipe = static_cast<output_pipe_class*>((*i)->get_pipe(stream_item.pipe_type));
                 }
                 else {
                     return false;
                 }
+
+                input_pipe->add_input_buffer(buffer);
+                output_pipe->add_output_buffer(buffer);
             }
         }
     }
@@ -234,7 +242,7 @@ bool spawner_new_c::init_runner()
     runner *secure_runner_instance;
     options.session << order++ << time(NULL) << runner::get_current_time();
     options.add_arguments(parser.get_program_arguments());
-    if (options.login.length()) 
+    if (options.login.length())
     {
         secure_runner_instance = new delegate_runner(parser.get_program(), options, restrictions);
     }
@@ -248,19 +256,19 @@ bool spawner_new_c::init_runner()
         output_pipe_class *error = new output_pipe_class();
         input_pipe_class *input = new input_pipe_class();
         for (uint i = 0; i < options.stdoutput.size(); ++i) {
-            output_buffer_class *buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
+            std::shared_ptr<output_buffer_class> buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
             if (buffer) {
                 output->add_output_buffer(buffer);
             }
         }
         for (uint i = 0; i < options.stderror.size(); ++i) {
-            output_buffer_class *buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
+            std::shared_ptr<output_buffer_class> buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
             if (buffer) {
                 error->add_output_buffer(buffer);
             }
         }
         for (uint i = 0; i < options.stdinput.size(); ++i) {
-            input_buffer_class *buffer = create_input_buffer(options.stdinput[i]);
+            std::shared_ptr<input_buffer_class> buffer = create_input_buffer(options.stdinput[i]);
             if (buffer) {
                 input->add_input_buffer(buffer);
             }

@@ -196,20 +196,21 @@ thread_return_t input_pipe_class::writing_buffer(thread_param_t param) {
 input_pipe_class::input_pipe_class(): pipe_class(PIPE_INPUT) {
 }
 
-input_pipe_class::input_pipe_class(input_buffer_class *input_buffer_param):
-    pipe_class(PIPE_INPUT) {
+input_pipe_class::input_pipe_class(std::shared_ptr<input_buffer_class> input_buffer_param)
+    : pipe_class(PIPE_INPUT) {
+
     input_buffers.push_back(input_buffer_param);
 }
 
 input_pipe_class::~input_pipe_class() {
-    //TerminateThread(buffer_thread, 0);
+
 }
 
-input_pipe_class::input_pipe_class(std::vector<input_buffer_class *> input_buffer_param):
+input_pipe_class::input_pipe_class(std::vector<std::shared_ptr<input_buffer_class>> input_buffer_param) :
     pipe_class(PIPE_INPUT), input_buffers(input_buffer_param) {
 }
 
-void input_pipe_class::add_input_buffer(input_buffer_class *input_buffer_param) {
+void input_pipe_class::add_input_buffer(std::shared_ptr<input_buffer_class> input_buffer_param) {
     input_buffers.push_back(input_buffer_param);
 }
 
@@ -261,28 +262,27 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
                 self->output_buffers[i]->write(data, bytes_count);
             }
         }
-        //ReleaseMutex(self->reading_mutex);
     }
     return 0;
 }
 
 output_pipe_class::output_pipe_class(): pipe_class(PIPE_OUTPUT)
 {}
-output_pipe_class::output_pipe_class(output_buffer_class *output_buffer_param):
+output_pipe_class::output_pipe_class(std::shared_ptr<output_buffer_class> output_buffer_param):
     pipe_class(PIPE_OUTPUT)
 {
     output_buffers.push_back(output_buffer_param);
 }
 
 output_pipe_class::~output_pipe_class() {
-    //TerminateThread(buffer_thread, 0);
+
 }
 
-output_pipe_class::output_pipe_class(std::vector<output_buffer_class *> output_buffer_param) :
+output_pipe_class::output_pipe_class(std::vector<std::shared_ptr<output_buffer_class>> output_buffer_param) :
     pipe_class(PIPE_OUTPUT), output_buffers(output_buffer_param)
 {}
 
-void output_pipe_class::add_output_buffer(output_buffer_class *output_buffer_param) {
+void output_pipe_class::add_output_buffer(std::shared_ptr<output_buffer_class> output_buffer_param) {
     output_buffers.push_back(output_buffer_param);
 }
 
