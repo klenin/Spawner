@@ -494,6 +494,9 @@ void spawner_new_c::init_arguments()
         environment_default_parser->add_argument_parser(c_lst("SP_SHARED_MEMORY"), new string_argument_parser_c(options.shared_memory))
         );
 
+    console_default_parser->add_flag_parser(c_lst(long_arg("controller")),
+        new boolean_argument_parser_c(options.controller));
+
     console_default_parser->add_flag_parser(c_lst(SEPARATOR_ARGUMENT), new callback_argument_parser_c<spawner_new_c*, void(spawner_new_c::*)(const std::string&)>(&(*this), &spawner_new_c::on_separator));
 
     //ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("program")), c_lst("SP_PROGRAM"),   options.session_id, STRING_CONVERT);

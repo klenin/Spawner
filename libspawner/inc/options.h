@@ -15,9 +15,19 @@ struct options_class
 
     session_class session;
     options_class(const options_class &options);
-    options_class(const session_class &session_param): 
-        hide_gui(true), silent_errors(true), debug(false), secure_token(false), use_cmd(false), session(session_param), 
-        delegated(false), hide_report(false), hide_output(false), json(false), environmentMode("inherit") {}
+    options_class(const session_class &session_param)
+        : hide_gui(true)
+        , silent_errors(true)
+        , debug(false)
+        , secure_token(false)
+        , use_cmd(false)
+        , session(session_param)
+        , delegated(false)
+        , hide_report(false)
+        , hide_output(false)
+        , json(false)
+        , controller(false)
+        , environmentMode("inherit") {}
     void add_argument(std::string argument);
     void add_arguments(const std::vector<std::string> &arguments_a);
     void push_argument_front(std::string argument);
@@ -53,6 +63,7 @@ struct options_class
     bool silent_errors;
     bool use_cmd;
     bool delegated;
+    bool controller;
     std::string environmentMode;
 };
 

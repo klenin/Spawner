@@ -5,24 +5,23 @@
 const std::string CLEAR_STRING = "nul";
 
 options_class::options_class(const options_class &options)
-    :
-    session(options.session),
-    hide_gui(options.hide_gui),
-    hide_report(options.hide_report),
-    hide_output(options.hide_output),
-    delegated(options.delegated),
-    debug(options.debug),
-    json(options.json),
-    secure_token(options.secure_token),
-    silent_errors(options.silent_errors),
-    use_cmd(options.use_cmd),
-    string_arguments(options.string_arguments),
-    working_directory(options.working_directory),
-    login(options.login),
-    password(options.password),
-    report_file(options.report_file),
-    shared_memory(options.shared_memory)
-{
+    : session(options.session)
+    , hide_gui(options.hide_gui)
+    , hide_report(options.hide_report)
+    , hide_output(options.hide_output)
+    , debug(options.debug)
+    , json(options.json)
+    , controller(options.controller)
+    , delegated(options.delegated)
+    , secure_token(options.secure_token)
+    , silent_errors(options.silent_errors)
+    , use_cmd(options.use_cmd)
+    , string_arguments(options.string_arguments)
+    , working_directory(options.working_directory)
+    , login(options.login)
+    , password(options.password)
+    , report_file(options.report_file) {
+
     for (auto i = options.stdinput.begin(); i != options.stdinput.end(); i++) {
         stdinput.push_back(*i);
     }
@@ -75,6 +74,7 @@ std::string options_class::get_argument(const size_t &index) const {
     }
     return ""; // !TODO! raise an error
 }
+
 size_t options_class::get_arguments_count() const {
     return arguments.size();
 }
@@ -111,6 +111,7 @@ void options_class::add_stdoutput(const std::string &name) {
     }
     stdoutput.push_back(name);
 }
+
 void options_class::add_stderror(const std::string &name) {
     if (std::find(stderror.begin(), stderror.end(), name) != stderror.end()) {
         return;
@@ -124,7 +125,7 @@ void options_class::add_stderror(const std::string &name) {
 
 void options_class::add_environment_variable(const std::string &envStr) {
     std::string name, val;
-    
+
     int pos = find(envStr.begin(), envStr.end(), '=') - envStr.begin();
     int l = envStr.length();
 
@@ -146,6 +147,7 @@ void options_class::clear_stdinput() {
 void options_class::clear_stdoutput() {
     stdoutput.clear();
 }
+
 void options_class::clear_stderror() {
     stderror.clear();
 }
