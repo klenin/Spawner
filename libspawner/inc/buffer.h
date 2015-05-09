@@ -59,41 +59,6 @@ public:
     virtual size_t write(const void *data, size_t size);
 };
 
-class input_stream_buffer_class: public input_buffer_class {
-protected:
-    bool ready;
-    size_t offset;
-    //CONDITION_VARIABLE condition_variable;
-public:
-    std::ostringstream buffer;
-    input_stream_buffer_class(): ready(false), input_buffer_class(0), offset(0) {
-        //InitializeConditionVariable(&condition_variable);
-    }
-    virtual bool readable() {
-        return true;
-    }
-    virtual size_t get_buffer_size() {
-        while (!ready);
-        return (size_t)buffer.tellp();
-    }
-    void set_ready() {
-        offset = 0;
-        ready = true;
-    }
-
-    virtual size_t read(void *data, size_t size) {
-        while (!ready)
-            Sleep(5);
-        std::string s = buffer.str();
-        size = min_def(size, (size_t)s.length());
-        memcpy(data, s.c_str(), size);
-        buffer.str(s.substr(offset));
-        ready = false;
-
-        return size;
-    }
-};
-
 class handle_buffer_class {
 protected:
     handle_t stream;
