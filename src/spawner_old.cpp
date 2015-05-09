@@ -50,9 +50,9 @@ bool spawner_old_c::init()
     }
 
         {//if (!options.session_id.length()) {
-            output_pipe_class *output = new output_pipe_class();
-            output_pipe_class *error = new output_pipe_class();
-            input_pipe_class *input = new input_pipe_class();
+            std::shared_ptr<output_pipe_class> output = std::make_shared<output_pipe_class>();
+            std::shared_ptr<output_pipe_class> error = std::make_shared<output_pipe_class>();
+            std::shared_ptr<input_pipe_class> input = std::make_shared<input_pipe_class>();
             for (uint i = 0; i < options.stdoutput.size(); ++i) {
                 std::shared_ptr<output_buffer_class> buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
                 if (buffer) {

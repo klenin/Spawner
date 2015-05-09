@@ -1,16 +1,19 @@
 #include <map>
 #include <string>
-#include <inc/delegate.h>
-#include <inc/error.h>
 #include <Windows.h>
+
+#include "inc/delegate.h"
+#include "inc/error.h"
 
 const char *SPAWNER_PROGRAM = "sp.exe";
 
-delegate_runner::delegate_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions):
-    runner(SPAWNER_PROGRAM, options),
-    restrictions(restrictions),
-    program_to_run(program)
+delegate_runner::delegate_runner(const std::string &program,
+    const options_class &options, const restrictions_class &restrictions)
+    : runner(SPAWNER_PROGRAM, options)
+    , restrictions(restrictions)
+    , program_to_run(program)
 {
+
 }
 
 void delegate_runner::create_process() {
@@ -57,7 +60,7 @@ void delegate_runner::create_process() {
         if (restrictions.restrictions[i] != restriction_no_limit)
         {
             std::string argument = "-" + cmd_arg.find((restriction_kind_t)i)->second;
-            
+
             argument += " " + std::to_string(restrictions.restrictions[i]);
             argument += cmd_units.find((restriction_kind_t)i)->second;
 
@@ -109,7 +112,7 @@ void delegate_runner::create_process() {
     std::string shared_memory_name = "mem" + options.session.hash();
 
     options.push_argument_front("--shared-memory=" + shared_memory_name);
-    
+
     CreateFileMappingA(
         INVALID_HANDLE_VALUE,
         NULL,

@@ -202,18 +202,18 @@ bool spawner_new_c::init()
                 }
                 runner *target_runner = runners[index];
                 std::shared_ptr<duplex_buffer_class> buffer = std::make_shared<duplex_buffer_class>();
-                input_pipe_class* input_pipe = NULL;
-                output_pipe_class* output_pipe = NULL;
+                std::shared_ptr<input_pipe_class> input_pipe = nullptr;
+                std::shared_ptr<output_pipe_class> output_pipe = nullptr;
 
                 if (stream_item.pipe_type == STD_INPUT_PIPE && pipe_type != STD_INPUT_PIPE) {
 
-                    input_pipe = static_cast<input_pipe_class*>((*i)->get_pipe(stream_item.pipe_type));
-                    output_pipe = static_cast<output_pipe_class*>(target_runner->get_pipe(pipe_type));
+                    input_pipe = std::static_pointer_cast<input_pipe_class>((*i)->get_pipe(stream_item.pipe_type));
+                    output_pipe = std::static_pointer_cast<output_pipe_class>(target_runner->get_pipe(pipe_type));
                 }
                 else if (stream_item.pipe_type != STD_INPUT_PIPE && pipe_type == STD_INPUT_PIPE) {
 
-                    input_pipe = static_cast<input_pipe_class*>(target_runner->get_pipe(pipe_type));
-                    output_pipe = static_cast<output_pipe_class*>((*i)->get_pipe(stream_item.pipe_type));
+                    input_pipe = std::static_pointer_cast<input_pipe_class>(target_runner->get_pipe(pipe_type));
+                    output_pipe = std::static_pointer_cast<output_pipe_class>((*i)->get_pipe(stream_item.pipe_type));
                 }
                 else {
                     return false;
@@ -252,9 +252,9 @@ bool spawner_new_c::init_runner()
     }
 
     {//if (!options.session_id.length()) {
-        output_pipe_class *output = new output_pipe_class();
-        output_pipe_class *error = new output_pipe_class();
-        input_pipe_class *input = new input_pipe_class();
+        std::shared_ptr<output_pipe_class> output = std::make_shared<output_pipe_class>();
+        std::shared_ptr<output_pipe_class> error = std::make_shared<output_pipe_class>();
+        std::shared_ptr<input_pipe_class> input = std::make_shared<input_pipe_class>();
         for (uint i = 0; i < options.stdoutput.size(); ++i) {
             std::shared_ptr<output_buffer_class> buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
             if (buffer) {

@@ -321,9 +321,6 @@ void runner::create_process() {
 }
 
 void runner::free() {
-    for (std::map<pipes_t, pipe_class*>::iterator it = pipes.begin(); it != pipes.end(); ++it) {
-        delete it->second;
-    }
     CloseHandleSafe(process_info.hProcess);
     CloseHandleSafe(process_info.hThread);
 }
@@ -351,8 +348,8 @@ void runner::requisites() {
         raise_error(*this, "ResumeThread");
         return;
     }
-    for (std::map<pipes_t, pipe_class*>::iterator it = pipes.begin(); it != pipes.end(); ++it) {
-        pipe_class *pipe = it->second;
+    for (auto& it : pipes) {
+        std::shared_ptr<pipe_class> pipe = it.second;
         if (!pipe->bufferize()) {
             raise_error(*this, LAST);
             return;
@@ -378,7 +375,9 @@ runner::runner(const std::string &program, const options_class &options):
 }
 
 runner::~runner() {
-    free();
+    printf("~runner\n");
+    CloseHandleSafe(process_info.hProcess);
+    CloseHandleSafe(process_info.hThread);
 }
 
 unsigned long runner::get_exit_code() {
@@ -532,11 +531,11 @@ void runner::safe_release() {
     free();// make it safe!!!
 }
 
-void runner::set_pipe(const pipes_t &pipe_type, pipe_class *pipe_object) {
+void runner::set_pipe(const pipes_t &pipe_type, std::shared_ptr<pipe_class> pipe_object) {
     pipes[pipe_type] = pipe_object;
 }
 
-pipe_class *runner::get_pipe(const pipes_t &pipe_type) {
+std::shared_ptr<pipe_class> runner::get_pipe(const pipes_t &pipe_type) {
     if (pipes.find(pipe_type) == pipes.end()) {
         return 0;
     }

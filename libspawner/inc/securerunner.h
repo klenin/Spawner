@@ -1,8 +1,8 @@
-#ifndef _SPAWNER_SECURE_RUNNER_H_
-#define _SPAWNER_SECURE_RUNNER_H_
+#pragma once
 
 #include <list>
 #include <string>
+
 #include "runner.h"
 
 class secure_runner: public runner
@@ -28,8 +28,9 @@ protected:
     virtual void wait();
     virtual void requisites();
 public:
-    secure_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions);
-    ~secure_runner();
+    secure_runner(const std::string &program, const options_class &options,
+        const restrictions_class &restrictions);
+    virtual ~secure_runner();
 
     terminate_reason_t get_terminate_reason();
 
@@ -43,5 +44,3 @@ public:
     void suspend();
     void resume();
 };
-
-#endif//_SPAWNER_SECURE_RUNNER_H_
