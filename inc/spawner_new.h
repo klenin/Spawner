@@ -22,6 +22,7 @@ protected:
     settings_parser_c &parser;
     std::vector<runner*> runners;
     size_t order;
+    bool control_mode_enabled;
 
 public:
     spawner_new_c(settings_parser_c &parser);

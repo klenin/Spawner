@@ -10,6 +10,7 @@ spawner_new_c::spawner_new_c(settings_parser_c &parser)
     , runas(false)
     , order(0)
     , base_initialized(false)
+    , control_mode_enabled(false)
 {
 
 }
@@ -159,6 +160,9 @@ void spawner_new_c::json_report(runner *runner_instance,
 bool spawner_new_c::init() {
     if (!init_runner() || !runners.size()) {
         return false;
+    }
+    for (auto i = runners.begin(); i != runners.end(); i++) {
+        control_mode_enabled = control_mode_enabled || (*i)->get_options().controller;
     }
     for (auto i = runners.begin(); i != runners.end(); i++) {
         options_class runner_options = (*i)->get_options();
