@@ -421,7 +421,7 @@ void spawner_new_c::init_arguments()
     console_default_parser->add_argument_parser(c_lst(long_arg("debug")),
         environment_default_parser->add_argument_parser(c_lst("SP_DEBUG"), new boolean_argument_parser_c(options.debug))
         );
-    console_default_parser->add_flag_parser(c_lst(long_arg("cmd"), long_arg("systempath")),
+    console_default_parser->add_flag_parser(c_lst(long_arg("cmd"), short_arg("cmd"), long_arg("systempath")),
         environment_default_parser->add_argument_parser(c_lst("SP_SYSTEM_PATH"), new boolean_argument_parser_c(options.use_cmd))
         );
     console_default_parser->add_argument_parser(c_lst(short_arg("wd")),
