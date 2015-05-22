@@ -106,16 +106,6 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
     restrictions_class restrictions = self->restrictions;
 
-    if (
-        restrictions[restriction_processor_time_limit] == restriction_no_limit &&
-        restrictions[restriction_user_time_limit] == restriction_no_limit &&
-        restrictions[restriction_write_limit] == restriction_no_limit &&
-        restrictions[restriction_idle_time_limit] == restriction_no_limit &&
-        restrictions[restriction_processes_count_limit] == restriction_no_limit
-        ) {
-        return 0;//may be comment this
-    }
-
     double total_rate = 10000.0;
     LONGLONG last_quad_part = 0;
     bool is_idle = false;
@@ -128,6 +118,12 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
     while (1) {
         if (!QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL))
             break;
+
+        if (bai.BasicInfo.ActiveProcesses == 0)
+        {
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_EXIT_PROCESS, COMPLETION_KEY, NULL);
+            break;
+        }
 
         if (restrictions.get_restriction(restriction_write_limit) != restriction_no_limit &&
             bai.IoInfo.WriteTransferCount > restrictions.get_restriction(restriction_write_limit)) {
@@ -240,6 +236,7 @@ void secure_runner::wait()
 #endif
     LPOVERLAPPED completedOverlapped;
     bool waiting;
+    bool postLoopWaiting = true;
     do
     {
         waiting = false;
@@ -259,6 +256,7 @@ void secure_runner::wait()
             process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_EXIT_PROCESS:
+            postLoopWaiting = false;
             break;
         case JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS:
             process_status = process_finished_abnormally;
@@ -295,7 +293,10 @@ void secure_runner::wait()
         };
     } while (waiting);
 
-    GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
+    if (postLoopWaiting)
+    {
+        GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
+    }
     //WaitForSingleObject(process_info.hProcess, infinite);
     report.user_time = get_time_since_create() / 10;
     running = false;
