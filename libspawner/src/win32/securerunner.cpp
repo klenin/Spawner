@@ -74,17 +74,9 @@ bool secure_runner::create_restrictions() {
     return true;
 }
 
-bool secure_runner::apply_restrictions()
+void secure_runner::apply_restrictions()
 {
-    //if (!create_restrictions)
-    //    return false;
-
-    if (!AssignProcessToJobObject(hJob, process_info.hProcess)) {
-        //DWORD le = GetLastError();
-        raise_error(*this, "AssignProcessToJobObject");
-        return false;
-    }
-    return true;
+    PANIC_IF(AssignProcessToJobObject(hJob, process_info.hProcess) == 0);
 }
 
 void secure_runner::create_process()
@@ -324,11 +316,7 @@ secure_runner::~secure_runner()
 
 void secure_runner::requisites()
 {
-    if (!apply_restrictions()) {
-
-        return;
-    }
-
+    apply_restrictions();
     runner::requisites();
 
     check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);

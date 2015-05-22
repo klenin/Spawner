@@ -144,9 +144,14 @@ BOOL WINAPI CtrlHandlerRoutine(DWORD dwCtrlType) {
 }
 
 int main(int argc, char *argv[]) {
+    // TODO: codestyle: replace \)\r\n\{ with \) \{\r\n
+    // Suppress msg window on abort; TODO: check if it's ms spec
+    _set_abort_behavior(0, _WRITE_ABORT_MSG);
     SetConsoleCtrlHandler(CtrlHandlerRoutine, TRUE);
-    if (!handler.parse(argc, argv)) {
-
-    }
+    set_on_panic_action([&]() {
+        handler.spawner->print_report();
+    });
+    // TODO: report parse errors
+    handler.parse(argc, argv);
     return 0;
 }

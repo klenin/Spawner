@@ -147,7 +147,8 @@ void spawner_new_c::json_report(runner *runner_instance,
     rapidjson_write(ExitCodeToString(runner_report.exit_code).c_str());
     rapidjson_write("SpawnerError");
     writer.StartArray();
-    std::vector<std::string> errors = error_list::get_errors();
+    std::vector<std::string> errors;
+    errors.push_back(get_error_text());
     for (int i = 0; i < errors.size(); i++) {
         rapidjson_write(errors[i].c_str());
     }
@@ -155,8 +156,7 @@ void spawner_new_c::json_report(runner *runner_instance,
     writer.EndObject();
 }
 
-bool spawner_new_c::init()
-{
+bool spawner_new_c::init() {
     if (!init_runner() || !runners.size()) {
         return false;
     }

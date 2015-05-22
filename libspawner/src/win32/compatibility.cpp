@@ -169,6 +169,6 @@ std::string GenerateSpawnerReport(const report_class &rep, const options_class &
     osstream << "TerminateReason:           " << get_terminate_reason(rep.terminate_reason) << std::endl;
     osstream << "ExitStatus:                " << ExitCodeToString(rep.exit_code) << std::endl;
     osstream << "----------------------------------------------" << std::endl;
-    osstream << "SpawnerError:              " << error_list::pop_error() << std::endl;
+    osstream << "SpawnerError:              " << get_error_text() << std::endl;
     return osstream.str();
 }

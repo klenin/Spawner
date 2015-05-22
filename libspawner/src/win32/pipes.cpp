@@ -42,10 +42,8 @@ bool pipe_class::create_pipe() {
     saAttr.bInheritHandle = TRUE;
     saAttr.lpSecurityDescriptor = NULL;
 
-    if (!CreatePipe(&readPipe, &writePipe, &saAttr, 0)) {
-        raise_error(*this, "CreatePipe");
-        return false;
-    }
+    PANIC_IF(CreatePipe(&readPipe, &writePipe, &saAttr, 0) == 0);
+	return true;
 }
 
 void pipe_class::close_pipe()
@@ -67,16 +65,10 @@ pipe_class::~pipe_class()
 size_t pipe_class::write(const void *data, size_t size)
 {
     DWORD dwWritten;
-    if (!WriteFile(writePipe, data, size, &dwWritten, NULL))// || dwWritten != size
-    {
-        raise_error(*this, "WriteFile");
-        return 0;
-    }
-/*    if (!FlushFileBuffers(writePipe))
-    {
-        raise_error(*this, "FlushFileBuffers");
-        return 0;
-    }*/
+    // WriteFile is also return 0 when GetLastError() == ERROR_IO_PENDING
+    PANIC_IF(WriteFile(writePipe, data, size, &dwWritten, NULL) == 0);
+    // TODO: dwWritten != size ???
+    FlushFileBuffers(writePipe);
     return dwWritten;
 }
 
@@ -219,11 +211,7 @@ bool input_pipe_class::bufferize()
     if (!pipe_class::bufferize())
         return false;
     buffer_thread = CreateThread(NULL, 0, writing_buffer, this, 0, NULL);
-    if (!buffer_thread)
-    {
-        raise_error(*this, "CreateThread");
-        return false;
-    }
+    PANIC_IF(!buffer_thread);
     return true;
 }
 
@@ -291,11 +279,7 @@ bool output_pipe_class::bufferize()
     if (!pipe_class::bufferize())
         return false;
     buffer_thread = CreateThread(NULL, 0, reading_buffer, this, 0, NULL);
-    if (!buffer_thread)
-    {
-        raise_error(*this, "CreateThread");
-        return false;
-    }
+    PANIC_IF(!buffer_thread);
     return true;
 }
 

@@ -17,7 +17,7 @@ protected:
     terminate_reason_t terminate_reason;
 
     virtual bool create_restrictions();
-    virtual bool apply_restrictions();
+    virtual void apply_restrictions();
     virtual void create_process();
 
     static thread_return_t process_completition_proc(thread_param_t param);

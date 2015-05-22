@@ -159,7 +159,7 @@ bool runner::init_process(char *cmd, const char *wd) {
                 &si, &process_info) ) {
             ReleaseMutex(main_job_object_access_mutex);
             restore_original_environment(original);
-            raise_error(*this, "CreateProcess \"" + run_program + "\"");
+            PANIC("CreateProcess \"" + run_program + "\"");
             return false;
         }
     }
@@ -207,7 +207,8 @@ bool runner::init_process_with_logon(char *cmd, const char *wd) {
             NULL, wwd, &siw, &process_info) )
         {
             ReleaseMutex(main_job_object_access_mutex);
-            raise_error(*this, "CreateProcessWithLogonW");
+            PANIC("CreateProcessWithLogonW");
+            // TODO: cleanup below is useless now since we're in panic
             delete[] login;
             delete[] password;
             delete[] wprogram;
@@ -344,16 +345,10 @@ void runner::debug() {
 }
 
 void runner::requisites() {
-    if (ResumeThread(process_info.hThread) == (DWORD)-1) {
-        raise_error(*this, "ResumeThread");
-        return;
-    }
+    PANIC_IF(ResumeThread(process_info.hThread) == (DWORD)-1);
     for (auto& it : pipes) {
         std::shared_ptr<pipe_class> pipe = it.second;
-        if (!pipe->bufferize()) {
-            raise_error(*this, LAST);
-            return;
-        }
+        PANIC_IF(!pipe->bufferize());
     }
     if (options.debug) {
         debug();
@@ -381,13 +376,12 @@ runner::~runner() {
 }
 
 unsigned long runner::get_exit_code() {
-    if (process_status == process_spawner_crash) {
+    if (process_status == process_spawner_crash
+     || process_status == process_not_started) {
         return 0;
     }
     DWORD dwExitCode = 0;
-    if (!GetExitCodeProcess(process_info.hProcess, &dwExitCode)) {
-        raise_error(*this, "GetExitCodeProcess");
-    }
+    PANIC_IF(GetExitCodeProcess(process_info.hProcess, &dwExitCode) == 0);
     return dwExitCode;
 }
 

@@ -11,7 +11,7 @@ private:
     std::string program_to_run;
     restrictions_class restrictions;
 protected:
-    void create_process();
+    virtual void create_process();
 public:
     delegate_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions);
 };
