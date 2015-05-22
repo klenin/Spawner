@@ -106,11 +106,12 @@ void options_class::add_stderror(const std::string &name) {
 
 void options_class::add_environment_variable(const std::string &envStr) {
     std::string name, val;
+    
     int pos = find(envStr.begin(), envStr.end(), '=') - envStr.begin();
     int l = envStr.length();
 
-    if (pos == 0 || pos == l || pos == l - 1) {
-        // throw exception
+    if (pos == 0 || pos == l) {
+        return; // TODO: raise error
     }
 
     name = envStr.substr(0, pos);
