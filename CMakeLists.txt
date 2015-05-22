@@ -19,7 +19,6 @@ ADD_SUBDIRECTORY("${PROJECT_SOURCE_DIR}/libspawner" libspawner)
 INCLUDE_DIRECTORIES ("${PROJECT_SOURCE_DIR}/inc")
 INCLUDE_DIRECTORIES ("${PROJECT_SOURCE_DIR}/libspawner")
 INCLUDE_DIRECTORIES ("${PROJECT_SOURCE_DIR}/lib/rapidjson/include")
-#INCLUDE_DIRECTORIES ("${PROJECT_SOURCE_DIR}/lib/json-cpp/json-cpp/include")
 
 #OPTION(MYPROJECT_DEBUG "Build the project using debugging code" ON)
 #LIST (APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
