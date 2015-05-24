@@ -10,6 +10,7 @@ options_class::options_class(const options_class &options)
     hide_gui(options.hide_gui),
     hide_report(options.hide_report),
     hide_output(options.hide_output),
+    delegated(options.delegated),
     debug(options.debug),
     json(options.json),
     secure_token(options.secure_token),
@@ -19,7 +20,8 @@ options_class::options_class(const options_class &options)
     working_directory(options.working_directory),
     login(options.login),
     password(options.password),
-    report_file(options.report_file)
+    report_file(options.report_file),
+    shared_memory(options.shared_memory)
 {
     for (auto i = options.stdinput.begin(); i != options.stdinput.end(); i++) {
         stdinput.push_back(*i);

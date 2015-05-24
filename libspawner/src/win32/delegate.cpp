@@ -85,5 +85,23 @@ void delegate_runner::create_process() {
 
     options.push_argument_front("-env " + options.environmentMode);
 
+    std::string ssid = std::to_string(time(NULL)); // TODO: use Pete's session class
+    std::string shared_memory_name = "mem" + ssid;
+
+    options.push_argument_front("--shared-memory=" + shared_memory_name);
+    
+    CreateFileMappingA(
+        INVALID_HANDLE_VALUE,
+        NULL,
+        PAGE_READWRITE,
+        0,
+        options_class::SHARED_MEMORY_BUF_SIZE,
+        shared_memory_name.c_str()
+   );
+
+    options.shared_memory = shared_memory_name;
+
+    options.push_argument_front("--delegated:1");
+
     runner::create_process();
 }
