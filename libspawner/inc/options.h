@@ -16,9 +16,9 @@ protected:
 public:
     session_class session;
     options_class(const options_class &options);
-    options_class(const session_class &session_param):
-        hide_gui(true), silent_errors(true), debug(false), secure_token(false), use_cmd(false), session(session_param),
-        delegated(false), hide_report(false), hide_output(false), json(false), environmentMode("inherit") {}
+    options_class(const session_class &session_param): 
+        hide_gui(true), silent_errors(true), debug(false), secure_token(false), use_cmd(false), session(session_param), 
+        hide_report(false), hide_output(false), json(false), environmentMode("inherit") {}
     void add_argument(std::string argument);
     void add_arguments(const std::vector<std::string> &arguments_a);
     void push_argument_front(std::string argument);
@@ -37,7 +37,6 @@ public:
     std::string working_directory;
     std::string login;
     std::string password;
-    std::string session_id;// only for delegate process
     std::vector<std::string> stdinput;
     std::vector<std::string> stdoutput;
     std::vector<std::string> stderror;
@@ -48,7 +47,6 @@ public:
     bool hide_output;
     bool debug;
     bool json;
-    bool delegated;
     bool secure_token;
     bool silent_errors;
     bool use_cmd;// uses environment paths to find application

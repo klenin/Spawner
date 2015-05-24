@@ -20,8 +20,8 @@ void spawner_old_c::init_std_streams()
 
 spawner_old_c::~spawner_old_c()
 {
-    if (secure_runner_instance) {
-        delete secure_runner_instance;
+    if (runner_instance) {
+        delete runner_instance;
     }
 }
 
@@ -29,9 +29,6 @@ bool spawner_old_c::init()
 {
     if (!parser.get_program().length()) {
         return false;
-    }
-    if (options.login.length()) {
-        options.delegated = true;
     }
     if (output_file.length()) {
         options.add_stdoutput(output_file);
@@ -44,14 +41,12 @@ bool spawner_old_c::init()
     }
     init_std_streams();
     options.add_arguments(parser.get_program_arguments());
-    if (options.delegated) {
-        secure_runner_instance = new delegate_runner(parser.get_program(), options, restrictions);
+    if (options.login.length() > 0) {
+        runner_instance = new delegate_runner(parser.get_program(), options, restrictions);
     }
-    else if (options.session_id.length()){
-        secure_runner_instance = new delegate_instance_runner(parser.get_program(), options, restrictions);
-    }
-    else {
-        secure_runner_instance = new secure_runner(parser.get_program(), options, restrictions);
+    else
+    {
+        runner_instance = new secure_runner(parser.get_program(), options, restrictions);
     }
 
         {//if (!options.session_id.length()) {
@@ -76,9 +71,9 @@ bool spawner_old_c::init()
                     input->add_input_buffer(buffer);
                 }
             }
-            secure_runner_instance->set_pipe(STD_OUTPUT_PIPE, output);
-            secure_runner_instance->set_pipe(STD_ERROR_PIPE, error);
-            secure_runner_instance->set_pipe(STD_INPUT_PIPE, input);
+            runner_instance->set_pipe(STD_OUTPUT_PIPE, output);
+            runner_instance->set_pipe(STD_ERROR_PIPE, error);
+            runner_instance->set_pipe(STD_INPUT_PIPE, input);
         }
     return true;
 }
@@ -86,22 +81,22 @@ bool spawner_old_c::init()
 void spawner_old_c::run()
 {
     begin_report();
-    secure_runner_instance->run_process_async();
-    secure_runner_instance->wait_for();
+    runner_instance->run_process_async();
+    runner_instance->wait_for();
 
     print_report();
 }
 
 void spawner_old_c::print_report()
 {
-    report_class rep = secure_runner_instance->get_report();
-    options_class options = secure_runner_instance->get_options();
+    report_class rep = runner_instance->get_report();
+    options_class options = runner_instance->get_options();
     std::cout.flush();
     if (!options.hide_report || options.report_file.length()) {
         std::string report;
         report = GenerateSpawnerReport(
-            rep, secure_runner_instance->get_options(),
-            secure_runner_instance->get_restrictions()
+            rep, runner_instance->get_options(),
+            runner_instance->get_restrictions()
             );
         if (!options.hide_report) {
             std::cout << report;

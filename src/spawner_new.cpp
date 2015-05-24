@@ -200,7 +200,7 @@ bool spawner_new_c::init()
                 else {
                     return false;
                 }
-                secure_runner *target_runner = runners[index];
+                runner *target_runner = runners[index];
                 duplex_buffer_class *buffer = new duplex_buffer_class();
                 if (stream_item.pipe_type == STD_INPUT_PIPE && pipe_type != STD_INPUT_PIPE) {
                     static_cast<input_pipe_class*>((*i)->get_pipe(stream_item.pipe_type))->add_input_buffer(buffer);
@@ -231,16 +231,15 @@ bool spawner_new_c::init_runner()
         return true;
         //throw exception
     }
-    secure_runner *secure_runner_instance;
+    runner *secure_runner_instance;
     options.session << order++ << time(NULL) << runner::get_current_time();
     options.add_arguments(parser.get_program_arguments());
-    if (options.login.length()) {
+    if (options.login.length()) 
+    {
         secure_runner_instance = new delegate_runner(parser.get_program(), options, restrictions);
     }
-    else if (options.session_id.length()){
-        secure_runner_instance = new delegate_instance_runner(parser.get_program(), options, restrictions);
-    }
-    else {
+    else
+    {
         secure_runner_instance = new secure_runner(parser.get_program(), options, restrictions);
     }
 
@@ -431,8 +430,6 @@ void spawner_new_c::init_arguments()
     console_default_parser->add_flag_parser(c_lst(long_arg("json")),
         environment_default_parser->add_argument_parser(c_lst("SP_JSON"), new boolean_argument_parser_c(options.json))
         );
-
-    console_default_parser->add_argument_parser(c_lst(long_arg("session")), new string_argument_parser_c(options.session_id));
 
     console_default_parser->add_argument_parser(c_lst(long_arg("separator")),
         environment_default_parser->add_argument_parser(c_lst("SP_SEPARATOR"), new callback_argument_parser_c<settings_parser_c*, void(settings_parser_c::*)(const std::string&)>(&parser, &settings_parser_c::set_separator))
