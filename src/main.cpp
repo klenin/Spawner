@@ -643,7 +643,7 @@ public:
         rapidjson_write("Limit");
         writer.StartObject();
 
-        restrictions_class runner_restrictions = ((secure_runner*)runner_instance)->get_restrictions();
+        restrictions_class runner_restrictions = runner_instance->get_restrictions();
         struct {
             char *field;
             unit_t unit;
@@ -881,28 +881,72 @@ public:
             if (!options_item.hide_report || options_item.report_file.length()) {
                 std::string report;
                 json_report(*i, report_writer);
-                if (!options_item.json) {
-                    report = GenerateSpawnerReport(
-                                rep, options_item,
-                                (*i)->get_restrictions()
-                            );
-                }
-                else {
-                    rapidjson::StringBuffer sub_report;
-                    rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_item_writer(sub_report);
-                    report_item_writer.StartArray();
-                    json_report(*i, report_item_writer);
-                    report_item_writer.EndArray();
-                    report = sub_report.GetString();
-                }
-                if (!options_item.hide_report && runners.size() == 1) {
-                    std::cout << report;
-                }
-                if (options_item.report_file.length())
+                if (options_item.login.length() == 0)
                 {
-                    std::ofstream fo(options_item.report_file.c_str());
-                    fo << report;
-                    fo.close();
+                    if (!options_item.json)
+                    {
+                        report = GenerateSpawnerReport(
+                            rep, options_item,
+                            (*i)->get_restrictions()
+                            );
+                    }
+                    else if (options_item.login.length() == 0)
+                    {
+                        rapidjson::StringBuffer sub_report;
+                        rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_item_writer(sub_report);
+                        report_item_writer.StartArray();
+                        json_report(*i, report_item_writer);
+                        report_item_writer.EndArray();
+                        report = sub_report.GetString();
+                    }
+                }
+                else
+                {
+                    HANDLE hIn = OpenFileMappingA(
+                        FILE_MAP_ALL_ACCESS,
+                        FALSE,
+                        options_item.shared_memory.c_str()
+                    );
+
+                    LPTSTR pRep = (LPTSTR)MapViewOfFile(
+                        hIn,
+                        FILE_MAP_ALL_ACCESS,
+                        0,
+                        0,
+                        options_class::SHARED_MEMORY_BUF_SIZE
+                    );
+
+                    report = pRep;
+
+                    UnmapViewOfFile(pRep);
+
+                    CloseHandle(hIn);
+                }
+                
+                if (options_item.delegated)
+                {
+                    HANDLE hOut = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, options_item.shared_memory.c_str());
+                    LPCSTR pRep = (LPTSTR)MapViewOfFile(hOut, FILE_MAP_ALL_ACCESS, 0, 0, options_class::SHARED_MEMORY_BUF_SIZE);
+
+                    memcpy((PVOID)pRep, report.c_str(), sizeof(char) * report.length());
+
+                    UnmapViewOfFile(pRep);
+
+                    CloseHandle(hOut);
+                }
+                else
+                {
+                    if (!options_item.hide_report && runners.size() == 1)
+                    {
+                        std::cout << report;
+                    }
+
+                    if (options_item.report_file.length())
+                    {
+                        std::ofstream fo(options_item.report_file.c_str());
+                        fo << report;
+                        fo.close();
+                    }
                 }
             }
         }
@@ -987,7 +1031,7 @@ public:
         );
 
         console_default_parser->add_argument_parser(c_lst(short_arg("runas"), long_arg("delegated")), 
-            environment_default_parser->add_argument_parser(c_lst("SP_RUNAS"), new boolean_argument_parser_c(runas))
+            environment_default_parser->add_argument_parser(c_lst("SP_RUNAS"), new boolean_argument_parser_c(options.delegated))
         );
         console_default_parser->add_argument_parser(c_lst(short_arg("ho")), 
             environment_default_parser->add_argument_parser(c_lst("SP_HIDE_OUTPUT"), new boolean_argument_parser_c(options.hide_output))
@@ -1018,15 +1062,14 @@ public:
             environment_default_parser->add_argument_parser(c_lst("SP_SEPARATOR"), new callback_argument_parser_c<settings_parser_c*, void(settings_parser_c::*)(const std::string&)>(&parser, &settings_parser_c::set_separator))
         );
 
-
+        console_default_parser->add_argument_parser(c_lst(long_arg("shared-memory")),
+            environment_default_parser->add_argument_parser(c_lst("SP_SHARED_MEMORY"), new string_argument_parser_c(options.shared_memory))
+        );
 
         console_default_parser->add_flag_parser(c_lst(SEPARATOR_ARGUMENT), new callback_argument_parser_c<spawner_new_c*, void(spawner_new_c::*)(const std::string&)>(&(*this), &spawner_new_c::on_separator));
 
-        //ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("program")), c_lst("SP_PROGRAM"),   options.session_id, STRING_CONVERT);
-
         parser.add_parser(console_default_parser);
         parser.add_parser(environment_default_parser);
-
     }
 };
 

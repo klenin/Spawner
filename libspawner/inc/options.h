@@ -9,16 +9,15 @@
 // silent_errors - on windows, if error occurs program doesn't show "send report" dialog
 // #to do: make some options as map of variant
 
-class options_class
+struct options_class
 {
-protected:
-    std::list<std::string> arguments;
-public:
+    static const unsigned SHARED_MEMORY_BUF_SIZE = 4069;
+
     session_class session;
     options_class(const options_class &options);
     options_class(const session_class &session_param): 
         hide_gui(true), silent_errors(true), debug(false), secure_token(false), use_cmd(false), session(session_param), 
-        hide_report(false), hide_output(false), json(false), environmentMode("inherit") {}
+        delegated(false), hide_report(false), hide_output(false), json(false), environmentMode("inherit") {}
     void add_argument(std::string argument);
     void add_arguments(const std::vector<std::string> &arguments_a);
     void push_argument_front(std::string argument);
@@ -41,7 +40,10 @@ public:
     std::vector<std::string> stdoutput;
     std::vector<std::string> stderror;
     std::list< std::pair< std::string, std::string > > environmentVars;
+    std::list<std::string> arguments;
     std::string report_file;//bad, need many values but this causes many outputs if environment variable and command line argument both present
+    std::string shared_memory;
+    std::string mutex;
     bool hide_gui;
     bool hide_report;
     bool hide_output;
@@ -49,7 +51,8 @@ public:
     bool json;
     bool secure_token;
     bool silent_errors;
-    bool use_cmd;// uses environment paths to find application
+    bool use_cmd;
+    bool delegated;
     std::string environmentMode;
 };
 
