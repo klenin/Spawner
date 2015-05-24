@@ -269,7 +269,7 @@ protected:
     std::string output_file;
     std::string error_file;
     std::string input_file;
-    secure_runner *secure_runner_instance;
+    runner *secure_runner_instance;
     //std::string program;
 
 public:
@@ -289,9 +289,6 @@ public:
         if (!parser.get_program().length()) {
             return false;
         }
-        if (options.login.length()) {
-            options.delegated = true;
-        }
         if (output_file.length()) {
             options.add_stdoutput(output_file);
         }
@@ -303,10 +300,8 @@ public:
         }
         init_std_streams();
         options.add_arguments(parser.get_program_arguments());
-        if (options.delegated) {
+        if (options.login.length() > 0) {
             secure_runner_instance = new delegate_runner(parser.get_program(), options, restrictions);
-        } else if (options.session_id.length()){
-            secure_runner_instance = new delegate_instance_runner(parser.get_program(), options, restrictions);
         } else {
             secure_runner_instance = new secure_runner(parser.get_program(), options, restrictions);
         }
@@ -615,7 +610,7 @@ protected:
     bool runas;
     bool base_initialized;
     settings_parser_c &parser;
-    std::vector<secure_runner*> runners;
+    std::vector<runner*> runners;
     size_t order;
 public:
     spawner_new_c(settings_parser_c &parser) : 
@@ -799,7 +794,7 @@ public:
                     } else {
                         return false;
                     }
-                    secure_runner *target_runner = runners[index];
+                    runner *target_runner = runners[index];
                     duplex_buffer_class *buffer = new duplex_buffer_class();
                     if (stream_item.pipe_type == STD_INPUT_PIPE && pipe_type != STD_INPUT_PIPE) {
                         static_cast<input_pipe_class*>((*i)->get_pipe(stream_item.pipe_type))->add_input_buffer(buffer);
@@ -826,13 +821,11 @@ public:
             return true;
             //throw exception
         }
-        secure_runner *secure_runner_instance;
+        runner *secure_runner_instance;
         options.session << order++ << time(NULL) << runner::get_current_time();
         options.add_arguments(parser.get_program_arguments());
         if (options.login.length()) {
             secure_runner_instance = new delegate_runner(parser.get_program(), options, restrictions);
-        } else if (options.session_id.length()){
-            secure_runner_instance = new delegate_instance_runner(parser.get_program(), options, restrictions);
         } else {
             secure_runner_instance = new secure_runner(parser.get_program(), options, restrictions);
         }
@@ -1020,8 +1013,6 @@ public:
         console_default_parser->add_flag_parser(c_lst(long_arg("json")), 
             environment_default_parser->add_argument_parser(c_lst("SP_JSON"), new boolean_argument_parser_c(options.json))
         );
-
-        console_default_parser->add_argument_parser(c_lst(long_arg("session")), new string_argument_parser_c(options.session_id));
 
         console_default_parser->add_argument_parser(c_lst(long_arg("separator")), 
             environment_default_parser->add_argument_parser(c_lst("SP_SEPARATOR"), new callback_argument_parser_c<settings_parser_c*, void(settings_parser_c::*)(const std::string&)>(&parser, &settings_parser_c::set_separator))

@@ -109,10 +109,6 @@ void ReadEnvironmentVariables(options_class &options, restrictions_class &restri
     const int restriction_bindings_count =
         sizeof(restriction_bindings)/(sizeof(char*) + sizeof(restriction_kind_t));
 
-    if (GetEnvironmentVariable("SP_RUNAS", buffer, sizeof(buffer))) {
-        options.delegated = true;
-    }
-
     if (GetEnvironmentVariable("SP_JSON", buffer, sizeof(buffer))) {
         options.json = atoi(buffer);
     }

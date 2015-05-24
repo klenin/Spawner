@@ -1,82 +1,89 @@
+#include <map>
+#include <string>
 #include <inc/delegate.h>
 #include <inc/error.h>
 
 const char *SPAWNER_PROGRAM = "sp.exe";
 
-
 delegate_runner::delegate_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions):
-    secure_runner(program, options, restrictions)
+    runner(SPAWNER_PROGRAM, options),
+    restrictions(restrictions),
+    program_to_run(program)
 {
-    force_program = SPAWNER_PROGRAM;
-}
-
-/*void delegate_runner::requisites() {
-/*    if (ResumeThread(process_info.hThread) == (DWORD)-1)
-    {
-        raise_error(*this, "ResumeThread");
-        return;
-    }
-    check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
-}*/
-
-void delegate_runner::set_allow_breakaway(bool allow) {
-}
-
-bool delegate_runner::apply_restrictions() {
-    return true;
 }
 
 void delegate_runner::create_process() {
+    options.push_argument_front(program_to_run);
+
     options.use_cmd = true;
 
-    //program = "ping";
-    options.push_argument_front(program);
-    std::string session = "--session=";
-    session += options.session.hash();
-    options.push_argument_front(session);
+    const std::map< restriction_kind_t, std::string > cmd_units = {
+        { restriction_user_time_limit, "ms" },
+        { restriction_memory_limit, "B" },
+        { restriction_processor_time_limit, "us" },
+        { restriction_security_limit, "" },
+        { restriction_write_limit, "B" },
+        { restriction_load_ratio, "" },
+        { restriction_idle_time_limit, "us" },
+        { restriction_processes_count_limit, "" }
+    };
 
-    if (options.use_cmd) {
-        options.push_argument_front("--cmd");
-    }
-    options.push_argument_front("--out=std");
-    options.push_argument_front("--err=std");
-    options.push_argument_front("--in=std");
-    options.push_argument_front("-hr");
-    options.push_argument_front("--legacy=sp00");
+    const std::map< restriction_kind_t, std::string > cmd_arg = {
+        { restriction_user_time_limit, "tl" },
+        { restriction_memory_limit, "ml" },
+        { restriction_processor_time_limit, "d" },
+        { restriction_security_limit, "s" },
+        { restriction_write_limit, "wl" },
+        { restriction_load_ratio, "lr" },
+        { restriction_idle_time_limit, "y" },
+        { restriction_processes_count_limit, "only-process" }
+    };
 
-    secure_runner::create_process();
-
-}
-
-
-
-delegate_instance_runner::delegate_instance_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions):
-    secure_runner(program, options, restrictions){
-}
-
-bool delegate_instance_runner::create_restrictions() {
-    std::string name = "Local\\";
-    name += options.session_id;
-#ifdef OPEN_JOB_OBJECT_DYNAMIC_LOAD
-    HINSTANCE hDLL_1 = LoadLibrary("kernel32.dll");
-    OpenJobObjectA = (OPEN_JOB_OBJECT)GetProcAddress(hDLL_1, "OpenJobObjectA");
-    FreeLibrary(hDLL_1);
-    //load_open_job_object();
-#endif
-    hJob = OpenJobObject(JOB_OBJECT_ASSIGN_PROCESS, FALSE, name.c_str());
-    //raise_error
-    return true;
-}
-
-void delegate_instance_runner::requisites_() {
-    apply_restrictions();
-    if (ResumeThread(process_info.hThread) == (DWORD)-1)
+    for (int i = 0; i < restriction_max; ++i)
     {
-        raise_error(*this, "ResumeThread");
-        return;
-    }
-}
+        if (restrictions.restrictions[i] != restriction_no_limit)
+        {
+            std::string argument = "-" + cmd_arg.find((restriction_kind_t)i)->second;
+            
+            argument += " " + std::to_string(restrictions.restrictions[i]);
+            argument += cmd_units.find((restriction_kind_t)i)->second;
 
-void delegate_instance_runner::wait() {
-    //while (1) Sleep(1000);
+            options.push_argument_front(argument);
+        }
+    }
+
+    auto process_pipes = [](options_class& options, const std::vector<std::string>& vals, const std::string& prefix) {
+        for (auto i = vals.cbegin(); i != vals.cend(); ++i)
+        {
+            options.push_argument_front(prefix + *i);
+        }
+    };
+
+    process_pipes(options, options.stderror, "--err=");
+    process_pipes(options, options.stdoutput, "--out=");
+    process_pipes(options, options.stdinput, "--in=");
+
+    if (options.working_directory.length() > 0)
+    {
+        options.push_argument_front("-wd " + options.working_directory);
+    }
+
+    if (options.hide_report)
+    {
+        options.push_argument_front("-hr 1");
+    }
+
+    for (auto i = options.environmentVars.cbegin(); i != options.environmentVars.cend(); ++i)
+    {
+        options.push_argument_front("-D " + i->first + "=" + i->second);
+    }
+
+    if (options.json)
+    {
+        options.push_argument_front("--json");
+    }
+
+    options.push_argument_front("-env " + options.environmentMode);
+
+    runner::create_process();
 }

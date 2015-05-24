@@ -4,7 +4,23 @@
 // TODO: use c_list /dev/null || nul system dependent
 const std::string CLEAR_STRING = "nul";
 
-options_class::options_class(const options_class &options) : session(options.session), hide_gui(options.hide_gui), hide_report(options.hide_report), hide_output(options.hide_output), debug(options.debug), json(options.json), delegated(options.delegated), secure_token(options.secure_token), silent_errors(options.silent_errors), use_cmd(options.use_cmd), string_arguments(options.string_arguments), working_directory(options.working_directory), login(options.login), password(options.password), session_id(options.session_id), report_file(options.report_file) {
+options_class::options_class(const options_class &options)
+    :
+    session(options.session),
+    hide_gui(options.hide_gui),
+    hide_report(options.hide_report),
+    hide_output(options.hide_output),
+    debug(options.debug),
+    json(options.json),
+    secure_token(options.secure_token),
+    silent_errors(options.silent_errors),
+    use_cmd(options.use_cmd),
+    string_arguments(options.string_arguments),
+    working_directory(options.working_directory),
+    login(options.login),
+    password(options.password),
+    report_file(options.report_file)
+{
     for (auto i = options.stdinput.begin(); i != options.stdinput.end(); i++) {
         stdinput.push_back(*i);
     }
