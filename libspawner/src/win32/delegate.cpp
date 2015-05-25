@@ -2,6 +2,7 @@
 #include <string>
 #include <inc/delegate.h>
 #include <inc/error.h>
+#include <Windows.h>
 
 const char *SPAWNER_PROGRAM = "sp.exe";
 
@@ -63,10 +64,18 @@ void delegate_runner::create_process() {
     process_pipes(options, options.stdoutput, "--out=");
     process_pipes(options, options.stdinput, "--in=");
 
-    if (options.working_directory.length() > 0)
+    std::string working_directory = options.working_directory;
+
+    if (working_directory.length() == 0)
     {
-        options.push_argument_front("-wd " + options.working_directory);
+        char dir[MAX_PATH + 1];
+
+        GetCurrentDirectoryA(MAX_PATH, dir);
+
+        working_directory = dir;
     }
+
+    options.push_argument_front("-wd \"" + working_directory + "\"");
 
     if (options.hide_report)
     {
