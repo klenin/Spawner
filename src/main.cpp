@@ -881,7 +881,31 @@ public:
             if (!options_item.hide_report || options_item.report_file.length()) {
                 std::string report;
                 json_report(*i, report_writer);
-                if (options_item.login.length() == 0)
+
+                if (options_item.login.length() > 0)
+                {
+                    HANDLE hIn = OpenFileMappingA(
+                        FILE_MAP_ALL_ACCESS,
+                        FALSE,
+                        options_item.shared_memory.c_str()
+                        );
+
+                    LPTSTR pRep = (LPTSTR)MapViewOfFile(
+                        hIn,
+                        FILE_MAP_ALL_ACCESS,
+                        0,
+                        0,
+                        options_class::SHARED_MEMORY_BUF_SIZE
+                        );
+
+                    report = pRep;
+
+                    UnmapViewOfFile(pRep);
+
+                    CloseHandle(hIn);
+                }
+
+                if (report.length() == 0)
                 {
                     if (!options_item.json)
                     {
@@ -890,7 +914,7 @@ public:
                             (*i)->get_restrictions()
                             );
                     }
-                    else if (options_item.login.length() == 0)
+                    else
                     {
                         rapidjson::StringBuffer sub_report;
                         rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_item_writer(sub_report);
@@ -900,29 +924,7 @@ public:
                         report = sub_report.GetString();
                     }
                 }
-                else
-                {
-                    HANDLE hIn = OpenFileMappingA(
-                        FILE_MAP_ALL_ACCESS,
-                        FALSE,
-                        options_item.shared_memory.c_str()
-                    );
 
-                    LPTSTR pRep = (LPTSTR)MapViewOfFile(
-                        hIn,
-                        FILE_MAP_ALL_ACCESS,
-                        0,
-                        0,
-                        options_class::SHARED_MEMORY_BUF_SIZE
-                    );
-
-                    report = pRep;
-
-                    UnmapViewOfFile(pRep);
-
-                    CloseHandle(hIn);
-                }
-                
                 if (options_item.delegated)
                 {
                     HANDLE hOut = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, options_item.shared_memory.c_str());
