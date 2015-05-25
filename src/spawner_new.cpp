@@ -297,26 +297,8 @@ void spawner_new_c::print_report()
         if (!options_item.hide_report || options_item.report_file.length()) {
             std::string report;
             json_report(*i, report_writer);
-            if (options_item.login.length() == 0)
-            {
-                if (!options_item.json)
-                {
-                    report = GenerateSpawnerReport(
-                        rep, options_item,
-                        (*i)->get_restrictions()
-                        );
-                }
-                else if (options_item.login.length() == 0)
-                {
-                    rapidjson::StringBuffer sub_report;
-                    rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_item_writer(sub_report);
-                    report_item_writer.StartArray();
-                    json_report(*i, report_item_writer);
-                    report_item_writer.EndArray();
-                    report = sub_report.GetString();
-                }
-            }
-            else
+
+            if (options_item.login.length() > 0)
             {
                 HANDLE hIn = OpenFileMappingA(
                     FILE_MAP_ALL_ACCESS,
@@ -337,6 +319,26 @@ void spawner_new_c::print_report()
                 UnmapViewOfFile(pRep);
 
                 CloseHandle(hIn);
+            }
+
+            if (report.length() == 0)
+            {
+                if (!options_item.json)
+                {
+                    report = GenerateSpawnerReport(
+                        rep, options_item,
+                        (*i)->get_restrictions()
+                        );
+                }
+                else
+                {
+                    rapidjson::StringBuffer sub_report;
+                    rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_item_writer(sub_report);
+                    report_item_writer.StartArray();
+                    json_report(*i, report_item_writer);
+                    report_item_writer.EndArray();
+                    report = sub_report.GetString();
+                }
             }
 
             if (options_item.delegated)
