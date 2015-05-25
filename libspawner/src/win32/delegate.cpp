@@ -14,6 +14,13 @@ delegate_runner::delegate_runner(const std::string &program, const options_class
 }
 
 void delegate_runner::create_process() {
+    char path[MAX_PATH + 1];
+
+    if (GetFullPathNameA(program_to_run.c_str(), MAX_PATH, path, NULL))
+    {
+        program_to_run = path;
+    }
+
     options.push_argument_front(program_to_run);
 
     options.use_cmd = true;
