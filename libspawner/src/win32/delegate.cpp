@@ -23,6 +23,11 @@ void delegate_runner::create_process() {
 
     options.push_argument_front(program_to_run);
 
+    if (options.use_cmd)
+    {
+        options.push_argument_front("--cmd");
+    }
+
     options.use_cmd = true;
 
     const std::map< restriction_kind_t, std::string > cmd_units = {
