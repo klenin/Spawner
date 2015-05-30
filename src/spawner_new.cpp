@@ -449,7 +449,7 @@ void spawner_new_c::init_arguments()
         );
 
     console_default_parser->add_argument_parser(c_lst(short_arg("runas"), long_arg("delegated")),
-        environment_default_parser->add_argument_parser(c_lst("SP_RUNAS"), new boolean_argument_parser_c(runas))
+        environment_default_parser->add_argument_parser(c_lst("SP_RUNAS"), new boolean_argument_parser_c(options.delegated))
         );
     console_default_parser->add_argument_parser(c_lst(short_arg("ho")),
         environment_default_parser->add_argument_parser(c_lst("SP_HIDE_OUTPUT"), new boolean_argument_parser_c(options.hide_output))
