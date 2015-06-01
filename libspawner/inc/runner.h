@@ -26,7 +26,6 @@ protected:
     bool running_async;
     options_class options;
     std::string program;
-    std::string force_program;
     std::map<pipes_t, pipe_class*> pipes;
     process_info_t process_info;
     process_status_t process_status;
@@ -63,6 +62,7 @@ public:
 
     virtual void run_process();
     virtual void run_process_async();
+    virtual restrictions_class get_restrictions() const { return restrictions_class(); }
     bool wait_for(const unsigned long &interval = INFINITE);
     bool wait_for_init(const unsigned long &interval);
     virtual void safe_release();

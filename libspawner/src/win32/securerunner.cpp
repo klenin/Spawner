@@ -106,13 +106,6 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
     restrictions_class restrictions = self->restrictions;
 
-    if (restrictions[restriction_processor_time_limit] == restriction_no_limit &&
-        restrictions[restriction_user_time_limit] == restriction_no_limit &&
-        restrictions[restriction_write_limit] == restriction_no_limit &&
-        restrictions[restriction_idle_time_limit] == restriction_no_limit) {
-        return 0;//may be comment this
-    }
-
     double total_rate = 10000.0;
     LONGLONG last_quad_part = 0;
     bool is_idle = false;
@@ -125,6 +118,12 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
     while (1) {
         if (!QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL))
             break;
+
+        if (bai.BasicInfo.ActiveProcesses == 0)
+        {
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_EXIT_PROCESS, COMPLETION_KEY, NULL);
+            break;
+        }
 
         if (restrictions.get_restriction(restriction_write_limit) != restriction_no_limit &&
             bai.IoInfo.WriteTransferCount > restrictions.get_restriction(restriction_write_limit)) {
@@ -166,6 +165,14 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
                     is_idle = false;
                 }
             }
+        }
+        if (
+            restrictions.get_restriction(restriction_processes_count_limit) != restriction_no_limit
+            && bai.BasicInfo.TotalProcesses > restrictions.get_restriction(restriction_processes_count_limit)
+            )
+        {
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_COUNT_LIMIT, COMPLETION_KEY, NULL);
+            break;
         }
         Sleep(1);
     }
@@ -228,65 +235,68 @@ void secure_runner::wait()
     DWORD dwKey;
 #endif
     LPOVERLAPPED completedOverlapped;
-    int message = 0;
+    bool waiting;
+    bool postLoopWaiting = true;
     do
     {
+        waiting = false;
+
         GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
 
         switch (dwNumBytes)
         {
-        case JOB_OBJECT_MSG_NEW_PROCESS:
-            break;
         case JOB_OBJECT_MSG_END_OF_PROCESS_TIME:
-            message++;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_time_limit;
             process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT:
-            message++;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_write_limit;
             process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_EXIT_PROCESS:
-            message++;
+            postLoopWaiting = false;
             break;
         case JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS:
-            message++;
             process_status = process_finished_abnormally;
             terminate_reason = terminate_reason_abnormal_exit_process;
             break;
         case JOB_OBJECT_MSG_PROCESS_MEMORY_LIMIT:
-            message++;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_memory_limit;
             process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_JOB_MEMORY_LIMIT:
-            message++;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_memory_limit;
             process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT:
-            message++;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_user_time_limit;
             process_status = process_finished_terminated;
             break;
         case JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT:
-            message++;
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_load_ratio_limit;
             process_status = process_finished_terminated;
             break;
+        case JOB_OBJECT_MSG_PROCESS_COUNT_LIMIT:
+            TerminateJobObject(hJob, 0);
+            terminate_reason = terminate_reason_created_process;
+            process_status = process_finished_terminated;
+            break;
         default:
+            waiting = true;
             break;
         };
-    } while (!message);
+    } while (waiting);
 
-    GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
+    if (postLoopWaiting)
+    {
+        GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
+    }
     //WaitForSingleObject(process_info.hProcess, infinite);
     report.user_time = get_time_since_create() / 10;
     running = false;

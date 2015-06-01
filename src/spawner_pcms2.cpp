@@ -27,8 +27,8 @@ bool spawner_pcms2_c::init()
 
 void spawner_pcms2_c::print_report()
 {
-    report_class rep = secure_runner_instance->get_report();
-    options_class options = secure_runner_instance->get_options();
+    report_class rep = runner_instance->get_report();
+    options_class options = runner_instance->get_options();
     if (!options.hide_report) {
         switch (rep.terminate_reason) {
         case terminate_reason_memory_limit:

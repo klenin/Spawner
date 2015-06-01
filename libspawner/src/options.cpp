@@ -4,7 +4,25 @@
 // TODO: use c_list /dev/null || nul system dependent
 const std::string CLEAR_STRING = "nul";
 
-options_class::options_class(const options_class &options) : session(options.session), hide_gui(options.hide_gui), hide_report(options.hide_report), hide_output(options.hide_output), debug(options.debug), json(options.json), delegated(options.delegated), secure_token(options.secure_token), silent_errors(options.silent_errors), use_cmd(options.use_cmd), string_arguments(options.string_arguments), working_directory(options.working_directory), login(options.login), password(options.password), session_id(options.session_id), report_file(options.report_file) {
+options_class::options_class(const options_class &options)
+    :
+    session(options.session),
+    hide_gui(options.hide_gui),
+    hide_report(options.hide_report),
+    hide_output(options.hide_output),
+    delegated(options.delegated),
+    debug(options.debug),
+    json(options.json),
+    secure_token(options.secure_token),
+    silent_errors(options.silent_errors),
+    use_cmd(options.use_cmd),
+    string_arguments(options.string_arguments),
+    working_directory(options.working_directory),
+    login(options.login),
+    password(options.password),
+    report_file(options.report_file),
+    shared_memory(options.shared_memory)
+{
     for (auto i = options.stdinput.begin(); i != options.stdinput.end(); i++) {
         stdinput.push_back(*i);
     }
@@ -106,11 +124,12 @@ void options_class::add_stderror(const std::string &name) {
 
 void options_class::add_environment_variable(const std::string &envStr) {
     std::string name, val;
+    
     int pos = find(envStr.begin(), envStr.end(), '=') - envStr.begin();
     int l = envStr.length();
 
-    if (pos == 0 || pos == l || pos == l - 1) {
-        // throw exception
+    if (pos == 0 || pos == l) {
+        return; // TODO: raise error
     }
 
     name = envStr.substr(0, pos);

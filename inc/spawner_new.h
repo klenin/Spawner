@@ -20,7 +20,7 @@ protected:
     bool runas;
     bool base_initialized;
     settings_parser_c &parser;
-    std::vector<secure_runner*> runners;
+    std::vector<runner*> runners;
     size_t order;
 
 public:

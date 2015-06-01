@@ -200,7 +200,7 @@ bool spawner_new_c::init()
                 else {
                     return false;
                 }
-                secure_runner *target_runner = runners[index];
+                runner *target_runner = runners[index];
                 duplex_buffer_class *buffer = new duplex_buffer_class();
                 if (stream_item.pipe_type == STD_INPUT_PIPE && pipe_type != STD_INPUT_PIPE) {
                     static_cast<input_pipe_class*>((*i)->get_pipe(stream_item.pipe_type))->add_input_buffer(buffer);
@@ -231,16 +231,15 @@ bool spawner_new_c::init_runner()
         return true;
         //throw exception
     }
-    secure_runner *secure_runner_instance;
+    runner *secure_runner_instance;
     options.session << order++ << time(NULL) << runner::get_current_time();
     options.add_arguments(parser.get_program_arguments());
-    if (options.login.length()) {
+    if (options.login.length()) 
+    {
         secure_runner_instance = new delegate_runner(parser.get_program(), options, restrictions);
     }
-    else if (options.session_id.length()){
-        secure_runner_instance = new delegate_instance_runner(parser.get_program(), options, restrictions);
-    }
-    else {
+    else
+    {
         secure_runner_instance = new secure_runner(parser.get_program(), options, restrictions);
     }
 
@@ -291,7 +290,6 @@ void spawner_new_c::print_report()
     rapidjson::StringBuffer s;
     rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_writer(s);
     report_writer.StartArray();
-    // sp99 legacy
     for (auto i = runners.begin(); i != runners.end(); i++) {
         report_class rep = (*i)->get_report();
         options_class options_item = (*i)->get_options();
@@ -299,28 +297,74 @@ void spawner_new_c::print_report()
         if (!options_item.hide_report || options_item.report_file.length()) {
             std::string report;
             json_report(*i, report_writer);
-            if (!options_item.json) {
-                report = GenerateSpawnerReport(
-                    rep, options_item,
-                    (*i)->get_restrictions()
-                    );
-            }
-            else {
-                rapidjson::StringBuffer sub_report;
-                rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_item_writer(sub_report);
-                report_item_writer.StartArray();
-                json_report(*i, report_item_writer);
-                report_item_writer.EndArray();
-                report = sub_report.GetString();
-            }
-            if (!options_item.hide_report && runners.size() == 1) {
-                std::cout << report;
-            }
-            if (options_item.report_file.length())
+
+            if (options_item.login.length() > 0)
             {
-                std::ofstream fo(options_item.report_file.c_str());
-                fo << report;
-                fo.close();
+                HANDLE hIn = OpenFileMappingA(
+                    FILE_MAP_ALL_ACCESS,
+                    FALSE,
+                    options_item.shared_memory.c_str()
+                    );
+
+                LPTSTR pRep = (LPTSTR)MapViewOfFile(
+                    hIn,
+                    FILE_MAP_ALL_ACCESS,
+                    0,
+                    0,
+                    options_class::SHARED_MEMORY_BUF_SIZE
+                    );
+
+                report = pRep;
+
+                UnmapViewOfFile(pRep);
+
+                CloseHandle(hIn);
+            }
+
+            if (report.length() == 0)
+            {
+                if (!options_item.json)
+                {
+                    report = GenerateSpawnerReport(
+                        rep, options_item,
+                        (*i)->get_restrictions()
+                        );
+                }
+                else
+                {
+                    rapidjson::StringBuffer sub_report;
+                    rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_item_writer(sub_report);
+                    report_item_writer.StartArray();
+                    json_report(*i, report_item_writer);
+                    report_item_writer.EndArray();
+                    report = sub_report.GetString();
+                }
+            }
+
+            if (options_item.delegated)
+            {
+                HANDLE hOut = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, options_item.shared_memory.c_str());
+                LPCSTR pRep = (LPTSTR)MapViewOfFile(hOut, FILE_MAP_ALL_ACCESS, 0, 0, options_class::SHARED_MEMORY_BUF_SIZE);
+
+                memcpy((PVOID)pRep, report.c_str(), sizeof(char) * report.length());
+
+                UnmapViewOfFile(pRep);
+
+                CloseHandle(hOut);
+            }
+            else
+            {
+                if (!options_item.hide_report && runners.size() == 1)
+                {
+                    std::cout << report;
+                }
+
+                if (options_item.report_file.length())
+                {
+                    std::ofstream fo(options_item.report_file.c_str());
+                    fo << report;
+                    fo.close();
+                }
             }
         }
     }
@@ -405,7 +449,7 @@ void spawner_new_c::init_arguments()
         );
 
     console_default_parser->add_argument_parser(c_lst(short_arg("runas"), long_arg("delegated")),
-        environment_default_parser->add_argument_parser(c_lst("SP_RUNAS"), new boolean_argument_parser_c(runas))
+        environment_default_parser->add_argument_parser(c_lst("SP_RUNAS"), new boolean_argument_parser_c(options.delegated))
         );
     console_default_parser->add_argument_parser(c_lst(short_arg("ho")),
         environment_default_parser->add_argument_parser(c_lst("SP_HIDE_OUTPUT"), new boolean_argument_parser_c(options.hide_output))
@@ -421,7 +465,7 @@ void spawner_new_c::init_arguments()
     console_default_parser->add_argument_parser(c_lst(long_arg("debug")),
         environment_default_parser->add_argument_parser(c_lst("SP_DEBUG"), new boolean_argument_parser_c(options.debug))
         );
-    console_default_parser->add_flag_parser(c_lst(long_arg("cmd"), long_arg("systempath")),
+    console_default_parser->add_flag_parser(c_lst(long_arg("cmd"), short_arg("cmd"), long_arg("systempath")),
         environment_default_parser->add_argument_parser(c_lst("SP_SYSTEM_PATH"), new boolean_argument_parser_c(options.use_cmd))
         );
     console_default_parser->add_argument_parser(c_lst(short_arg("wd")),
@@ -432,10 +476,14 @@ void spawner_new_c::init_arguments()
         environment_default_parser->add_argument_parser(c_lst("SP_JSON"), new boolean_argument_parser_c(options.json))
         );
 
-    console_default_parser->add_argument_parser(c_lst(long_arg("session")), new string_argument_parser_c(options.session_id));
-
     console_default_parser->add_argument_parser(c_lst(long_arg("separator")),
         environment_default_parser->add_argument_parser(c_lst("SP_SEPARATOR"), new callback_argument_parser_c<settings_parser_c*, void(settings_parser_c::*)(const std::string&)>(&parser, &settings_parser_c::set_separator))
+        );
+
+    console_default_parser->add_argument_parser(c_lst(short_arg("process-count")), new time_argument_parser_c<degree_default>(restrictions[restriction_processes_count_limit]));
+
+    console_default_parser->add_argument_parser(c_lst(long_arg("shared-memory")),
+        environment_default_parser->add_argument_parser(c_lst("SP_SHARED_MEMORY"), new string_argument_parser_c(options.shared_memory))
         );
 
     console_default_parser->add_flag_parser(c_lst(SEPARATOR_ARGUMENT), new callback_argument_parser_c<spawner_new_c*, void(spawner_new_c::*)(const std::string&)>(&(*this), &spawner_new_c::on_separator));

@@ -15,7 +15,7 @@ protected:
     std::string output_file;
     std::string error_file;
     std::string input_file;
-    secure_runner *secure_runner_instance;
+    runner *runner_instance;
 
 public:
     spawner_old_c(settings_parser_c &parser);
