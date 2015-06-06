@@ -1,5 +1,4 @@
-#ifndef _SPAWNER_PLATFORM_H_
-#define _SPAWNER_PLATFORM_H_
+#pragma once
 
 /************************************************************************/
 /* GLOBAL TODO                                                          */
@@ -95,6 +94,10 @@ const handle_t handle_default_value = INVALID_HANDLE_VALUE;
 
 #endif//_WIN32
 
+BOOL WINAPI CancelSynchronousIo_wrapper(_In_ HANDLE);
+
+void platform_init();
+
 wchar_t *a2w(const char *str);
 char *w2a(const wchar_t *str);
 
@@ -102,5 +105,3 @@ char *w2a(const wchar_t *str);
 typedef unsigned int uint_32;
 typedef uint_32 uint;
 #endif//uint
-
-#endif//_SPAWNER_PLATFORM_H_

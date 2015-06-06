@@ -55,3 +55,24 @@ char *w2a(const wchar_t *str) {
     return cstr;
 
 }
+
+typedef BOOL(WINAPI *CancelSynchronousIo_func_type)(_In_ HANDLE);
+CancelSynchronousIo_func_type CancelSynchronousIo_dyn = nullptr;
+
+void platform_init()
+{
+    HINSTANCE hKernel32 = LoadLibrary("kernel32.dll");
+
+    if (!hKernel32) {
+        return;
+    }
+
+    CancelSynchronousIo_dyn = (CancelSynchronousIo_func_type)GetProcAddress(hKernel32, "CancelSynchronousIo");
+}
+
+BOOL WINAPI CancelSynchronousIo_wrapper(_In_ HANDLE handle)
+{
+    if (CancelSynchronousIo_dyn != nullptr) {
+        return CancelSynchronousIo_dyn(handle);
+    }
+}

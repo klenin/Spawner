@@ -148,6 +148,7 @@ BOOL WINAPI CtrlHandlerRoutine(DWORD dwCtrlType) {
 }
 
 int main(int argc, char *argv[]) {
+    platform_init();
     handler = new command_handler_c();
     // TODO: codestyle: replace \)\r\n\{ with \) \{\r\n
     // Suppress msg window on abort; TODO: check if it's ms spec
