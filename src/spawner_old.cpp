@@ -50,9 +50,9 @@ bool spawner_old_c::init()
     }
 
         {//if (!options.session_id.length()) {
-            std::shared_ptr<output_pipe_class> output = std::make_shared<output_pipe_class>();
-            std::shared_ptr<output_pipe_class> error = std::make_shared<output_pipe_class>();
-            std::shared_ptr<input_pipe_class> input = std::make_shared<input_pipe_class>();
+            std::shared_ptr<output_pipe_c> output = std::make_shared<output_pipe_c>();
+            std::shared_ptr<output_pipe_c> error = std::make_shared<output_pipe_c>();
+            std::shared_ptr<input_pipe_c> input = std::make_shared<input_pipe_c>();
             for (uint i = 0; i < options.stdoutput.size(); ++i) {
                 std::shared_ptr<output_buffer_c> buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
                 if (buffer) {
@@ -78,8 +78,7 @@ bool spawner_old_c::init()
     return true;
 }
 
-void spawner_old_c::run()
-{
+void spawner_old_c::run() {
     begin_report();
     runner_instance->run_process_async();
     runner_instance->wait_for();

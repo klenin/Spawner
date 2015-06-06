@@ -27,7 +27,7 @@ protected:
     bool running_async;
     options_class options;
     std::string program;
-    std::map<pipes_t, std::shared_ptr<pipe_class>> pipes;
+    std::map<pipes_t, std::shared_ptr<pipe_c>> pipes;
     process_info_t process_info;
     process_status_t process_status;
     bool running;
@@ -67,6 +67,6 @@ public:
     bool wait_for(const unsigned long &interval = INFINITE);
     bool wait_for_init(const unsigned long &interval);
     virtual void safe_release();
-    void set_pipe(const pipes_t &pipe_type, std::shared_ptr<pipe_class> pipe_object);
-    std::shared_ptr<pipe_class> get_pipe(const pipes_t &pipe_type);
+    void set_pipe(const pipes_t &pipe_type, std::shared_ptr<pipe_c> pipe_object);
+    std::shared_ptr<pipe_c> get_pipe(const pipes_t &pipe_type);
 };

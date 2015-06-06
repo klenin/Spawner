@@ -1,53 +1,57 @@
 #include "pipes.h"
-#include <error.h>
+
 #include <iostream>
 #include <AccCtrl.h>
 #include <Aclapi.h>//advapi32.lib
 
-input_buffer_c dummy_input_buffer;
-output_buffer_c dummy_output_buffer;
-//move this to separate function
+#include "error.h"
 
-pipe_class::pipe_class()
+// TODO: 4096 is assumed to be "enough" however if message sent via pipes will
+// exceed buffer size then it's fragment could be mixed up with fragments of
+// another messages. This is valid for fill_pipe_thread, and fixed for drain_pipe_thread.
+// I tested it with a value of 8 and messages' parts are really being mixed up.
+unsigned const DEFAULT_BUFFER_SIZE = 4096;
+
+pipe_c::pipe_c()
     : pipe_type(PIPE_UNDEFINED)
     , buffer_thread(handle_default_value)
-    , reading_mutex(handle_default_value)
     , readPipe(handle_default_value)
     , writePipe(handle_default_value) {
 
     create_pipe();
 }
 
-pipe_class::pipe_class(const std_pipe_t &pipe_type)
+pipe_c::pipe_c(const std_pipe_t &pipe_type)
     : pipe_type(pipe_type)
     , buffer_thread(handle_default_value)
-    , reading_mutex(handle_default_value)
     , readPipe(handle_default_value)
     , writePipe(handle_default_value) {
 
     create_pipe();
 }
 
-pipe_t pipe_class::input_pipe() {
+pipe_t pipe_c::input_pipe() {
     return readPipe;
 }
 
-pipe_t pipe_class::output_pipe() {
+pipe_t pipe_c::output_pipe() {
     return writePipe;
 }
 
-bool pipe_class::create_pipe() {
+#include <io.h>
+#include <fcntl.h>
+void pipe_c::create_pipe()
+{
     SECURITY_ATTRIBUTES saAttr;
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
     saAttr.bInheritHandle = TRUE;
     saAttr.lpSecurityDescriptor = NULL;
 
     PANIC_IF(CreatePipe(&readPipe, &writePipe, &saAttr, 0) == 0);
-	return true;
+    return true;
 }
 
-void pipe_class::close_pipe()
-{
+void pipe_c::close_pipe() {
     if (pipe_type == PIPE_INPUT) {
         CloseHandleSafe(readPipe);
     }
@@ -57,13 +61,11 @@ void pipe_class::close_pipe()
     finish();
 }
 
-pipe_class::~pipe_class()
-{
+pipe_c::~pipe_c() {
     close_pipe();
 }
 
-size_t pipe_class::write(const void *data, size_t size)
-{
+size_t pipe_c::write(const void *data, size_t size) {
     DWORD dwWritten;
     // WriteFile is also return 0 when GetLastError() == ERROR_IO_PENDING
     PANIC_IF(WriteFile(writePipe, data, size, &dwWritten, NULL) == 0);
@@ -72,218 +74,293 @@ size_t pipe_class::write(const void *data, size_t size)
     return dwWritten;
 }
 
-size_t pipe_class::read(void *data, size_t size)
-{
+size_t pipe_c::read(void *data, size_t size) {
     DWORD dwRead;
-    static DWORD total = 0;
-    DWORD bytesAvailable = 0;
-    /*
-    */
-    size_t i = 0;
-    /*while (bytesAvailable <= size) {
-        PeekNamedPipe(readPipe, NULL, size, NULL, &bytesAvailable, NULL);
-        if (bytesAvailable && i > 5) {
-            break;
-        }
-        i++;
-        Sleep(1);
-    }/**/
-    //DWORD e;
-    //std::cout << "r:" <<WaitCommEvent(readPipe, &e, NULL) << GetLastError std::endl;
-    //std::cout << e << std::endl;
     if (!ReadFile(readPipe, data, size, &dwRead, NULL))
     {
-        //raise_error(*this, "ReadFile");
         return 0;
     }
-    total += dwRead;
-    //        std::cout << total << " ";
     return dwRead;
 }
 
-bool pipe_class::bufferize()
-{
-    if (buffer_thread != handle_default_value)
-    {
-        //trying to bufferize twice
-        return false;
-    }
-    if (reading_mutex == handle_default_value)
-    {
-        reading_mutex = CreateMutex(NULL, FALSE, NULL);
-    }
-    return true;
+void pipe_c::bufferize() {
+    // trying to bufferize twice
+    PANIC_IF(buffer_thread != handle_default_value);
 }
-//
-//void pipe_class::wait()
-//{
-//    if (reading_mutex == handle_default_value || buffer_thread == handle_default_value)
-//        return;
-//    WaitForSingleObject(reading_mutex, INFINITE);
-//}
 
-void pipe_class::finish()
+void pipe_c::finish()
 {
-    //WaitForSingleObject(buffer_thread, 10000);
-    /*{
-        WaitForSingleObject(reading_mutex, INFINITE);
-        ReleaseMutex(reading_mutex);
-    }*/
     if (buffer_thread && buffer_thread != INVALID_HANDLE_VALUE) {
-        //TerminateThread(buffer_thread, 0);
         buffer_thread = INVALID_HANDLE_VALUE;
     }
-    //CloseHandleSafe(buffer_thread);
-    CloseHandleSafe(reading_mutex);
 }
 
-void pipe_class::wait_for_pipe(const unsigned int &ms_time)
-{
-    WaitForSingleObject(buffer_thread, ms_time);
-}
-
-void pipe_class::safe_release()
-{
-    close_pipe();
-    state = false;
-}
-
-bool pipe_class::valid()
+bool pipe_c::valid()
 {
     return state;
 }
 
-pipe_t pipe_class::get_pipe()
+pipe_t pipe_c::get_pipe()
 {
     return 0;
 }
 
-thread_return_t input_pipe_class::writing_buffer(thread_param_t param) {
-    input_pipe_class *self = (input_pipe_class*)param;
+void pipe_c::wait()
+{
+    if (buffer_thread == handle_default_value) {
+        return;
+    }
+    stop_thread_ = true;
+    // TODO: WAIT_TIMEOUT ?
+    while (WaitForSingleObject(buffer_thread, 0) != WAIT_OBJECT_0) {
+        CancelSynchronousIo_wrapper(buffer_thread);
+    }
+    CloseHandle(writePipe);
+    CloseHandle(readPipe);
+    writePipe = nullptr;
+    readPipe = nullptr;
+    if (this->pipe_type == PIPE_INPUT) {
+        done_io_ = true;
+    }
+    while (!done_io_) {
+        Sleep(1);
+    }
+}
 
-    char buffer[BUFFER_SIZE + 1];
+thread_return_t input_pipe_c::fill_pipe_thread(thread_param_t param) {
+    input_pipe_c *self = (input_pipe_c*)param;
+
+    char buffer[DEFAULT_BUFFER_SIZE + 1];
     size_t read_count;
     if (self->writePipe == INVALID_HANDLE_VALUE) {
+        self->done_io_ = true;
         return 0;
     }
     for (uint i = 0; i < self->input_buffers.size(); ++i) {
         if (!self->input_buffers[i]->readable()) {
+            self->done_io_ = true;
             return 0;
         }
     }
     size_t can_continue = 1;
     while (can_continue) {
+        if (self->stop_thread_) {
+            break;
+        }
         can_continue = 0;
         for (uint i = 0; i < self->input_buffers.size(); ++i) {
-            read_count = self->input_buffers[i]->read(buffer, BUFFER_SIZE);
+            if (self->stop_thread_) {
+                break;
+            }
+            read_count = self->input_buffers[i]->read(buffer, DEFAULT_BUFFER_SIZE);
+            if (self->stop_thread_) {
+                break;
+            }
             if (!self->write(buffer, read_count)) {
+                self->done_io_ = true;
                 return 0;
             }
             can_continue += read_count!=0;
         }
     }
+    self->done_io_ = true;
     return 0;
 }
 
-input_pipe_class::input_pipe_class(): pipe_class(PIPE_INPUT) {
+input_pipe_c::input_pipe_c()
+    : pipe_c(PIPE_INPUT) {
+
 }
 
-input_pipe_class::input_pipe_class(std::shared_ptr<input_buffer_c> input_buffer_param)
-    : pipe_class(PIPE_INPUT) {
+input_pipe_c::input_pipe_c(std::shared_ptr<input_buffer_c> input_buffer_param)
+    : pipe_c(PIPE_INPUT) {
 
     input_buffers.push_back(input_buffer_param);
 }
 
-input_pipe_class::~input_pipe_class() {
+input_pipe_c::~input_pipe_c() {
+    wait();
+}
+
+input_pipe_c::input_pipe_c(std::vector<std::shared_ptr<input_buffer_c>> input_buffer_param)
+    : pipe_c(PIPE_INPUT)
+    , input_buffers(input_buffer_param) {
 
 }
 
-input_pipe_class::input_pipe_class(std::vector<std::shared_ptr<input_buffer_c>> input_buffer_param) :
-    pipe_class(PIPE_INPUT), input_buffers(input_buffer_param) {
-}
-
-void input_pipe_class::add_input_buffer(std::shared_ptr<input_buffer_c> input_buffer_param) {
+void input_pipe_c::add_input_buffer(std::shared_ptr<input_buffer_c> input_buffer_param) {
     input_buffers.push_back(input_buffer_param);
 }
 
-bool input_pipe_class::bufferize()
+void input_pipe_c::bufferize()
 {
-    if (!pipe_class::bufferize())
-        return false;
-    buffer_thread = CreateThread(NULL, 0, writing_buffer, this, 0, NULL);
-    PANIC_IF(!buffer_thread);
-    return true;
+    // we can only save one thread if there's no input buffers
+    // threads for stdout and stderr couldn't be saved since we have to consume
+    // the pipe in order for the application not to block on printf
+    if (input_buffers.empty()) {
+        return;
+    }
+    pipe_c::bufferize();
+    buffer_thread = CreateThread(NULL, 0, fill_pipe_thread, this, 0, NULL);
+    PANIC_IF(buffer_thread == NULL);
 }
 
-pipe_t input_pipe_class::get_pipe()
+pipe_t input_pipe_c::get_pipe()
 {
     return input_pipe();
 }
 
-thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
+void hexDump(const void *addr, int len) {
+    static mutex_c mutex;
+    mutex.possess();
+    mutex.lock();
+    int i;
+    unsigned char buff[17];
+    unsigned char *pc = (unsigned char*)addr;
+
+    for (i = 0; i < len; i++) {
+        if ((i % 16) == 0) {
+            if (i != 0)
+                dprintf ("  %s\n", buff);
+            dprintf ("  %04x ", i);
+        }
+
+        dprintf (" %02x", pc[i]);
+
+        if ((pc[i] < 0x20) || (pc[i] > 0x7e))
+            buff[i % 16] = '.';
+        else
+            buff[i % 16] = pc[i];
+        buff[(i % 16) + 1] = '\0';
+    }
+
+    while ((i % 16) != 0) {
+        dprintf ("   ");
+        i++;
+    }
+
+    dprintf ("  %s\n", buff);
+    mutex.unlock();
+    mutex.release();
+}
+
+thread_return_t output_pipe_c::drain_pipe_thread(thread_param_t param)
 {
-    output_pipe_class *self = (output_pipe_class*)param;
+    // Can't use shared_ptr here: it causes a deadlock
+    // since destructor waits for thread to finish
+    output_pipe_c* self = reinterpret_cast<output_pipe_c*>(param);
+
     if (self->readPipe == INVALID_HANDLE_VALUE) {
+        self->done_io_ = true;
         return 0;
     }
-    //if debug show some message
 
     for (uint i = 0; i < self->output_buffers.size(); ++i) {
-        if (!self->output_buffers[i]->writeable()) {
+        if (!self->output_buffers[i]->writable()) {
+            self->done_io_ = true;
             return 0;
         }
     }
+
     for (;;)
     {
-        char data[BUFFER_SIZE];
-        size_t bytes_count = self->read(data, BUFFER_SIZE);
-        if (bytes_count == 0) {
+        int p0 = 0;
+        char data[DEFAULT_BUFFER_SIZE + 1];
+        DWORD bytes_available = 0;
+        const BOOL peek_result = PeekNamedPipe(self->readPipe, NULL, 0, NULL, &bytes_available, NULL);
+
+        if (bytes_available == 0) {
+            Sleep(1);
+            //self->done_io_ = true;
+            if (self->stop_thread_) {
+                break;
+            }
+            // continue; ???
+        } else {
+            size_t bytes_count = self->read(data, DEFAULT_BUFFER_SIZE);
+            if (bytes_count == 0) {
+                self->done_io_ = true;
+                break;
+            }
+            data[bytes_count] = 0;
+            int p0 = self->message_buffer.size();
+            self->message_buffer += data;
+        }
+
+        // TODO: store p1 value between cycle iterations
+        int p1 = 0;
+        do {
+            p1 = 0;
+            for (int i = 0; i < self->message_buffer.size(); i++) {
+                if (self->message_buffer[i] == '\n') {
+                    p1 = i;
+                    break;
+                }
+            }
+
+            if (p1 == 0
+             && !self->message_buffer.empty()
+             && (self->stop_thread_ || peek_result == false)) {
+                p1 = self->message_buffer.length() - 1;
+            }
+
+            if (p1 > 0) {
+                std::string message = self->message_buffer.substr(0, p1 + 1);
+                self->message_buffer = self->message_buffer.substr(p1 + 1);
+                if (self->process_message) {
+                    self->process_message(message, self);
+                }
+                else {
+                    for (uint i = 0; i < self->output_buffers.size(); ++i) {
+                        self->output_buffers[i]->write(message.c_str(), message.size());
+                    }
+                }
+            }
+        } while (p1 != 0);
+
+        if (peek_result == FALSE) {
+            self->done_io_ = true;
             break;
         }
-        //WaitForSingleObject(self->reading_mutex, INFINITE);
-        if (bytes_count != 0)
-        {
-            if (bytes_count < BUFFER_SIZE) {
-                data[bytes_count] = 0;
-            }
-            for (uint i = 0; i < self->output_buffers.size(); ++i) {
-                self->output_buffers[i]->write(data, bytes_count);
-            }
-        }
+
     }
+    self->done_io_ = true;
     return 0;
 }
 
-output_pipe_class::output_pipe_class(): pipe_class(PIPE_OUTPUT)
-{}
-output_pipe_class::output_pipe_class(std::shared_ptr<output_buffer_c> output_buffer_param):
-    pipe_class(PIPE_OUTPUT)
-{
+output_pipe_c::output_pipe_c()
+    : pipe_c(PIPE_OUTPUT) {
+
+}
+
+output_pipe_c::output_pipe_c(std::shared_ptr<output_buffer_c> output_buffer_param)
+    : pipe_c(PIPE_OUTPUT) {
+
     output_buffers.push_back(output_buffer_param);
 }
 
-output_pipe_class::~output_pipe_class() {
+output_pipe_c::~output_pipe_c() {
+    wait();
+}
+
+output_pipe_c::output_pipe_c(std::vector<std::shared_ptr<output_buffer_c>> output_buffer_param)
+    : pipe_c(PIPE_OUTPUT)
+    , output_buffers(output_buffer_param) {
 
 }
 
-output_pipe_class::output_pipe_class(std::vector<std::shared_ptr<output_buffer_c>> output_buffer_param) :
-    pipe_class(PIPE_OUTPUT), output_buffers(output_buffer_param)
-{}
-
-void output_pipe_class::add_output_buffer(std::shared_ptr<output_buffer_c> output_buffer_param) {
+void output_pipe_c::add_output_buffer(std::shared_ptr<output_buffer_c> output_buffer_param) {
     output_buffers.push_back(output_buffer_param);
 }
 
-bool output_pipe_class::bufferize()
+void output_pipe_c::bufferize()
 {
-    if (!pipe_class::bufferize())
-        return false;
-    buffer_thread = CreateThread(NULL, 0, reading_buffer, this, 0, NULL);
-    PANIC_IF(!buffer_thread);
-    return true;
+    pipe_c::bufferize();
+    buffer_thread = CreateThread(NULL, 0, drain_pipe_thread, this, 0, NULL);
+    PANIC_IF(buffer_thread == NULL);
 }
 
-pipe_t output_pipe_class::get_pipe()
+pipe_t output_pipe_c::get_pipe()
 {
     return output_pipe();
 }

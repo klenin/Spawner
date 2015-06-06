@@ -347,8 +347,8 @@ void runner::debug() {
 void runner::requisites() {
     PANIC_IF(ResumeThread(process_info.hThread) == (DWORD)-1);
     for (auto& it : pipes) {
-        std::shared_ptr<pipe_class> pipe = it.second;
-        PANIC_IF(!pipe->bufferize());
+        std::shared_ptr<pipe_c> pipe = it.second;
+        pipe->bufferize();
     }
     if (options.debug) {
         debug();
@@ -361,16 +361,20 @@ thread_return_t runner::async_body(thread_param_t param) {
     return 0;
 }
 
-runner::runner(const std::string &program, const options_class &options):
-    program(program), options(options), process_status(process_not_started), running_async(false),
-    running_thread(handle_default_value), running(false), init_semaphore(handle_default_value) {
+runner::runner(const std::string &program, const options_class &options)
+    : program(program)
+    , options(options)
+    , process_status(process_not_started)
+    , running_async(false)
+    , running_thread(handle_default_value)
+    , running(false)
+    , init_semaphore(handle_default_value) {
 
     init_semaphore = CreateSemaphore(NULL, 0, 10, NULL);
     ZeroMemory(&process_info, sizeof(process_info));
 }
 
 runner::~runner() {
-    printf("~runner\n");
     CloseHandleSafe(process_info.hProcess);
     CloseHandleSafe(process_info.hThread);
 }
@@ -525,11 +529,11 @@ void runner::safe_release() {
     free();// make it safe!!!
 }
 
-void runner::set_pipe(const pipes_t &pipe_type, std::shared_ptr<pipe_class> pipe_object) {
+void runner::set_pipe(const pipes_t &pipe_type, std::shared_ptr<pipe_c> pipe_object) {
     pipes[pipe_type] = pipe_object;
 }
 
-std::shared_ptr<pipe_class> runner::get_pipe(const pipes_t &pipe_type) {
+std::shared_ptr<pipe_c> runner::get_pipe(const pipes_t &pipe_type) {
     if (pipes.find(pipe_type) == pipes.end()) {
         return 0;
     }

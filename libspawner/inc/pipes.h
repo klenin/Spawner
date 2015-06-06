@@ -3,10 +3,13 @@
 #include <sstream>
 #include <string>
 #include <memory>
+#include <functional>
+#include <atomic>
 
 #include "inc/platform.h"
 #include "inc/buffer.h"
 #include "inc/session.h"
+#include "inc/mutex.h"
 
 enum pipes_t/*rename*/ {
     STD_INPUT_PIPE,
@@ -21,60 +24,63 @@ enum std_pipe_t {
     PIPE_UNDEFINED,
 };
 
-class pipe_class
+class pipe_c
 {
 protected:
-    bool create_pipe();
+    void create_pipe();
     handle_t buffer_thread;
-    handle_t reading_mutex;
-    pipe_t readPipe, writePipe;
+    pipe_t readPipe;
+    pipe_t writePipe;
     std_pipe_t pipe_type;
     bool state;
     pipe_t input_pipe();
     pipe_t output_pipe();
+    void wait();
+    std::atomic<bool> stop_thread_ = false;
+    std::atomic<bool> done_io_ = false;
+
 public:
-    pipe_class();
-    pipe_class(const std_pipe_t &pipe_type);
+    pipe_c();
+    pipe_c(const std_pipe_t &pipe_type);
     void close_pipe();
-    virtual ~pipe_class();
+    virtual ~pipe_c();
     size_t write(const void *data, size_t size);
     size_t read(void *data, size_t size);
-    virtual bool bufferize();
-//    void wait();
+    virtual void bufferize();
     void finish();
-    /* think about safer way of reading from pipe */
-    void wait_for_pipe(const unsigned int &ms_time);
-    void safe_release();
     bool valid();
     virtual pipe_t get_pipe();
 };
 
-class input_pipe_class: public pipe_class
+class input_pipe_c: public pipe_c
 {
 protected:
+    static thread_return_t fill_pipe_thread(thread_param_t param);
     std::vector<std::shared_ptr<input_buffer_c>> input_buffers;
-    static thread_return_t writing_buffer(thread_param_t param);
 public:
-    input_pipe_class();
-    virtual ~input_pipe_class();
-    input_pipe_class(std::shared_ptr<input_buffer_c> input_buffer_param);
-    input_pipe_class(std::vector<std::shared_ptr<input_buffer_c>> input_buffer_param);
+    input_pipe_c();
+    virtual ~input_pipe_c();
+    input_pipe_c(std::shared_ptr<input_buffer_c> input_buffer_param);
+    input_pipe_c(std::vector<std::shared_ptr<input_buffer_c>> input_buffer_param);
     virtual void add_input_buffer(std::shared_ptr<input_buffer_c> input_buffer_param);
-    virtual bool bufferize();
+    virtual void bufferize();
     virtual pipe_t get_pipe();
 };
 
-class output_pipe_class: public pipe_class
+class output_pipe_c: public pipe_c
 {
 protected:
-    std::vector<std::shared_ptr<output_buffer_c>> output_buffers;
-    static thread_return_t reading_buffer(thread_param_t param);
+    static thread_return_t drain_pipe_thread(thread_param_t param);
+    std::string message_buffer;
 public:
-    output_pipe_class();
-    virtual ~output_pipe_class();
-    output_pipe_class(std::shared_ptr<output_buffer_c> output_buffer_param);
-    output_pipe_class(std::vector<std::shared_ptr<output_buffer_c>> output_buffer_param);
+    output_pipe_c();
+    virtual ~output_pipe_c();
+    output_pipe_c(std::shared_ptr<output_buffer_c> output_buffer_param);
+    output_pipe_c(std::vector<std::shared_ptr<output_buffer_c>> output_buffer_param);
     virtual void add_output_buffer(std::shared_ptr<output_buffer_c> output_buffer_param);
-    virtual bool bufferize();
+    virtual void bufferize();
     virtual pipe_t get_pipe();
+
+    std::function<void(std::string&, output_pipe_c*)> process_message;
+    std::vector<std::shared_ptr<output_buffer_c>> output_buffers;
 };
