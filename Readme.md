@@ -1,9 +1,25 @@
-Модуль контролируемого исполнения программ "Spawner"
-=======================================
+# Модуль контролируемого исполнения программ "Spawner"
 
 Модуль разрабатывается как часть системы организации соревнований [Cats](https://github.com/klenin/cats-judge).
 Модуль поддерживает различные режимы совместимости. Режим совместимости задается ключом `--legacy` или переменной окружения `SP_LEGACY`. Доступные значения можно посмотреть в списке поддерживаемых систем. Значение по-умолчанию `sp00`.
 Справку по каждой из них можно получить запустив модуль с ключом `--help` или `-h`.
+
+# Building
+
+You must have cmake and Visual Studio 2013 installed.
+Building with MinGW hasn't been tested for long.
+
+```
+git clone git@github.com:klenin/Spawner.git
+cd Spawner
+git submodule init
+git submodule update
+mkdir build
+cd build
+cmake ..
+```
+
+Visual Studio 2013 solution `sp.sln` will be generated in `./Spawner/build`.
 
 sp99
 ---------------------------------------
