@@ -52,14 +52,14 @@ public:
 class input_pipe_class: public pipe_class
 {
 protected:
-    std::vector<std::shared_ptr<input_buffer_class>> input_buffers;
+    std::vector<std::shared_ptr<input_buffer_c>> input_buffers;
     static thread_return_t writing_buffer(thread_param_t param);
 public:
     input_pipe_class();
     virtual ~input_pipe_class();
-    input_pipe_class(std::shared_ptr<input_buffer_class> input_buffer_param);
-    input_pipe_class(std::vector<std::shared_ptr<input_buffer_class>> input_buffer_param);
-    virtual void add_input_buffer(std::shared_ptr<input_buffer_class> input_buffer_param);
+    input_pipe_class(std::shared_ptr<input_buffer_c> input_buffer_param);
+    input_pipe_class(std::vector<std::shared_ptr<input_buffer_c>> input_buffer_param);
+    virtual void add_input_buffer(std::shared_ptr<input_buffer_c> input_buffer_param);
     virtual bool bufferize();
     virtual pipe_t get_pipe();
 };
@@ -67,14 +67,14 @@ public:
 class output_pipe_class: public pipe_class
 {
 protected:
-    std::vector<std::shared_ptr<output_buffer_class>> output_buffers;
+    std::vector<std::shared_ptr<output_buffer_c>> output_buffers;
     static thread_return_t reading_buffer(thread_param_t param);
 public:
     output_pipe_class();
     virtual ~output_pipe_class();
-    output_pipe_class(std::shared_ptr<output_buffer_class> output_buffer_param);
-    output_pipe_class(std::vector<std::shared_ptr<output_buffer_class>> output_buffer_param);
-    virtual void add_output_buffer(std::shared_ptr<output_buffer_class> output_buffer_param);
+    output_pipe_class(std::shared_ptr<output_buffer_c> output_buffer_param);
+    output_pipe_class(std::vector<std::shared_ptr<output_buffer_c>> output_buffer_param);
+    virtual void add_output_buffer(std::shared_ptr<output_buffer_c> output_buffer_param);
     virtual bool bufferize();
     virtual pipe_t get_pipe();
 };

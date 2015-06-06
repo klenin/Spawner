@@ -12,10 +12,9 @@ class spawner_base_c {
 protected:
     std::vector<runner*> runners;
     std::map<std::string, runner*> runner_alias;
-    std::shared_ptr<output_buffer_class> create_output_buffer(const std::string &name,
-        const pipes_t &pipe_type, const size_t buffer_size = 4096);
-    std::shared_ptr<input_buffer_class> create_input_buffer(const std::string &name,
-        const size_t buffer_size = 4096);
+    std::shared_ptr<output_buffer_c> create_output_buffer(const std::string &name,
+        const pipes_t &pipe_type);
+    std::shared_ptr<input_buffer_c> create_input_buffer(const std::string &name);
 
 public:
     spawner_base_c();

@@ -4,8 +4,8 @@
 #include <AccCtrl.h>
 #include <Aclapi.h>//advapi32.lib
 
-input_buffer_class dummy_input_buffer;
-output_buffer_class dummy_output_buffer;
+input_buffer_c dummy_input_buffer;
+output_buffer_c dummy_output_buffer;
 //move this to separate function
 
 pipe_class::pipe_class()
@@ -188,7 +188,7 @@ thread_return_t input_pipe_class::writing_buffer(thread_param_t param) {
 input_pipe_class::input_pipe_class(): pipe_class(PIPE_INPUT) {
 }
 
-input_pipe_class::input_pipe_class(std::shared_ptr<input_buffer_class> input_buffer_param)
+input_pipe_class::input_pipe_class(std::shared_ptr<input_buffer_c> input_buffer_param)
     : pipe_class(PIPE_INPUT) {
 
     input_buffers.push_back(input_buffer_param);
@@ -198,11 +198,11 @@ input_pipe_class::~input_pipe_class() {
 
 }
 
-input_pipe_class::input_pipe_class(std::vector<std::shared_ptr<input_buffer_class>> input_buffer_param) :
+input_pipe_class::input_pipe_class(std::vector<std::shared_ptr<input_buffer_c>> input_buffer_param) :
     pipe_class(PIPE_INPUT), input_buffers(input_buffer_param) {
 }
 
-void input_pipe_class::add_input_buffer(std::shared_ptr<input_buffer_class> input_buffer_param) {
+void input_pipe_class::add_input_buffer(std::shared_ptr<input_buffer_c> input_buffer_param) {
     input_buffers.push_back(input_buffer_param);
 }
 
@@ -256,7 +256,7 @@ thread_return_t output_pipe_class::reading_buffer(thread_param_t param)
 
 output_pipe_class::output_pipe_class(): pipe_class(PIPE_OUTPUT)
 {}
-output_pipe_class::output_pipe_class(std::shared_ptr<output_buffer_class> output_buffer_param):
+output_pipe_class::output_pipe_class(std::shared_ptr<output_buffer_c> output_buffer_param):
     pipe_class(PIPE_OUTPUT)
 {
     output_buffers.push_back(output_buffer_param);
@@ -266,11 +266,11 @@ output_pipe_class::~output_pipe_class() {
 
 }
 
-output_pipe_class::output_pipe_class(std::vector<std::shared_ptr<output_buffer_class>> output_buffer_param) :
+output_pipe_class::output_pipe_class(std::vector<std::shared_ptr<output_buffer_c>> output_buffer_param) :
     pipe_class(PIPE_OUTPUT), output_buffers(output_buffer_param)
 {}
 
-void output_pipe_class::add_output_buffer(std::shared_ptr<output_buffer_class> output_buffer_param) {
+void output_pipe_class::add_output_buffer(std::shared_ptr<output_buffer_c> output_buffer_param) {
     output_buffers.push_back(output_buffer_param);
 }
 

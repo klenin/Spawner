@@ -54,19 +54,19 @@ bool spawner_old_c::init()
             std::shared_ptr<output_pipe_class> error = std::make_shared<output_pipe_class>();
             std::shared_ptr<input_pipe_class> input = std::make_shared<input_pipe_class>();
             for (uint i = 0; i < options.stdoutput.size(); ++i) {
-                std::shared_ptr<output_buffer_class> buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
+                std::shared_ptr<output_buffer_c> buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
                 if (buffer) {
                     output->add_output_buffer(buffer);
                 }
             }
             for (uint i = 0; i < options.stderror.size(); ++i) {
-                std::shared_ptr<output_buffer_class> buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
+                std::shared_ptr<output_buffer_c> buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
                 if (buffer) {
                     error->add_output_buffer(buffer);
                 }
             }
             for (uint i = 0; i < options.stdinput.size(); ++i) {
-                std::shared_ptr<input_buffer_class > buffer = create_input_buffer(options.stdinput[i]);
+                std::shared_ptr<input_buffer_c > buffer = create_input_buffer(options.stdinput[i]);
                 if (buffer) {
                     input->add_input_buffer(buffer);
                 }

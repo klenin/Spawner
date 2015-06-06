@@ -1,109 +1,138 @@
-#ifndef _SPAWNER_BUFFER_H_
-#define _SPAWNER_BUFFER_H_
+#pragma once
 
-#include <inc/platform.h>
 #include <string>
 #include <sstream>
-#include <queue>
-#include <time.h>
-#include <math.h>
-const unsigned int BUFFER_SIZE = 4096;//provide this in to constructor
+#include <vector>
+#include <ctime>
+#include <cstdarg>
+#include <memory>
 
-//dirty hack
-//#ifndef min
-#define min_def(a, b) (a) > (b) ? (b) : (a)
-//#endif
+#include "inc/platform.h"
+#include "inc/mutex.h"
 
-class buffer_class {
-protected:
-    size_t buffer_size;
+class buffer_c {
 public:
-    buffer_class();
-    buffer_class(const size_t &buffer_size_param);
-    virtual size_t get_buffer_size() {
-        return buffer_size;
+    virtual ~buffer_c() {
+
     }
 };
 
-class input_buffer_class: public virtual buffer_class {
+class input_buffer_c: public virtual buffer_c {
 public:
-    input_buffer_class();
-    input_buffer_class(const size_t &buffer_size_param);
-    virtual bool readable() {
-        return false;
-    }
-    virtual size_t read(void *data, size_t size) {
-        return 0;
-    }
+    virtual bool readable() = 0;
+    virtual size_t read(void *data, size_t size) = 0;
 };
-class output_buffer_class: public virtual buffer_class {
+
+class output_buffer_c: public virtual buffer_c {
 public:
-    output_buffer_class();
-    output_buffer_class(const size_t &buffer_size_param);
-    virtual bool writeable() {
-        return false;
+    output_buffer_c() {
+        write_mutex_.possess();
     }
-    virtual size_t write(const void *data, size_t size) {
-        return 0;
+    virtual ~output_buffer_c() {
+        write_mutex_.release();
     }
+    virtual bool writable() = 0;
+    size_t write(const void *data, size_t size) {
+        write_mutex_.lock();
+        size_t r = write_impl_(data, size);
+        write_mutex_.unlock();
+        return r;
+    }
+
+private:
+    mutex_c write_mutex_;
+    virtual size_t write_impl_(const void *data, size_t size) = 0;
 };
-class duplex_buffer_class: public input_buffer_class, public output_buffer_class {
+
+class duplex_buffer_c
+    : public input_buffer_c
+    , public output_buffer_c {
 protected:
     handle_t in;
     handle_t out;
+
 public:
-    duplex_buffer_class();
+    duplex_buffer_c();
     virtual bool readable();
-    virtual bool writeable();
+    virtual bool writable();
     virtual size_t read(void *data, size_t size);
-    virtual size_t write(const void *data, size_t size);
+    virtual size_t write_impl_(const void *data, size_t size);
 };
 
-class handle_buffer_class {
+class handle_buffer_c {
 protected:
+    bool dont_close_handle_ = false;
     handle_t stream;
     size_t protected_read(void *data, size_t size);
     size_t protected_write(const void *data, size_t size);
     void init_handle(handle_t stream_arg);
+
 public:
-    handle_buffer_class();
-    ~handle_buffer_class();
+    handle_buffer_c();
+    virtual ~handle_buffer_c();
 };
 
-class input_file_buffer_class: public input_buffer_class, protected handle_buffer_class {
+class input_file_buffer_c
+    : public input_buffer_c
+    , protected handle_buffer_c {
 public:
-    input_file_buffer_class();
-    input_file_buffer_class(const std::string &file_name, const size_t &buffer_size_param);
+    input_file_buffer_c();
+    input_file_buffer_c(const std::string &file_name);
     virtual bool readable();
     virtual size_t read(void *data, size_t size);
 };
 
-class output_file_buffer_class: public output_buffer_class, protected handle_buffer_class {
+class output_file_buffer_c
+    : public output_buffer_c
+    , protected handle_buffer_c {
 public:
-    output_file_buffer_class();
-    output_file_buffer_class(const std::string &file_name, const size_t &buffer_size_param);
-    virtual bool writeable();
-    virtual size_t write(const void *data, size_t size);
+    output_file_buffer_c();
+    output_file_buffer_c(const std::string &file_name);
+    virtual bool writable();
+
+private:
+    virtual size_t write_impl_(const void *data, size_t size);
 };
 
-class output_stdout_buffer_class: public output_buffer_class, protected handle_buffer_class {
+class output_stdout_buffer_c
+    : public output_buffer_c
+    , protected handle_buffer_c {
 protected:
-    unsigned int color;
+    unsigned color;
+
 public:
-    output_stdout_buffer_class();
-    output_stdout_buffer_class(const size_t &buffer_size_param = BUFFER_SIZE, const unsigned int &color_param = 0);
-    virtual bool writeable();
-    virtual size_t write(const void *data, size_t size);
+    output_stdout_buffer_c() = delete;
+    output_stdout_buffer_c(const unsigned &color_param = 0);
+    virtual ~output_stdout_buffer_c();
+    virtual bool writable();
+
+private:
+    static mutex_c stdout_write_mutex_;
+    virtual size_t write_impl_(const void *data, size_t size);
 };
 
-class input_stdin_buffer_class: public input_buffer_class, protected handle_buffer_class {
+void dprintf(const char* format, ...);
+
+class input_stdin_buffer_c
+    : public input_buffer_c
+    , protected handle_buffer_c {
 protected:
-    unsigned int color;
+    unsigned color;
+
 public:
-    input_stdin_buffer_class();
-    input_stdin_buffer_class(const size_t &buffer_size_param = BUFFER_SIZE);
+    input_stdin_buffer_c();
     virtual bool readable();
     virtual size_t read(void *data, size_t size);
 };
 
-#endif//_SPAWNER_BUFFER_H_
+class input_pipe_class;
+class pipe_buffer_c : public output_buffer_c {
+public:
+    pipe_buffer_c(const std::shared_ptr<input_pipe_class>& pipe);
+    virtual bool writable() {
+        return true;
+    }
+private:
+    std::shared_ptr<input_pipe_class> pipe_;
+    virtual size_t write_impl_(const void *data, size_t size);
+};

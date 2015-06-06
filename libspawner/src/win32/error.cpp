@@ -2,7 +2,7 @@
 
 #include <sstream>
 #include <windows.h>
-#include <Dbghelp.h>
+#include <dbghelp.h>
 
 #include "stack_walker.h"
 
@@ -69,6 +69,7 @@ static std::string error_text_ = "no error";
 static bool we_do_panic_ = false;
 
 void begin_panic_() {
+    // TODO: use atomic
     we_do_panic_ = true;
 }
 

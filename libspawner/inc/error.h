@@ -9,6 +9,7 @@ void make_minidump(EXCEPTION_POINTERS* e);
 void set_on_panic_action(const std::function<void()> action);
 void set_error_text(const std::string& error_text);
 const std::string& get_error_text();
+std::string get_win_last_error_string();
 
 void panic_(const std::string& error_message, char* filename, int line_number);
 
