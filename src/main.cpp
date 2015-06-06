@@ -138,12 +138,11 @@ bool command_handler_c::parse(int argc, char *argv[]) {
 command_handler_c* handler = nullptr;
 
 BOOL WINAPI CtrlHandlerRoutine(DWORD dwCtrlType) {
-    if (handler == nullptr) {
-        return FALSE;
+    if (handler != nullptr) {
+        handler->spawner->print_report();
+        // don't delete handler here since we can step into infinite loop
+        // in case this handler was called while executing destructor
     }
-    handler->spawner->print_report();
-    delete handler;
-    handler = nullptr;
     return FALSE;
 }
 
@@ -155,12 +154,11 @@ int main(int argc, char *argv[]) {
     _set_abort_behavior(0, _WRITE_ABORT_MSG);
     SetConsoleCtrlHandler(CtrlHandlerRoutine, TRUE);
     set_on_panic_action([&]() {
-        if (handler == nullptr) {
-            return;
+        if (handler != nullptr) {
+            handler->spawner->print_report();
+            handler = nullptr;
+            // don't delete handler here either
         }
-        handler->spawner->print_report();
-        delete handler;
-        handler = nullptr;
     });
     // TODO: report parse errors
     if (handler != nullptr) {

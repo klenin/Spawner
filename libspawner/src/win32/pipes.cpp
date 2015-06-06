@@ -48,7 +48,6 @@ void pipe_c::create_pipe()
     saAttr.lpSecurityDescriptor = NULL;
 
     PANIC_IF(CreatePipe(&readPipe, &writePipe, &saAttr, 0) == 0);
-    return true;
 }
 
 void pipe_c::close_pipe() {

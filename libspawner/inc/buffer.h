@@ -125,14 +125,14 @@ public:
     virtual size_t read(void *data, size_t size);
 };
 
-class input_pipe_class;
+class input_pipe_c;
 class pipe_buffer_c : public output_buffer_c {
 public:
-    pipe_buffer_c(const std::shared_ptr<input_pipe_class>& pipe);
+    pipe_buffer_c(const std::shared_ptr<input_pipe_c>& pipe);
     virtual bool writable() {
         return true;
     }
 private:
-    std::shared_ptr<input_pipe_class> pipe_;
+    std::shared_ptr<input_pipe_c> pipe_;
     virtual size_t write_impl_(const void *data, size_t size);
 };

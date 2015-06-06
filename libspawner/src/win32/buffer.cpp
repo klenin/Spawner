@@ -182,7 +182,7 @@ size_t pipe_buffer_c::write_impl_(const void *data, size_t size) {
     return pipe_->write(data, size);
 }
 
-pipe_buffer_c::pipe_buffer_c(const std::shared_ptr<input_pipe_class>& pipe)
+pipe_buffer_c::pipe_buffer_c(const std::shared_ptr<input_pipe_c>& pipe)
     : pipe_(pipe) {
 
 }
