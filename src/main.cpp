@@ -135,23 +135,37 @@ bool command_handler_c::parse(int argc, char *argv[]) {
     return true;
 }
 
-command_handler_c handler;
+command_handler_c* handler = nullptr;
 
 BOOL WINAPI CtrlHandlerRoutine(DWORD dwCtrlType) {
-    //handler.spawner->stop();
-    handler.spawner->print_report();
+    if (handler == nullptr) {
+        return FALSE;
+    }
+    handler->spawner->print_report();
+    delete handler;
+    handler = nullptr;
     return FALSE;
 }
 
 int main(int argc, char *argv[]) {
+    handler = new command_handler_c();
     // TODO: codestyle: replace \)\r\n\{ with \) \{\r\n
     // Suppress msg window on abort; TODO: check if it's ms spec
     _set_abort_behavior(0, _WRITE_ABORT_MSG);
     SetConsoleCtrlHandler(CtrlHandlerRoutine, TRUE);
     set_on_panic_action([&]() {
-        handler.spawner->print_report();
+        if (handler == nullptr) {
+            return;
+        }
+        handler->spawner->print_report();
+        delete handler;
+        handler = nullptr;
     });
     // TODO: report parse errors
-    handler.parse(argc, argv);
+    if (handler != nullptr) {
+        handler->parse(argc, argv);
+        delete handler;
+        handler = nullptr;
+    }
     return 0;
 }
