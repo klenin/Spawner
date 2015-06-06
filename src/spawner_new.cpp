@@ -10,21 +10,18 @@ spawner_new_c::spawner_new_c(settings_parser_c &parser)
     , runas(false)
     , order(0)
     , base_initialized(false)
-    , control_mode_enabled(false)
-{
+    , control_mode_enabled(false) {
 
 }
 
-spawner_new_c::~spawner_new_c()
-{
-    for (auto i = runners.begin(); i != runners.end(); i++) {
-        delete (*i);
+spawner_new_c::~spawner_new_c() {
+    for (auto& i : runners) {
+        delete i;
     }
 }
 
 void spawner_new_c::json_report(runner *runner_instance,
-    rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > &writer)
-{
+    rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > &writer) {
     writer.StartObject();
 
     //for {
@@ -161,8 +158,13 @@ bool spawner_new_c::init() {
     if (!init_runner() || !runners.size()) {
         return false;
     }
-    for (auto i = runners.begin(); i != runners.end(); i++) {
-        control_mode_enabled = control_mode_enabled || (*i)->get_options().controller;
+
+    int controller_index = -1;
+    for (int i = 0; i < runners.size(); i++) {
+        if (runners[i]->get_options().controller) {
+            controller_index = i;
+            control_mode_enabled = true;
+        }
     }
     for (auto i = runners.begin(); i != runners.end(); i++) {
         options_class runner_options = (*i)->get_options();
@@ -205,34 +207,106 @@ bool spawner_new_c::init() {
                     return false;
                 }
                 runner *target_runner = runners[index];
-                std::shared_ptr<duplex_buffer_c> buffer = std::make_shared<duplex_buffer_c>();
                 std::shared_ptr<input_pipe_c> input_pipe = nullptr;
                 std::shared_ptr<output_pipe_c> output_pipe = nullptr;
+                pipes_t out_pipe_type = STD_ERROR_PIPE;
+                runner* out_pipe_runner = nullptr;
+                runner* in_pipe_runner = nullptr;
 
                 if (stream_item.pipe_type == STD_INPUT_PIPE && pipe_type != STD_INPUT_PIPE) {
 
                     input_pipe = std::static_pointer_cast<input_pipe_c>((*i)->get_pipe(stream_item.pipe_type));
                     output_pipe = std::static_pointer_cast<output_pipe_c>(target_runner->get_pipe(pipe_type));
-                }
-                else if (stream_item.pipe_type != STD_INPUT_PIPE && pipe_type == STD_INPUT_PIPE) {
+                    out_pipe_type = pipe_type;
+                    out_pipe_runner = target_runner;
+                    in_pipe_runner = *i;
+
+                } else if (stream_item.pipe_type != STD_INPUT_PIPE && pipe_type == STD_INPUT_PIPE) {
 
                     input_pipe = std::static_pointer_cast<input_pipe_c>(target_runner->get_pipe(pipe_type));
                     output_pipe = std::static_pointer_cast<output_pipe_c>((*i)->get_pipe(stream_item.pipe_type));
+                    out_pipe_type = stream_item.pipe_type;
+                    out_pipe_runner = *i;
+                    in_pipe_runner = target_runner;
                 }
                 else {
                     return false;
                 }
 
+                std::shared_ptr<duplex_buffer_c> buffer = std::make_shared<duplex_buffer_c>();
                 input_pipe->add_input_buffer(buffer);
                 output_pipe->add_output_buffer(buffer);
+
+                int out_runner_index = -1;
+                int in_runner_index = -1;
+                for (int i = 0; i < runners.size(); i++) {
+                    if (runners[i] == out_pipe_runner) {
+                        out_runner_index = i;
+                    }
+                    if (runners[i] == in_pipe_runner) {
+                        in_runner_index = i;
+                    }
+                }
+
+                if (out_runner_index == controller_index) {
+                    int index = in_runner_index;
+                    if (index > controller_index) {
+                        index--;
+                    }
+                    buffer_to_runner_index_[buffer] = index;
+                }
+
+                if (control_mode_enabled
+                    && out_pipe_type == STD_OUTPUT_PIPE
+                    && !output_pipe->process_message) {
+
+                    output_pipe->process_message = [=](std::string& message,
+                        output_pipe_c* pipe) {
+
+                        if (out_pipe_runner->get_options().controller) {
+                            const int hash_pos = message.find_first_of('#');
+                            const int endl_pos = message.find_first_of("\r\n");
+                            // endl_pos can't be npos
+                            if (hash_pos == std::string::npos) {
+                                PANIC("No hash prefix in controller message");
+                            }
+                            if (endl_pos - hash_pos == 1) {
+                                // this is a message to spawner
+                            }
+                            else {
+                                // this is indeed a message to some slave
+                                // TODO: std::invalid_argument std::out_of_range
+                                const int slave_index = stoi(message);
+                                for (uint i = 0; i < pipe->output_buffers.size(); ++i) {
+                                    auto& buffer = pipe->output_buffers[i];
+                                    if (buffer_to_runner_index_.find(buffer) == buffer_to_runner_index_.end()) {
+                                        buffer->write(message.c_str(), message.size());
+                                    }
+                                    else if (buffer_to_runner_index_[buffer] == slave_index) {
+                                        buffer->write(message.c_str() + hash_pos + 1, message.size() - hash_pos - 1);
+                                    }
+
+                                }
+                            }
+                        } else {
+                            int index = out_runner_index;
+                            if (index > controller_index) {
+                                index--;
+                            }
+                            std::string mod_message = std::to_string(index) + "#" + message;
+                            for (uint i = 0; i < pipe->output_buffers.size(); ++i) {
+                                pipe->output_buffers[i]->write(mod_message.c_str(), mod_message.size());
+                            }
+                        }
+                    };
+                }
             }
         }
     }
     return true;
 }
 
-bool spawner_new_c::init_runner()
-{
+bool spawner_new_c::init_runner() {
     if (!parser.get_program().length()) {
         if (base_initialized) {
             return false;
@@ -285,20 +359,18 @@ bool spawner_new_c::init_runner()
     return true;
 }
 
-void spawner_new_c::run()
-{
+void spawner_new_c::run() {
     begin_report();
-    for (auto i = runners.begin(); i != runners.end(); i++) {
-        (*i)->run_process_async();
+    for (auto& i : runners) {
+        i->run_process_async();
     }
-    for (auto i = runners.begin(); i != runners.end(); i++) {
-        (*i)->wait_for();
+    for (auto& i : runners) {
+        i->wait_for();
     }
     print_report();
 }
 
-void spawner_new_c::print_report()
-{
+void spawner_new_c::print_report() {
     rapidjson::StringBuffer s;
     rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_writer(s);
     report_writer.StartArray();
@@ -394,16 +466,14 @@ void spawner_new_c::print_report()
     }
 }
 
-void spawner_new_c::on_separator(const std::string &_)
-{
+void spawner_new_c::on_separator(const std::string &_) {
     init_runner();
     parser.clear_program_parser();
     options = options_class(base_options);
     restrictions = restrictions_class(base_restrictions);
 }
 
-void spawner_new_c::init_arguments()
-{
+void spawner_new_c::init_arguments() {
     parser.set_dividers(c_lst("=", ":").vector());
 
     console_argument_parser_c *console_default_parser = new console_argument_parser_c();
@@ -509,7 +579,6 @@ void spawner_new_c::init_arguments()
     parser.add_parser(environment_default_parser);
 }
 
-std::string spawner_new_c::help()
-{
+std::string spawner_new_c::help() {
     return parser.help();
 }
