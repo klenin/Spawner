@@ -143,7 +143,7 @@ bool runner::init_process(char *cmd, const char *wd) {
     env_vars_list_t original = set_environment_for_process();
 
     std::string run_program = program;
-    
+
     if ( !CreateProcess(run_program.c_str(),
             cmd, NULL, NULL,
             TRUE,
@@ -159,7 +159,7 @@ bool runner::init_process(char *cmd, const char *wd) {
                 &si, &process_info) ) {
             ReleaseMutex(main_job_object_access_mutex);
             restore_original_environment(original);
-            PANIC("CreateProcess \"" + run_program + "\"");
+            PANIC("CreateProcess: \"" + run_program + "\", " + get_win_last_error_string());
             return false;
         }
     }
@@ -207,7 +207,7 @@ bool runner::init_process_with_logon(char *cmd, const char *wd) {
             NULL, wwd, &siw, &process_info) )
         {
             ReleaseMutex(main_job_object_access_mutex);
-            PANIC("CreateProcessWithLogonW");
+            PANIC("CreateProcess: \"" + run_program + "\", " + get_win_last_error_string());
             // TODO: cleanup below is useless now since we're in panic
             delete[] login;
             delete[] password;
@@ -345,7 +345,9 @@ void runner::debug() {
 }
 
 void runner::requisites() {
-    PANIC_IF(ResumeThread(process_info.hThread) == (DWORD)-1);
+    if (ResumeThread(process_info.hThread) == (DWORD)-1) {
+        PANIC(get_win_last_error_string());
+    }
     for (auto& it : pipes) {
         std::shared_ptr<pipe_c> pipe = it.second;
         pipe->bufferize();
@@ -385,7 +387,9 @@ unsigned long runner::get_exit_code() {
         return 0;
     }
     DWORD dwExitCode = 0;
-    PANIC_IF(GetExitCodeProcess(process_info.hProcess, &dwExitCode) == 0);
+    if (GetExitCodeProcess(process_info.hProcess, &dwExitCode) == 0) {
+        PANIC(get_win_last_error_string());
+    }
     return dwExitCode;
 }
 

@@ -79,7 +79,7 @@ bool do_we_panic_() {
 
 void set_error_text(const std::string& error_text) {
     if (do_we_panic_()) {
-        error_text_ = error_text_ + "n" + error_text;
+        error_text_ = error_text_ + ", " + error_text;
     }
     else {
         error_text_ = error_text;
