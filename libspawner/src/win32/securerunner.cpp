@@ -76,7 +76,9 @@ bool secure_runner::create_restrictions() {
 
 void secure_runner::apply_restrictions()
 {
-    PANIC_IF(AssignProcessToJobObject(hJob, process_info.hProcess) == 0);
+    if (AssignProcessToJobObject(hJob, process_info.hProcess) == 0) {
+        PANIC(get_win_last_error_string());
+    }
 }
 
 void secure_runner::create_process()

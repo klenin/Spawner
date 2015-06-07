@@ -47,7 +47,9 @@ void pipe_c::create_pipe()
     saAttr.bInheritHandle = TRUE;
     saAttr.lpSecurityDescriptor = NULL;
 
-    PANIC_IF(CreatePipe(&readPipe, &writePipe, &saAttr, 0) == 0);
+    if (CreatePipe(&readPipe, &writePipe, &saAttr, 0) == 0) {
+        PANIC(get_win_last_error_string());
+    }
 }
 
 void pipe_c::close_pipe() {
@@ -67,7 +69,9 @@ pipe_c::~pipe_c() {
 size_t pipe_c::write(const void *data, size_t size) {
     DWORD dwWritten;
     // WriteFile is also return 0 when GetLastError() == ERROR_IO_PENDING
-    PANIC_IF(WriteFile(writePipe, data, size, &dwWritten, NULL) == 0);
+    if (WriteFile(writePipe, data, size, &dwWritten, NULL) == 0) {
+        PANIC(get_win_last_error_string());
+    }
     // TODO: dwWritten != size ???
     FlushFileBuffers(writePipe);
     return dwWritten;
@@ -201,7 +205,9 @@ void input_pipe_c::bufferize()
     }
     pipe_c::bufferize();
     buffer_thread = CreateThread(NULL, 0, fill_pipe_thread, this, 0, NULL);
-    PANIC_IF(buffer_thread == NULL);
+    if (buffer_thread == NULL) {
+        PANIC(get_win_last_error_string());
+    }
 }
 
 pipe_t input_pipe_c::get_pipe()
@@ -356,7 +362,9 @@ void output_pipe_c::bufferize()
 {
     pipe_c::bufferize();
     buffer_thread = CreateThread(NULL, 0, drain_pipe_thread, this, 0, NULL);
-    PANIC_IF(buffer_thread == NULL);
+    if (buffer_thread == NULL) {
+        PANIC(get_win_last_error_string());
+    }
 }
 
 pipe_t output_pipe_c::get_pipe()
