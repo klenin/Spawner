@@ -65,7 +65,7 @@ std::string get_win_last_error_string() {
 }
 
 static std::function<void()> on_panic_action_ = nullptr;
-static std::string error_text_ = "no error";
+static std::string error_text_ = "<none>";
 static bool we_do_panic_ = false;
 
 void begin_panic_() {

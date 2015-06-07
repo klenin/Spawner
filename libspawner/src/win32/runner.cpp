@@ -158,8 +158,8 @@ bool runner::init_process(char *cmd, const char *wd) {
                 NULL, wd,
                 &si, &process_info) ) {
             ReleaseMutex(main_job_object_access_mutex);
-            restore_original_environment(original);
             PANIC("CreateProcess: \"" + run_program + "\", " + get_win_last_error_string());
+            restore_original_environment(original);
             return false;
         }
     }
