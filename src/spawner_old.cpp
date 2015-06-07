@@ -50,23 +50,23 @@ bool spawner_old_c::init()
     }
 
         {//if (!options.session_id.length()) {
-            output_pipe_class *output = new output_pipe_class();
-            output_pipe_class *error = new output_pipe_class();
-            input_pipe_class *input = new input_pipe_class();
+            std::shared_ptr<output_pipe_c> output = std::make_shared<output_pipe_c>();
+            std::shared_ptr<output_pipe_c> error = std::make_shared<output_pipe_c>();
+            std::shared_ptr<input_pipe_c> input = std::make_shared<input_pipe_c>();
             for (uint i = 0; i < options.stdoutput.size(); ++i) {
-                output_buffer_class *buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
+                std::shared_ptr<output_buffer_c> buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
                 if (buffer) {
                     output->add_output_buffer(buffer);
                 }
             }
             for (uint i = 0; i < options.stderror.size(); ++i) {
-                output_buffer_class *buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
+                std::shared_ptr<output_buffer_c> buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
                 if (buffer) {
                     error->add_output_buffer(buffer);
                 }
             }
             for (uint i = 0; i < options.stdinput.size(); ++i) {
-                input_buffer_class *buffer = create_input_buffer(options.stdinput[i]);
+                std::shared_ptr<input_buffer_c > buffer = create_input_buffer(options.stdinput[i]);
                 if (buffer) {
                     input->add_input_buffer(buffer);
                 }
@@ -78,8 +78,7 @@ bool spawner_old_c::init()
     return true;
 }
 
-void spawner_old_c::run()
-{
+void spawner_old_c::run() {
     begin_report();
     runner_instance->run_process_async();
     runner_instance->wait_for();

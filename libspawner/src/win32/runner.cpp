@@ -159,7 +159,7 @@ bool runner::init_process(char *cmd, const char *wd) {
                 &si, &process_info) ) {
             ReleaseMutex(main_job_object_access_mutex);
             restore_original_environment(original);
-            raise_error(*this, "CreateProcess");
+            PANIC("CreateProcess \"" + run_program + "\"");
             return false;
         }
     }
@@ -207,7 +207,8 @@ bool runner::init_process_with_logon(char *cmd, const char *wd) {
             NULL, wwd, &siw, &process_info) )
         {
             ReleaseMutex(main_job_object_access_mutex);
-            raise_error(*this, "CreateProcessWithLogonW");
+            PANIC("CreateProcessWithLogonW");
+            // TODO: cleanup below is useless now since we're in panic
             delete[] login;
             delete[] password;
             delete[] wprogram;
@@ -321,9 +322,6 @@ void runner::create_process() {
 }
 
 void runner::free() {
-    for (std::map<pipes_t, pipe_class*>::iterator it = pipes.begin(); it != pipes.end(); ++it) {
-        delete it->second;
-    }
     CloseHandleSafe(process_info.hProcess);
     CloseHandleSafe(process_info.hThread);
 }
@@ -347,16 +345,10 @@ void runner::debug() {
 }
 
 void runner::requisites() {
-    if (ResumeThread(process_info.hThread) == (DWORD)-1) {
-        raise_error(*this, "ResumeThread");
-        return;
-    }
-    for (std::map<pipes_t, pipe_class*>::iterator it = pipes.begin(); it != pipes.end(); ++it) {
-        pipe_class *pipe = it->second;
-        if (!pipe->bufferize()) {
-            raise_error(*this, LAST);
-            return;
-        }
+    PANIC_IF(ResumeThread(process_info.hThread) == (DWORD)-1);
+    for (auto& it : pipes) {
+        std::shared_ptr<pipe_c> pipe = it.second;
+        pipe->bufferize();
     }
     if (options.debug) {
         debug();
@@ -369,26 +361,31 @@ thread_return_t runner::async_body(thread_param_t param) {
     return 0;
 }
 
-runner::runner(const std::string &program, const options_class &options):
-    program(program), options(options), process_status(process_not_started), running_async(false),
-    running_thread(handle_default_value), running(false), init_semaphore(handle_default_value) {
+runner::runner(const std::string &program, const options_class &options)
+    : program(program)
+    , options(options)
+    , process_status(process_not_started)
+    , running_async(false)
+    , running_thread(handle_default_value)
+    , running(false)
+    , init_semaphore(handle_default_value) {
 
     init_semaphore = CreateSemaphore(NULL, 0, 10, NULL);
     ZeroMemory(&process_info, sizeof(process_info));
 }
 
 runner::~runner() {
-    free();
+    CloseHandleSafe(process_info.hProcess);
+    CloseHandleSafe(process_info.hThread);
 }
 
 unsigned long runner::get_exit_code() {
-    if (process_status == process_spawner_crash) {
+    if (process_status == process_spawner_crash
+     || process_status == process_not_started) {
         return 0;
     }
     DWORD dwExitCode = 0;
-    if (!GetExitCodeProcess(process_info.hProcess, &dwExitCode)) {
-        raise_error(*this, "GetExitCodeProcess");
-    }
+    PANIC_IF(GetExitCodeProcess(process_info.hProcess, &dwExitCode) == 0);
     return dwExitCode;
 }
 
@@ -532,11 +529,11 @@ void runner::safe_release() {
     free();// make it safe!!!
 }
 
-void runner::set_pipe(const pipes_t &pipe_type, pipe_class *pipe_object) {
+void runner::set_pipe(const pipes_t &pipe_type, std::shared_ptr<pipe_c> pipe_object) {
     pipes[pipe_type] = pipe_object;
 }
 
-pipe_class *runner::get_pipe(const pipes_t &pipe_type) {
+std::shared_ptr<pipe_c> runner::get_pipe(const pipes_t &pipe_type) {
     if (pipes.find(pipe_type) == pipes.end()) {
         return 0;
     }

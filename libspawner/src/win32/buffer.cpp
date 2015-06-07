@@ -1,143 +1,188 @@
-#include <buffer.h>
-#include <error.h>
+#include "buffer.h"
 
-buffer_class::buffer_class(): buffer_size(BUFFER_SIZE) {
-}
+#include <memory>
 
-buffer_class::buffer_class(const size_t &buffer_size_param): buffer_size(buffer_size_param) {
-}
+#include "error.h"
+#include "pipes.h"
 
-input_buffer_class::input_buffer_class(): buffer_class(BUFFER_SIZE) {
-}
-
-input_buffer_class::input_buffer_class(const size_t &buffer_size_param): buffer_class(buffer_size_param) {
-}
-
-output_buffer_class::output_buffer_class(): buffer_class(BUFFER_SIZE) {
-}
-
-output_buffer_class::output_buffer_class(const size_t &buffer_size_param): buffer_class(buffer_size_param) {
-}
-
-duplex_buffer_class::duplex_buffer_class(): input_buffer_class(), output_buffer_class() {
+duplex_buffer_c::duplex_buffer_c() {
     if (!CreatePipe(&in, &out, NULL, 0)) {
         //raise_error(*this, "CreatePipe");
     }
 }
 
-bool duplex_buffer_class::readable() {
+bool duplex_buffer_c::readable() {
     return true;
 }
 
-bool duplex_buffer_class::writeable() {
+bool duplex_buffer_c::writable() {
     return true;
 }
 
-size_t duplex_buffer_class::read(void *data, size_t size) {
+size_t duplex_buffer_c::read(void *data, size_t size) {
     DWORD bytes_read;
     ReadFile(in, data, size, &bytes_read, NULL);
     return bytes_read;
 }
 
-size_t duplex_buffer_class::write(void *data, size_t size) {
+size_t duplex_buffer_c::write_impl_(const void *data, size_t size) {
     DWORD bytes_written;
     WriteFile(out, data, size, &bytes_written, NULL);
+    FlushFileBuffers(out);
     return bytes_written;
 }
 
-handle_buffer_class::handle_buffer_class(): stream(handle_default_value) {
+handle_buffer_c::handle_buffer_c()
+    : stream(handle_default_value) {
 }
 
-size_t handle_buffer_class::protected_read(void *data, size_t size) {
+size_t handle_buffer_c::protected_read(void *data, size_t size) {
     DWORD bytes_read = 0;
     ReadFile(stream, data, size, &bytes_read, NULL);
     return bytes_read;
 }
-size_t handle_buffer_class::protected_write(void *data, size_t size) {
+
+size_t handle_buffer_c::protected_write(const void *data, size_t size) {
     DWORD bytes_written = 0;
     WriteFile(stream, data, size, &bytes_written, NULL);
     return bytes_written;
 }
-void handle_buffer_class::init_handle(handle_t stream_arg) {
+
+void handle_buffer_c::init_handle(handle_t stream_arg) {
     stream = stream_arg;
 }
-handle_buffer_class::~handle_buffer_class() {
-    CloseHandleSafe(stream);
+
+handle_buffer_c::~handle_buffer_c() {
+    if (!dont_close_handle_) {
+        CloseHandleSafe(stream);
+    }
 }
 
-input_file_buffer_class::input_file_buffer_class(): input_buffer_class(), handle_buffer_class() {
+input_file_buffer_c::input_file_buffer_c() {
 }
-input_file_buffer_class::input_file_buffer_class(const std::string &file_name, const size_t &buffer_size_param):
-    input_buffer_class(), handle_buffer_class() {
-    handle_t handle = CreateFile(file_name.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (true){}
+
+input_file_buffer_c::input_file_buffer_c(const std::string &file_name) {
+    handle_t handle = CreateFile(file_name.c_str(), GENERIC_READ, 0, NULL,
+        OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (handle == INVALID_HANDLE_VALUE) {
+        PANIC(get_win_last_error_string());
+    }
     init_handle(handle);
 }
-bool input_file_buffer_class::readable() {
+
+bool input_file_buffer_c::readable() {
     return (stream != handle_default_value);
 }
-size_t input_file_buffer_class::read(void *data, size_t size) {
+
+size_t input_file_buffer_c::read(void *data, size_t size) {
     return protected_read(data, size);
 }
 
-output_file_buffer_class::output_file_buffer_class(): output_buffer_class(), handle_buffer_class() {
+output_file_buffer_c::output_file_buffer_c() {
 }
-output_file_buffer_class::output_file_buffer_class(const std::string &file_name, const size_t &buffer_size_param = BUFFER_SIZE):
-    output_buffer_class(buffer_size_param), handle_buffer_class() {
-    handle_t handle = CreateFile(file_name.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (true){}
+
+output_file_buffer_c::output_file_buffer_c(const std::string &file_name) {
+    handle_t handle = CreateFile(file_name.c_str(), GENERIC_WRITE, 0, NULL,
+        CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (handle == INVALID_HANDLE_VALUE) {
+        PANIC(get_win_last_error_string());
+    }
     init_handle(handle);
 }
-bool output_file_buffer_class::writeable() {
+
+bool output_file_buffer_c::writable() {
     return (stream != handle_default_value);
 }
-size_t output_file_buffer_class::write(void *data, size_t size) {
+
+size_t output_file_buffer_c::write_impl_(const void *data, size_t size) {
     return protected_write(data, size);
 }
 
-output_stdout_buffer_class::output_stdout_buffer_class(): output_buffer_class(), handle_buffer_class() {
-}
-output_stdout_buffer_class::output_stdout_buffer_class(const size_t &buffer_size_param, const unsigned int &color_param):
-    output_buffer_class(buffer_size_param), handle_buffer_class(), color(color_param) {
+mutex_c output_stdout_buffer_c::stdout_write_mutex_;
+
+output_stdout_buffer_c::output_stdout_buffer_c(const unsigned int &color_param)
+    : color(color_param) {
+
+    dont_close_handle_ = true;
     handle_t handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (true){}
     init_handle(handle);
+    stdout_write_mutex_.possess();
 }
-bool output_stdout_buffer_class::writeable() {
+
+output_stdout_buffer_c::~output_stdout_buffer_c() {
+    stdout_write_mutex_.release();
+}
+
+bool output_stdout_buffer_c::writable() {
     return (stream != handle_default_value);
 }
-size_t output_stdout_buffer_class::write(void *data, size_t size) {
+
+size_t output_stdout_buffer_c::write_impl_(const void *data, size_t size) {
+    size_t result = 0;
+    stdout_write_mutex_.lock();
     if (color) {
         WORD attributes = color;
         if (!SetConsoleTextAttribute(stream, attributes))
         {
-        //    throw GetWin32Error("SetConsoleTextAttribute");
+            //    throw GetWin32Error("SetConsoleTextAttribute");
         }
     }
-    size_t result = protected_write(data, size);
+    result = protected_write(data, size);
     if (color) {
         WORD attributes = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
         if (!SetConsoleTextAttribute(stream, attributes))
         {
-        //    throw GetWin32Error("SetConsoleTextAttribute");
+            //    throw GetWin32Error("SetConsoleTextAttribute");
         }
     }
+    fflush(stdout);
+    stdout_write_mutex_.unlock();
     return result;
 }
 
-input_stdin_buffer_class::input_stdin_buffer_class(): input_buffer_class(), handle_buffer_class() {
-}
-input_stdin_buffer_class::input_stdin_buffer_class(const size_t &buffer_size_param):
-    input_buffer_class(buffer_size_param), handle_buffer_class() {
+input_stdin_buffer_c::input_stdin_buffer_c() {
+    dont_close_handle_ = true;
     handle_t handle = GetStdHandle(STD_INPUT_HANDLE);
-    if (true){}
     init_handle(handle);
 }
-bool input_stdin_buffer_class::readable() {
+
+bool input_stdin_buffer_c::readable() {
     return (stream != handle_default_value);
 }
-size_t input_stdin_buffer_class::read(void *data, size_t size) {
+
+size_t input_stdin_buffer_c::read(void *data, size_t size) {
     size_t result = protected_read(data, size);
 
     return result;
+}
+
+void dprintf(const char* format, ...) {
+  int final_n;
+  int n = strlen(format) * 2;
+  std::string str;
+  std::unique_ptr<char[]> formatted;
+  va_list ap;
+  for (;;) {
+    formatted.reset(new char[n]);
+    strcpy(&formatted[0], format);
+    va_start(ap, format);
+    final_n = vsnprintf(&formatted[0], n, format, ap);
+    va_end(ap);
+    if (final_n < 0 || final_n >= n) {
+      n += std::abs(final_n - n + 1);
+    } else {
+      break;
+    }
+  }
+  static output_stdout_buffer_c stdout_buffer(FOREGROUND_INTENSITY | FOREGROUND_GREEN | FOREGROUND_RED);
+  stdout_buffer.write(formatted.get(), final_n);
+}
+
+size_t pipe_buffer_c::write_impl_(const void *data, size_t size) {
+    return pipe_->write(data, size);
+}
+
+pipe_buffer_c::pipe_buffer_c(const std::shared_ptr<input_pipe_c>& pipe)
+    : pipe_(pipe) {
+
 }

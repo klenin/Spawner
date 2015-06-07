@@ -147,7 +147,8 @@ void spawner_new_c::json_report(runner *runner_instance,
     rapidjson_write(ExitCodeToString(runner_report.exit_code).c_str());
     rapidjson_write("SpawnerError");
     writer.StartArray();
-    std::vector<std::string> errors = error_list::get_errors();
+    std::vector<std::string> errors;
+    errors.push_back(get_error_text());
     for (int i = 0; i < errors.size(); i++) {
         rapidjson_write(errors[i].c_str());
     }
@@ -155,8 +156,7 @@ void spawner_new_c::json_report(runner *runner_instance,
     writer.EndObject();
 }
 
-bool spawner_new_c::init()
-{
+bool spawner_new_c::init() {
     if (!init_runner() || !runners.size()) {
         return false;
     }
@@ -201,18 +201,26 @@ bool spawner_new_c::init()
                     return false;
                 }
                 runner *target_runner = runners[index];
-                duplex_buffer_class *buffer = new duplex_buffer_class();
+                std::shared_ptr<duplex_buffer_c> buffer = std::make_shared<duplex_buffer_c>();
+                std::shared_ptr<input_pipe_c> input_pipe = nullptr;
+                std::shared_ptr<output_pipe_c> output_pipe = nullptr;
+
                 if (stream_item.pipe_type == STD_INPUT_PIPE && pipe_type != STD_INPUT_PIPE) {
-                    static_cast<input_pipe_class*>((*i)->get_pipe(stream_item.pipe_type))->add_input_buffer(buffer);
-                    static_cast<output_pipe_class*>(target_runner->get_pipe(pipe_type))->add_output_buffer(buffer);
+
+                    input_pipe = std::static_pointer_cast<input_pipe_c>((*i)->get_pipe(stream_item.pipe_type));
+                    output_pipe = std::static_pointer_cast<output_pipe_c>(target_runner->get_pipe(pipe_type));
                 }
                 else if (stream_item.pipe_type != STD_INPUT_PIPE && pipe_type == STD_INPUT_PIPE) {
-                    static_cast<input_pipe_class*>(target_runner->get_pipe(pipe_type))->add_input_buffer(buffer);
-                    static_cast<output_pipe_class*>((*i)->get_pipe(stream_item.pipe_type))->add_output_buffer(buffer);
+
+                    input_pipe = std::static_pointer_cast<input_pipe_c>(target_runner->get_pipe(pipe_type));
+                    output_pipe = std::static_pointer_cast<output_pipe_c>((*i)->get_pipe(stream_item.pipe_type));
                 }
                 else {
                     return false;
                 }
+
+                input_pipe->add_input_buffer(buffer);
+                output_pipe->add_output_buffer(buffer);
             }
         }
     }
@@ -234,7 +242,7 @@ bool spawner_new_c::init_runner()
     runner *secure_runner_instance;
     options.session << order++ << time(NULL) << runner::get_current_time();
     options.add_arguments(parser.get_program_arguments());
-    if (options.login.length()) 
+    if (options.login.length())
     {
         secure_runner_instance = new delegate_runner(parser.get_program(), options, restrictions);
     }
@@ -243,32 +251,32 @@ bool spawner_new_c::init_runner()
         secure_runner_instance = new secure_runner(parser.get_program(), options, restrictions);
     }
 
-        {//if (!options.session_id.length()) {
-            output_pipe_class *output = new output_pipe_class();
-            output_pipe_class *error = new output_pipe_class();
-            input_pipe_class *input = new input_pipe_class();
-            for (uint i = 0; i < options.stdoutput.size(); ++i) {
-                output_buffer_class *buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
-                if (buffer) {
-                    output->add_output_buffer(buffer);
-                }
+    {//if (!options.session_id.length()) {
+        std::shared_ptr<output_pipe_c> output = std::make_shared<output_pipe_c>();
+        std::shared_ptr<output_pipe_c> error = std::make_shared<output_pipe_c>();
+        std::shared_ptr<input_pipe_c> input = std::make_shared<input_pipe_c>();
+        for (uint i = 0; i < options.stdoutput.size(); ++i) {
+            std::shared_ptr<output_buffer_c> buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
+            if (buffer) {
+                output->add_output_buffer(buffer);
             }
-            for (uint i = 0; i < options.stderror.size(); ++i) {
-                output_buffer_class *buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
-                if (buffer) {
-                    error->add_output_buffer(buffer);
-                }
-            }
-            for (uint i = 0; i < options.stdinput.size(); ++i) {
-                input_buffer_class *buffer = create_input_buffer(options.stdinput[i]);
-                if (buffer) {
-                    input->add_input_buffer(buffer);
-                }
-            }
-            secure_runner_instance->set_pipe(STD_OUTPUT_PIPE, output);
-            secure_runner_instance->set_pipe(STD_ERROR_PIPE, error);
-            secure_runner_instance->set_pipe(STD_INPUT_PIPE, input);
         }
+        for (uint i = 0; i < options.stderror.size(); ++i) {
+            std::shared_ptr<output_buffer_c> buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
+            if (buffer) {
+                error->add_output_buffer(buffer);
+            }
+        }
+        for (uint i = 0; i < options.stdinput.size(); ++i) {
+            std::shared_ptr<input_buffer_c> buffer = create_input_buffer(options.stdinput[i]);
+            if (buffer) {
+                input->add_input_buffer(buffer);
+            }
+        }
+        secure_runner_instance->set_pipe(STD_OUTPUT_PIPE, output);
+        secure_runner_instance->set_pipe(STD_ERROR_PIPE, error);
+        secure_runner_instance->set_pipe(STD_INPUT_PIPE, input);
+    }
     runners.push_back(secure_runner_instance);
     return true;
 }

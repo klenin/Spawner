@@ -1,7 +1,9 @@
-#include <securerunner.h>
-#include <time.h>
+#include "securerunner.h"
+
+#include <ctime>
 #include <vector>
-#include <inc/error.h>
+
+#include "inc/error.h"
 
 #ifndef JOB_OBJECT_UILIMIT_ALL
 #define JOB_OBJECT_UILIMIT_ALL                      0x000000FF
@@ -72,17 +74,9 @@ bool secure_runner::create_restrictions() {
     return true;
 }
 
-bool secure_runner::apply_restrictions()
+void secure_runner::apply_restrictions()
 {
-    //if (!create_restrictions)
-    //    return false;
-
-    if (!AssignProcessToJobObject(hJob, process_info.hProcess)) {
-        //DWORD le = GetLastError();
-        raise_error(*this, "AssignProcessToJobObject");
-        return false;
-    }
-    return true;
+    PANIC_IF(AssignProcessToJobObject(hJob, process_info.hProcess) == 0);
 }
 
 void secure_runner::create_process()
@@ -217,11 +211,10 @@ void secure_runner::dump_threads( bool suspend )
 
 void secure_runner::free()
 {
+    runner::free();
     CloseHandleSafe(hIOCP);
     CloseHandleSafe(hJob);
-    //CloseHandleSafe(check_thread);
     if (check_thread && check_thread != INVALID_HANDLE_VALUE) {
-        //TerminateThread(check_thread, 0);
         check_thread = INVALID_HANDLE_VALUE;
     }
 }
@@ -302,24 +295,28 @@ void secure_runner::wait()
     running = false;
 }
 
-secure_runner::secure_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions):
-    runner(program, options), restrictions(restrictions),
-    hIOCP(handle_default_value), hJob(handle_default_value), check_thread(handle_default_value), terminate_reason(terminate_reason_not_terminated)
-{
+secure_runner::secure_runner(const std::string &program,
+    const options_class &options, const restrictions_class &restrictions)
+    : runner(program, options)
+    , restrictions(restrictions)
+    , hIOCP(handle_default_value)
+    , hJob(handle_default_value)
+    , check_thread(handle_default_value)
+    , terminate_reason(terminate_reason_not_terminated) {
 }
 
 secure_runner::~secure_runner()
 {
-    free();
+    CloseHandleSafe(hIOCP);
+    CloseHandleSafe(hJob);
+    if (check_thread && check_thread != INVALID_HANDLE_VALUE) {
+        check_thread = INVALID_HANDLE_VALUE;
+    }
 }
 
 void secure_runner::requisites()
 {
-    if (!apply_restrictions()) {
-
-        return;
-    }
-
+    apply_restrictions();
     runner::requisites();
 
     check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);

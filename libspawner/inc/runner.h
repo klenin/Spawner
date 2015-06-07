@@ -1,17 +1,18 @@
-#ifndef _SPAWNER_RUNNER_H_
-#define _SPAWNER_RUNNER_H_
+#pragma once
 
 #include <string>
-#include <map>// <-- for pipes only
-#include <inc/platform.h>
-#include <inc/pipes.h>
-#include <inc/status.h>
-#include <inc/report.h>
-#include <inc/options.h>
+#include <map>
+#include <memory>
+
+#include "inc/platform.h"
+#include "inc/pipes.h"
+#include "inc/status.h"
+#include "inc/report.h"
+#include "inc/options.h"
 
 class runner {
 private:
-    typedef std::list< std::pair< std::string, std::string> > env_vars_list_t;
+    typedef std::list<std::pair<std::string, std::string>> env_vars_list_t;
 
     void copy_environment(TCHAR* dest, const WCHAR* source) const;
     void set_environment_var(TCHAR* dest, const std::string& varStr) const;
@@ -26,7 +27,7 @@ protected:
     bool running_async;
     options_class options;
     std::string program;
-    std::map<pipes_t, pipe_class*> pipes;
+    std::map<pipes_t, std::shared_ptr<pipe_c>> pipes;
     process_info_t process_info;
     process_status_t process_status;
     bool running;
@@ -66,8 +67,6 @@ public:
     bool wait_for(const unsigned long &interval = INFINITE);
     bool wait_for_init(const unsigned long &interval);
     virtual void safe_release();
-    void set_pipe(const pipes_t &pipe_type, pipe_class *pipe_object);
-    pipe_class *get_pipe(const pipes_t &pipe_type);
+    void set_pipe(const pipes_t &pipe_type, std::shared_ptr<pipe_c> pipe_object);
+    std::shared_ptr<pipe_c> get_pipe(const pipes_t &pipe_type);
 };
-
-#endif//_SPAWNER_RUNNER_H_

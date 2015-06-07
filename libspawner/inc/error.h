@@ -1,28 +1,37 @@
-#ifndef _SPAWNER_ERROR_H_
-#define _SPAWNER_ERROR_H_
+#pragma once
 
-#include <vector>
 #include <string>
+#include <functional>
+#include <Windows.h>
 
-#define LAST "Last function"
+std::string get_stacktrace_string();
+void make_minidump(EXCEPTION_POINTERS* e);
+void set_on_panic_action(const std::function<void()> action);
+void set_error_text(const std::string& error_text);
+const std::string& get_error_text();
+std::string get_win_last_error_string();
 
-class error_list
-{
-private:
-    static error_list instance;
-    std::vector<std::string> errors;
+void panic_(const std::string& error_message, char* filename, int line_number);
+
+#define PANIC(MESSAGE) do { panic_(MESSAGE, __FILE__, __LINE__); } while (false);
+
+#define PANIC_IF(CONDITION) do { \
+    if (CONDITION) { \
+        PANIC(#CONDITION); \
+    } \
+} while (false); \
+
+class finally final {
+    typedef std::function<void()> handler_t_;
 public:
-    static void push_error(const std::string &place);
-    static std::string pop_error();
-    static std::vector<std::string> get_errors();
-    static bool remains();
+    finally(handler_t_ handler)
+        : handler_(handler) {
+    }
+    finally() = delete;
+    finally(const finally&) = delete;
+    ~finally() {
+        handler_();
+    }
+private:
+    handler_t_ handler_;
 };
-
-template <class T>
-void raise_error(T &obj, const std::string &place)
-{
-    error_list::push_error(place);
-    obj.safe_release();
-}
-
-#endif//_SPAWNER_ERROR_H_
