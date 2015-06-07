@@ -101,7 +101,6 @@ protected:
     unsigned color;
 
 public:
-    output_stdout_buffer_c() = delete;
     output_stdout_buffer_c(const unsigned &color_param = 0);
     virtual ~output_stdout_buffer_c();
     virtual bool writable();
