@@ -31,6 +31,7 @@ protected:
     void setup_stream_(const std::string& stream_str, pipes_t this_pipe_type, runner* this_runner);
     void process_controller_message_(const std::string& message, output_pipe_c* pipe);
     void process_normal_message_(const std::string& message, output_pipe_c* pipe, int runner_index);
+    int get_normal_index_(const std::string& message);
 public:
     spawner_new_c(settings_parser_c &parser);
     virtual ~spawner_new_c();

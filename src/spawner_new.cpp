@@ -154,6 +154,32 @@ void spawner_new_c::json_report(runner *runner_instance,
     writer.EndObject();
 }
 
+int spawner_new_c::get_normal_index_(const std::string& message) {
+    int normal_index = -1;
+    try {
+        normal_index = stoi(message);
+    // std::invalid_argument std::out_of_range
+    } catch (...) {}
+
+    if (normal_index < 0 || normal_index >= runners.size() - 1) {
+        normal_index = -1;
+    }
+
+    if (normal_index != -1) {
+        int normal_runner_index = normal_index;
+        if (normal_runner_index >= controller_index_) {
+            normal_runner_index++;
+        }
+        auto status = runners[normal_runner_index]->get_process_status();
+        if (status != process_still_active
+         && status != process_suspended
+         && status != process_not_started) {
+            normal_index = -1;
+        }
+    }
+    return normal_index;
+}
+
 void spawner_new_c::process_controller_message_(const std::string& message, output_pipe_c* pipe) {
     const int hash_pos = message.find_first_of('#');
     const int endl_pos = message.find_first_of("\r\n");
@@ -165,7 +191,11 @@ void spawner_new_c::process_controller_message_(const std::string& message, outp
         // this is a message to spawner
     } else {
         // this is a message to normal
-        int normal_index = stoi(message);
+        int normal_index = get_normal_index_(message);
+        if (normal_index == -1) {
+            const std::string error_message = message.substr(0, hash_pos) + "I#\n";
+            controller_buffer_->write(error_message.c_str(), error_message.size());
+        }
 
         for (uint i = 0; i < pipe->output_buffers.size(); ++i) {
             auto& buffer = pipe->output_buffers[i];
