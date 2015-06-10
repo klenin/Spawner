@@ -543,3 +543,11 @@ std::shared_ptr<pipe_c> runner::get_pipe(const pipes_t &pipe_type) {
     }
     return pipes[pipe_type];
 }
+
+std::shared_ptr<input_pipe_c> runner::get_input_pipe() {
+    return std::static_pointer_cast<input_pipe_c>(get_pipe(STD_INPUT_PIPE));
+}
+
+std::shared_ptr<output_pipe_c> runner::get_output_pipe() {
+    return std::static_pointer_cast<output_pipe_c>(get_pipe(STD_INPUT_PIPE));
+}

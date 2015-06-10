@@ -26,6 +26,8 @@ enum std_pipe_t {
 
 class pipe_c
 {
+private:
+    mutex_c write_mutex;
 protected:
     void create_pipe();
     handle_t buffer_thread;

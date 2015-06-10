@@ -147,11 +147,134 @@ void spawner_new_c::json_report(runner *runner_instance,
     writer.StartArray();
     std::vector<std::string> errors;
     errors.push_back(get_error_text());
-    for (int i = 0; i < errors.size(); i++) {
+    for (auto i = 0; i < errors.size(); i++) {
         rapidjson_write(errors[i].c_str());
     }
     writer.EndArray();
     writer.EndObject();
+}
+
+void spawner_new_c::process_controller_message_(const std::string& message, output_pipe_c* pipe) {
+    const int hash_pos = message.find_first_of('#');
+    const int endl_pos = message.find_first_of("\r\n");
+    // endl_pos can't be npos
+    if (hash_pos == std::string::npos) {
+        PANIC("No hash prefix in controller message");
+    }
+    if (endl_pos - hash_pos == 1) {
+        // this is a message to spawner
+    } else {
+        // this is a message to normal
+        int normal_index = stoi(message);
+
+        for (uint i = 0; i < pipe->output_buffers.size(); ++i) {
+            auto& buffer = pipe->output_buffers[i];
+            if (buffer_to_runner_index_.find(buffer) == buffer_to_runner_index_.end()) {
+                buffer->write(message.c_str(), message.size());
+            }
+            else if (buffer_to_runner_index_[buffer] == normal_index) {
+                buffer->write(message.c_str() + hash_pos + 1, message.size() - hash_pos - 1);
+            }
+
+        }
+    }
+}
+
+void spawner_new_c::process_normal_message_(const std::string& message, output_pipe_c* pipe, int runner_index) {
+    int index = runner_index;
+    if (index > controller_index_) {
+        index--;
+    }
+    std::string mod_message = std::to_string(index) + "#" + message;
+    for (uint i = 0; i < pipe->output_buffers.size(); ++i) {
+        pipe->output_buffers[i]->write(mod_message.c_str(), mod_message.size());
+    }
+}
+
+void spawner_new_c::setup_stream_(const std::string& stream_str, pipes_t this_pipe_type, runner* this_runner) {
+    size_t pos = stream_str.find(".");
+    // malformed argument
+    PANIC_IF(pos == std::string::npos);
+    size_t index = stoi(stream_str.substr(1, pos - 1), nullptr, 10);
+    std::string stream = stream_str.substr(pos + 1);
+    // invalid index
+    PANIC_IF(index > runners.size() || index < 0);
+    pipes_t other_pipe_type;
+    if (stream == "stderr") {
+        other_pipe_type = STD_ERROR_PIPE;
+    }
+    else if (stream == "stdin") {
+        other_pipe_type = STD_INPUT_PIPE;
+    }
+    else if (stream == "stdout") {
+        other_pipe_type = STD_OUTPUT_PIPE;
+    }
+    else {
+        PANIC("invalid stream name");
+    }
+    runner *target_runner = runners[index];
+    std::shared_ptr<input_pipe_c> input_pipe = nullptr;
+    std::shared_ptr<output_pipe_c> output_pipe = nullptr;
+    pipes_t out_pipe_type = STD_ERROR_PIPE;
+    runner* out_pipe_runner = nullptr;
+    runner* in_pipe_runner = nullptr;
+
+    if (this_pipe_type == STD_INPUT_PIPE && other_pipe_type != STD_INPUT_PIPE) {
+
+        input_pipe = std::static_pointer_cast<input_pipe_c>(this_runner->get_pipe(this_pipe_type));
+        output_pipe = std::static_pointer_cast<output_pipe_c>(target_runner->get_pipe(other_pipe_type));
+        out_pipe_type = other_pipe_type;
+        out_pipe_runner = target_runner;
+        in_pipe_runner = this_runner;
+
+    } else if (this_pipe_type != STD_INPUT_PIPE && other_pipe_type == STD_INPUT_PIPE) {
+
+        input_pipe = std::static_pointer_cast<input_pipe_c>(target_runner->get_pipe(other_pipe_type));
+        output_pipe = std::static_pointer_cast<output_pipe_c>(this_runner->get_pipe(this_pipe_type));
+        out_pipe_type = this_pipe_type;
+        out_pipe_runner = this_runner;
+        in_pipe_runner = target_runner;
+    } else {
+        PANIC("invalid pipe mapping");
+    }
+
+    std::shared_ptr<duplex_buffer_c> buffer = std::make_shared<duplex_buffer_c>();
+    input_pipe->add_input_buffer(buffer);
+    output_pipe->add_output_buffer(buffer);
+
+    int out_runner_index = -1;
+    int in_runner_index = -1;
+    for (int i = 0; i < runners.size(); i++) {
+        if (runners[i] == out_pipe_runner) {
+            out_runner_index = i;
+        }
+        if (runners[i] == in_pipe_runner) {
+            in_runner_index = i;
+        }
+    }
+
+    if (out_runner_index == controller_index_) {
+        int index = in_runner_index;
+        if (index > controller_index_) {
+            index--;
+        }
+        buffer_to_runner_index_[buffer] = index;
+    }
+
+    if (control_mode_enabled
+     && out_pipe_type == STD_OUTPUT_PIPE
+     && !output_pipe->process_message) {
+
+        if (out_pipe_runner->get_options().controller) {
+            output_pipe->process_message = [=](std::string& message, output_pipe_c* pipe) {
+                process_controller_message_(message, pipe);
+            };
+        } else {
+            output_pipe->process_message = [=](std::string& message, output_pipe_c* pipe) {
+                process_normal_message_(message, pipe, out_runner_index);
+            };
+        }
+    }
 }
 
 bool spawner_new_c::init() {
@@ -159,15 +282,18 @@ bool spawner_new_c::init() {
         return false;
     }
 
-    int controller_index = -1;
     for (int i = 0; i < runners.size(); i++) {
         if (runners[i]->get_options().controller) {
-            controller_index = i;
+            // there must be only one controller process
+            PANIC_IF(controller_index_ != -1);
+            controller_index_ = i;
             control_mode_enabled = true;
+            controller_buffer_ = std::make_shared<pipe_buffer_c>(runners[i]->get_input_pipe());
         }
     }
-    for (auto i = runners.begin(); i != runners.end(); i++) {
-        options_class runner_options = (*i)->get_options();
+
+    for (auto& runner : runners) {
+        options_class runner_options = runner->get_options();
         struct {
             std::vector<std::string> &streams;
             pipes_t pipe_type;
@@ -176,130 +302,13 @@ bool spawner_new_c::init() {
             { runner_options.stdoutput, STD_OUTPUT_PIPE },
             { runner_options.stderror, STD_ERROR_PIPE },
         };
-        for (int k = 0; k < 3; ++k) {
-            auto stream_item = streams[k];
-            for (auto j = stream_item.streams.begin(); j != stream_item.streams.end(); j++) {
-                if ((*j)[0] != '*') {
+        for (auto& stream_item : streams) {
+            for (auto& stream_str : stream_item.streams) {
+                PANIC_IF(stream_str.size() == 0);
+                if (stream_str[0] != '*') {
                     continue;
                 }
-                size_t pos = (*j).find(".");
-                if (pos == std::string::npos) {
-                    //error
-                    return false;
-                }
-                size_t index = stoi((*j).substr(1, pos - 1), nullptr, 10);
-                std::string stream = (*j).substr(pos + 1);
-                if (index > runners.size()) {
-                    //error
-                    return false;
-                }
-                pipes_t pipe_type;
-                if (stream == "stderr") {
-                    pipe_type = STD_ERROR_PIPE;
-                }
-                else if (stream == "stdin") {
-                    pipe_type = STD_INPUT_PIPE;
-                }
-                else if (stream == "stdout") {
-                    pipe_type = STD_OUTPUT_PIPE;
-                }
-                else {
-                    return false;
-                }
-                runner *target_runner = runners[index];
-                std::shared_ptr<input_pipe_c> input_pipe = nullptr;
-                std::shared_ptr<output_pipe_c> output_pipe = nullptr;
-                pipes_t out_pipe_type = STD_ERROR_PIPE;
-                runner* out_pipe_runner = nullptr;
-                runner* in_pipe_runner = nullptr;
-
-                if (stream_item.pipe_type == STD_INPUT_PIPE && pipe_type != STD_INPUT_PIPE) {
-
-                    input_pipe = std::static_pointer_cast<input_pipe_c>((*i)->get_pipe(stream_item.pipe_type));
-                    output_pipe = std::static_pointer_cast<output_pipe_c>(target_runner->get_pipe(pipe_type));
-                    out_pipe_type = pipe_type;
-                    out_pipe_runner = target_runner;
-                    in_pipe_runner = *i;
-
-                } else if (stream_item.pipe_type != STD_INPUT_PIPE && pipe_type == STD_INPUT_PIPE) {
-
-                    input_pipe = std::static_pointer_cast<input_pipe_c>(target_runner->get_pipe(pipe_type));
-                    output_pipe = std::static_pointer_cast<output_pipe_c>((*i)->get_pipe(stream_item.pipe_type));
-                    out_pipe_type = stream_item.pipe_type;
-                    out_pipe_runner = *i;
-                    in_pipe_runner = target_runner;
-                }
-                else {
-                    return false;
-                }
-
-                std::shared_ptr<duplex_buffer_c> buffer = std::make_shared<duplex_buffer_c>();
-                input_pipe->add_input_buffer(buffer);
-                output_pipe->add_output_buffer(buffer);
-
-                int out_runner_index = -1;
-                int in_runner_index = -1;
-                for (int i = 0; i < runners.size(); i++) {
-                    if (runners[i] == out_pipe_runner) {
-                        out_runner_index = i;
-                    }
-                    if (runners[i] == in_pipe_runner) {
-                        in_runner_index = i;
-                    }
-                }
-
-                if (out_runner_index == controller_index) {
-                    int index = in_runner_index;
-                    if (index > controller_index) {
-                        index--;
-                    }
-                    buffer_to_runner_index_[buffer] = index;
-                }
-
-                if (control_mode_enabled
-                    && out_pipe_type == STD_OUTPUT_PIPE
-                    && !output_pipe->process_message) {
-
-                    output_pipe->process_message = [=](std::string& message,
-                        output_pipe_c* pipe) {
-
-                        if (out_pipe_runner->get_options().controller) {
-                            const int hash_pos = message.find_first_of('#');
-                            const int endl_pos = message.find_first_of("\r\n");
-                            // endl_pos can't be npos
-                            if (hash_pos == std::string::npos) {
-                                PANIC("No hash prefix in controller message");
-                            }
-                            if (endl_pos - hash_pos == 1) {
-                                // this is a message to spawner
-                            }
-                            else {
-                                // this is indeed a message to some slave
-                                // TODO: std::invalid_argument std::out_of_range
-                                const int slave_index = stoi(message);
-                                for (uint i = 0; i < pipe->output_buffers.size(); ++i) {
-                                    auto& buffer = pipe->output_buffers[i];
-                                    if (buffer_to_runner_index_.find(buffer) == buffer_to_runner_index_.end()) {
-                                        buffer->write(message.c_str(), message.size());
-                                    }
-                                    else if (buffer_to_runner_index_[buffer] == slave_index) {
-                                        buffer->write(message.c_str() + hash_pos + 1, message.size() - hash_pos - 1);
-                                    }
-
-                                }
-                            }
-                        } else {
-                            int index = out_runner_index;
-                            if (index > controller_index) {
-                                index--;
-                            }
-                            std::string mod_message = std::to_string(index) + "#" + message;
-                            for (uint i = 0; i < pipe->output_buffers.size(); ++i) {
-                                pipe->output_buffers[i]->write(mod_message.c_str(), mod_message.size());
-                            }
-                        }
-                    };
-                }
+                setup_stream_(stream_str, stream_item.pipe_type, runner);
             }
         }
     }

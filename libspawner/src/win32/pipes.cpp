@@ -50,6 +50,7 @@ void pipe_c::create_pipe()
     if (CreatePipe(&readPipe, &writePipe, &saAttr, 0) == 0) {
         PANIC(get_win_last_error_string());
     }
+    write_mutex.possess();
 }
 
 void pipe_c::close_pipe() {
@@ -60,6 +61,7 @@ void pipe_c::close_pipe() {
         CloseHandleSafe(writePipe);
     }
     finish();
+    write_mutex.release();
 }
 
 pipe_c::~pipe_c() {
@@ -68,10 +70,12 @@ pipe_c::~pipe_c() {
 
 size_t pipe_c::write(const void *data, size_t size) {
     DWORD dwWritten;
+    write_mutex.lock();
     // WriteFile is also return 0 when GetLastError() == ERROR_IO_PENDING
     if (WriteFile(writePipe, data, size, &dwWritten, NULL) == 0) {
         PANIC(get_win_last_error_string());
     }
+    write_mutex.unlock();
     // TODO: dwWritten != size ???
     FlushFileBuffers(writePipe);
     return dwWritten;

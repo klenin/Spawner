@@ -69,4 +69,6 @@ public:
     virtual void safe_release();
     void set_pipe(const pipes_t &pipe_type, std::shared_ptr<pipe_c> pipe_object);
     std::shared_ptr<pipe_c> get_pipe(const pipes_t &pipe_type);
+    std::shared_ptr<input_pipe_c> get_input_pipe();
+    std::shared_ptr<output_pipe_c> get_output_pipe();
 };
