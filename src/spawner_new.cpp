@@ -147,8 +147,8 @@ void spawner_new_c::json_report(runner *runner_instance,
     writer.StartArray();
     std::vector<std::string> errors;
     errors.push_back(get_error_text());
-    for (auto i = 0; i < errors.size(); i++) {
-        rapidjson_write(errors[i].c_str());
+    for (auto& error : errors) {
+        rapidjson_write(error.c_str());
     }
     writer.EndArray();
     writer.EndObject();
@@ -159,14 +159,18 @@ int spawner_new_c::get_normal_index_(const std::string& message) {
     try {
         normal_index = stoi(message);
     // std::invalid_argument std::out_of_range
-    } catch (...) {}
+    } catch (...) {
+        normal_index = -1;
+    }
 
-    if (normal_index < 0 || normal_index >= runners.size() - 1) {
+    if (normal_index == 0) {
+        return 0;
+    } else if (normal_index < 1 || normal_index > runners.size() - 1) {
         normal_index = -1;
     }
 
     if (normal_index != -1) {
-        int normal_runner_index = normal_index;
+        int normal_runner_index = normal_index - 1;
         if (normal_runner_index >= controller_index_) {
             normal_runner_index++;
         }
@@ -182,40 +186,31 @@ int spawner_new_c::get_normal_index_(const std::string& message) {
 
 void spawner_new_c::process_controller_message_(const std::string& message, output_pipe_c* pipe) {
     const int hash_pos = message.find_first_of('#');
-    const int endl_pos = message.find_first_of("\r\n");
-    // endl_pos can't be npos
     if (hash_pos == std::string::npos) {
         PANIC("No hash prefix in controller message");
     }
-    if (endl_pos - hash_pos == 1) {
+
+    const int normal_index = get_normal_index_(message);
+    if (normal_index == 0) {
         // this is a message to spawner
-    } else {
-        // this is a message to normal
-        int normal_index = get_normal_index_(message);
-        if (normal_index == -1) {
-            const std::string error_message = message.substr(0, hash_pos) + "I#\n";
-            controller_buffer_->write(error_message.c_str(), error_message.size());
-        }
+    } else if (normal_index == -1) {
+        const std::string error_message = message.substr(0, hash_pos) + "I#\n";
+        controller_buffer_->write(error_message.c_str(), error_message.size());
+    }
 
-        for (uint i = 0; i < pipe->output_buffers.size(); ++i) {
-            auto& buffer = pipe->output_buffers[i];
-            if (buffer_to_runner_index_.find(buffer) == buffer_to_runner_index_.end()) {
-                buffer->write(message.c_str(), message.size());
-            }
-            else if (buffer_to_runner_index_[buffer] == normal_index) {
-                buffer->write(message.c_str() + hash_pos + 1, message.size() - hash_pos - 1);
-            }
-
+    for (uint i = 0; i < pipe->output_buffers.size(); ++i) {
+        auto& buffer = pipe->output_buffers[i];
+        auto at_index = buffer_to_runner_index_.find(buffer);
+        if (at_index == buffer_to_runner_index_.end()) {
+            buffer->write(message.c_str(), message.size());
+        } else if (at_index->second == normal_index) {
+            buffer->write(message.c_str() + hash_pos + 1, message.size() - hash_pos - 1);
         }
     }
 }
 
 void spawner_new_c::process_normal_message_(const std::string& message, output_pipe_c* pipe, int runner_index) {
-    int index = runner_index;
-    if (index > controller_index_) {
-        index--;
-    }
-    std::string mod_message = std::to_string(index) + "#" + message;
+    std::string mod_message = std::to_string(runner_index) + "#" + message;
     for (uint i = 0; i < pipe->output_buffers.size(); ++i) {
         pipe->output_buffers[i]->write(mod_message.c_str(), mod_message.size());
     }
@@ -288,7 +283,7 @@ void spawner_new_c::setup_stream_(const std::string& stream_str, pipes_t this_pi
         if (index > controller_index_) {
             index--;
         }
-        buffer_to_runner_index_[buffer] = index;
+        buffer_to_runner_index_[buffer] = index + 1;
     }
 
     if (control_mode_enabled
@@ -300,8 +295,12 @@ void spawner_new_c::setup_stream_(const std::string& stream_str, pipes_t this_pi
                 process_controller_message_(message, pipe);
             };
         } else {
+            int index = out_runner_index;
+            if (index > controller_index_) {
+                index--;
+            }
             output_pipe->process_message = [=](std::string& message, output_pipe_c* pipe) {
-                process_normal_message_(message, pipe, out_runner_index);
+                process_normal_message_(message, pipe, index + 1);
             };
         }
     }
