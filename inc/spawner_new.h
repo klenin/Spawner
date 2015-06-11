@@ -11,6 +11,7 @@
 #include "arguments.h"
 #include "sp.h"
 #include "spawner_base.h"
+#include "inc/mutex.h"
 
 class spawner_new_c: public spawner_base_c {
 protected:
@@ -28,10 +29,13 @@ protected:
     // std::map<int, std::shared_ptr<output_buffer_c>> runner_index_to_buffer_;
     std::shared_ptr<pipe_buffer_c> controller_buffer_;
     int controller_index_ = -1;
+    mutex_c wait_normal_mutex_;
+    std::vector<bool> awaited_normals_;
     void setup_stream_(const std::string& stream_str, pipes_t this_pipe_type, runner* this_runner);
     void process_controller_message_(const std::string& message, output_pipe_c* pipe);
     void process_normal_message_(const std::string& message, output_pipe_c* pipe, int runner_index);
     int get_normal_index_(const std::string& message);
+    int normal_to_runner_index_(int normal_index);
 public:
     spawner_new_c(settings_parser_c &parser);
     virtual ~spawner_new_c();

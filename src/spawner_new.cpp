@@ -11,13 +11,14 @@ spawner_new_c::spawner_new_c(settings_parser_c &parser)
     , order(0)
     , base_initialized(false)
     , control_mode_enabled(false) {
-
+    wait_normal_mutex_.possess();
 }
 
 spawner_new_c::~spawner_new_c() {
     for (auto& i : runners) {
         delete i;
     }
+    wait_normal_mutex_.release();
 }
 
 void spawner_new_c::json_report(runner *runner_instance,
@@ -170,10 +171,7 @@ int spawner_new_c::get_normal_index_(const std::string& message) {
     }
 
     if (normal_index != -1) {
-        int normal_runner_index = normal_index - 1;
-        if (normal_runner_index >= controller_index_) {
-            normal_runner_index++;
-        }
+        int normal_runner_index = normal_to_runner_index_(normal_index);
         auto status = runners[normal_runner_index]->get_process_status();
         if (status != process_still_active
          && status != process_suspended
@@ -184,18 +182,46 @@ int spawner_new_c::get_normal_index_(const std::string& message) {
     return normal_index;
 }
 
+int spawner_new_c::normal_to_runner_index_(int normal_index) {
+    // normal_index must be valid here
+    int normal_runner_index = normal_index - 1;
+    if (normal_runner_index >= controller_index_) {
+        normal_runner_index++;
+    }
+    PANIC_IF(normal_runner_index <= 0 || normal_runner_index >= runners.size());
+    return normal_runner_index;
+}
+
 void spawner_new_c::process_controller_message_(const std::string& message, output_pipe_c* pipe) {
     const int hash_pos = message.find_first_of('#');
     if (hash_pos == std::string::npos) {
-        PANIC("No hash prefix in controller message");
+        PANIC("no hash prefix in controller message");
+    } else if (hash_pos == 0) {
+        PANIC("missing header in controller message");
     }
+    char control_letter = message[hash_pos - 1];
+    bool send_to_normal = false;
 
     const int normal_index = get_normal_index_(message);
-    if (normal_index == 0) {
-        // this is a message to spawner
-    } else if (normal_index == -1) {
+    if (normal_index == -1) {
         const std::string error_message = message.substr(0, hash_pos) + "I#\n";
         controller_buffer_->write(error_message.c_str(), error_message.size());
+        send_to_normal = true;
+    }
+    if (normal_index == 0) {
+        // this is a message to spawner
+    } else switch (control_letter) {
+    case 'W': {
+        wait_normal_mutex_.lock();
+        awaited_normals_[normal_index - 1] = true;
+        int runner_index = normal_to_runner_index_(normal_index);
+        runners[runner_index]->resume();
+        wait_normal_mutex_.unlock();
+        break;
+    }
+    default:
+        send_to_normal = true;
+        break;
     }
 
     for (uint i = 0; i < pipe->output_buffers.size(); ++i) {
@@ -203,17 +229,26 @@ void spawner_new_c::process_controller_message_(const std::string& message, outp
         auto at_index = buffer_to_runner_index_.find(buffer);
         if (at_index == buffer_to_runner_index_.end()) {
             buffer->write(message.c_str(), message.size());
-        } else if (at_index->second == normal_index) {
+        } else if (send_to_normal && at_index->second == normal_index) {
             buffer->write(message.c_str() + hash_pos + 1, message.size() - hash_pos - 1);
         }
     }
 }
 
-void spawner_new_c::process_normal_message_(const std::string& message, output_pipe_c* pipe, int runner_index) {
-    std::string mod_message = std::to_string(runner_index) + "#" + message;
+void spawner_new_c::process_normal_message_(const std::string& message, output_pipe_c* pipe, int normal_index) {
+    std::string mod_message = std::to_string(normal_index) + "#" + message;
     for (uint i = 0; i < pipe->output_buffers.size(); ++i) {
         pipe->output_buffers[i]->write(mod_message.c_str(), mod_message.size());
     }
+    wait_normal_mutex_.lock();
+    if (awaited_normals_[normal_index - 1]) {
+        int runner_index = normal_to_runner_index_(normal_index);
+        awaited_normals_[normal_index - 1] = false;
+        runners[runner_index]->suspend();
+    } else {
+        // it hasn't been waited for, but sent a message. what do?
+    }
+    wait_normal_mutex_.unlock();
 }
 
 void spawner_new_c::setup_stream_(const std::string& stream_str, pipes_t this_pipe_type, runner* this_runner) {
@@ -320,6 +355,7 @@ bool spawner_new_c::init() {
         }
     }
     if (controller_index_ != -1) {
+        awaited_normals_.resize(runners.size() - 1);
         for (int i = 0; i < runners.size(); i++) {
             if (i != controller_index_) {
                 runners[i]->start_suspended = true;
