@@ -219,6 +219,10 @@ void spawner_new_c::process_controller_message_(const std::string& message, outp
         wait_normal_mutex_.unlock();
         break;
     }
+    case 'S': {
+        int runner_index = normal_to_runner_index_(normal_index);
+        static_cast<secure_runner*>(runners[runner_index])->force_stop = true;
+    }
     default:
         send_to_normal = true;
         break;

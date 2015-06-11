@@ -33,4 +33,5 @@ public:
     restrictions_class get_restrictions() const;
     process_status_t get_process_status();
     virtual report_class get_report();
+    bool force_stop = false;
 };

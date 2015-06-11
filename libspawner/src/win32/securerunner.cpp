@@ -161,6 +161,10 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_COUNT_LIMIT, COMPLETION_KEY, NULL);
             break;
         }
+        if (self->force_stop) {
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_CONTROLLER_STOP, COMPLETION_KEY, NULL);
+            break;
+        }
         Sleep(1);
     }
     return 0;
@@ -235,6 +239,11 @@ void secure_runner::wait()
         case JOB_OBJECT_MSG_PROCESS_COUNT_LIMIT:
             TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_created_process;
+            process_status = process_finished_terminated;
+            break;
+        case JOB_OBJECT_MSG_PROCESS_CONTROLLER_STOP:
+            TerminateJobObject(hJob, 0);
+            terminate_reason = terminate_reason_by_controller;
             process_status = process_finished_terminated;
             break;
         default:
