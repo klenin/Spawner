@@ -91,7 +91,6 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
 {
     secure_runner *self = (secure_runner*)param;
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
-    restrictions_class restrictions = self->restrictions;
 
     double total_rate = 10000.0;
     LONGLONG last_quad_part = 0;
@@ -103,6 +102,8 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
     unsigned long long dt = 0, idle_time = 0;
 
     while (1) {
+        restrictions_class restrictions = self->restrictions;
+
         if (!QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL))
             break;
 
@@ -118,13 +119,21 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             break;
         }
 
+        if (self->prolong_time_limits_ || self->get_process_status() == process_suspended) {
+            self->base_time_processor_ = bai.BasicInfo.TotalUserTime.QuadPart;
+            self->base_time_user_ = self->get_time_since_create();
+            self->prolong_time_limits_ = false;
+        }
+
         if (restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit &&
-            (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart > 10*restrictions.get_restriction(restriction_processor_time_limit)) {
+            (DOUBLE)(bai.BasicInfo.TotalUserTime.QuadPart - self->base_time_processor_) >
+            10 * restrictions.get_restriction(restriction_processor_time_limit)) {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);
             break;
         }
         if (restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit &&
-            self->get_time_since_create() > 10*restrictions.get_restriction(restriction_user_time_limit)) {
+            (self->get_time_since_create() - self->base_time_user_) >
+            10 * restrictions.get_restriction(restriction_user_time_limit)) {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);//freezed
             break;
         }
@@ -264,6 +273,7 @@ void secure_runner::wait()
 secure_runner::secure_runner(const std::string &program,
     const options_class &options, const restrictions_class &restrictions)
     : runner(program, options)
+    , start_restrictions(restrictions)
     , restrictions(restrictions)
     , hIOCP(handle_default_value)
     , hJob(handle_default_value)
@@ -333,4 +343,8 @@ process_status_t secure_runner::get_process_status()
      || process_status == process_suspended)
         return process_status;
     return runner::get_process_status();
+}
+
+void secure_runner::prolong_time_limits() {
+    prolong_time_limits_ = true;
 }

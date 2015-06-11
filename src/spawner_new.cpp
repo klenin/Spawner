@@ -193,6 +193,7 @@ int spawner_new_c::normal_to_runner_index_(int normal_index) {
 }
 
 void spawner_new_c::process_controller_message_(const std::string& message, output_pipe_c* pipe) {
+    static_cast<secure_runner*>(runners[controller_index_])->prolong_time_limits();
     const int hash_pos = message.find_first_of('#');
     if (hash_pos == std::string::npos) {
         PANIC("no hash prefix in controller message");
@@ -207,8 +208,7 @@ void spawner_new_c::process_controller_message_(const std::string& message, outp
         const std::string error_message = message.substr(0, hash_pos) + "I#\n";
         controller_buffer_->write(error_message.c_str(), error_message.size());
         send_to_normal = true;
-    }
-    if (normal_index == 0) {
+    } else if (normal_index == 0) {
         // this is a message to spawner
     } else switch (control_letter) {
     case 'W': {
@@ -249,6 +249,7 @@ void spawner_new_c::process_normal_message_(const std::string& message, output_p
         int runner_index = normal_to_runner_index_(normal_index);
         awaited_normals_[normal_index - 1] = false;
         runners[runner_index]->suspend();
+        static_cast<secure_runner*>(runners[runner_index])->prolong_time_limits();
     } else {
         // it hasn't been waited for, but sent a message. what do?
     }
