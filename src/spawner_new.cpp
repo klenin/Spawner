@@ -310,7 +310,6 @@ bool spawner_new_c::init() {
     if (!init_runner() || !runners.size()) {
         return false;
     }
-
     for (int i = 0; i < runners.size(); i++) {
         if (runners[i]->get_options().controller) {
             // there must be only one controller process
@@ -318,6 +317,13 @@ bool spawner_new_c::init() {
             controller_index_ = i;
             control_mode_enabled = true;
             controller_buffer_ = std::make_shared<pipe_buffer_c>(runners[i]->get_input_pipe());
+        }
+    }
+    if (controller_index_ != -1) {
+        for (int i = 0; i < runners.size(); i++) {
+            if (i != controller_index_) {
+                runners[i]->start_suspended = true;
+            }
         }
     }
 

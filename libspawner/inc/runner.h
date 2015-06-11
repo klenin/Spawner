@@ -72,6 +72,7 @@ public:
     std::shared_ptr<pipe_c> get_pipe(const pipes_t &pipe_type);
     std::shared_ptr<input_pipe_c> get_input_pipe();
     std::shared_ptr<output_pipe_c> get_output_pipe();
+    bool start_suspended = false;
     void suspend();
     void resume();
     bool is_running();

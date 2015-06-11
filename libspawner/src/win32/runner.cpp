@@ -345,8 +345,12 @@ void runner::debug() {
 }
 
 void runner::requisites() {
-    if (ResumeThread(process_info.hThread) == (DWORD)-1) {
-        PANIC(get_win_last_error_string());
+    if (!start_suspended) {
+        if (ResumeThread(process_info.hThread) == (DWORD)-1) {
+            PANIC(get_win_last_error_string());
+        }
+    } else {
+        process_status = process_suspended;
     }
     for (auto& it : pipes) {
         std::shared_ptr<pipe_c> pipe = it.second;
