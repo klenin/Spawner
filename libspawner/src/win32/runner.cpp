@@ -395,7 +395,9 @@ unsigned long runner::get_exit_code() {
 
 process_status_t runner::get_process_status() {
     //renew process status
-    if (process_status & process_finished_normal || process_status == process_suspended || process_status == process_not_started) {
+    if (process_status & process_finished_normal
+     || process_status == process_suspended
+     || process_status == process_not_started) {
         return process_status;
     }
     unsigned long exitcode = get_exit_code();
@@ -489,12 +491,14 @@ void runner::run_process() {
         return;
     }
     create_process();
-    if (get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal) {
+    if (get_process_status() == process_spawner_crash
+     || get_process_status() & process_finished_normal) {
         return;
     }
     running = true;
     requisites();
-    if (get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal) {
+    if (get_process_status() == process_spawner_crash
+     || get_process_status() & process_finished_normal) {
         return;
     }
     wait();
@@ -506,7 +510,8 @@ void runner::run_process_async() {
 }
 
 bool runner::wait_for(const unsigned long &interval) {
-    if (get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal) {
+    if (get_process_status() == process_spawner_crash
+     || get_process_status() & process_finished_normal) {
         return true;
     }
     if (!running_async) {
@@ -550,4 +555,59 @@ std::shared_ptr<input_pipe_c> runner::get_input_pipe() {
 
 std::shared_ptr<output_pipe_c> runner::get_output_pipe() {
     return std::static_pointer_cast<output_pipe_c>(get_pipe(STD_INPUT_PIPE));
+}
+
+void runner::enumerate_threads_(std::function<void(handle_t)> on_thread) {
+    if (!is_running()) {
+        return;
+    }
+    HANDLE thread_snapshot_h = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+    if (thread_snapshot_h == handle_default_value) {
+        return;
+    }
+    THREADENTRY32 thread_entry;
+    thread_entry.dwSize = sizeof(thread_entry);
+    if (!Thread32First(thread_snapshot_h, &thread_entry)) {
+        return;
+    }
+    do {
+        if (thread_entry.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) +
+            sizeof(thread_entry.th32OwnerProcessID) && thread_entry.th32OwnerProcessID == process_info.dwProcessId) {
+            handle_t handle = OpenThread(THREAD_ALL_ACCESS, FALSE, thread_entry.th32ThreadID);
+            if (on_thread) {
+                on_thread(handle);
+            }
+            CloseHandle(handle);
+        }
+        thread_entry.dwSize = sizeof(thread_entry);
+    } while (Thread32Next(thread_snapshot_h, &thread_entry));
+    CloseHandle(thread_snapshot_h);
+}
+
+void runner::suspend()
+{
+    if (get_process_status() != process_still_active) {
+        return;
+    }
+    enumerate_threads_([](handle_t handle) {
+        SuspendThread(handle);
+    });
+    process_status = process_suspended;
+}
+
+void runner::resume()
+{
+    if (get_process_status() != process_suspended) {
+        return;
+    }
+    enumerate_threads_([](handle_t handle) {
+        ResumeThread(handle);
+    });
+    process_status = process_still_active;
+    get_process_status();
+}
+
+bool runner::is_running()
+{
+    return running || ((get_process_status() & process_still_active) != 0);
 }

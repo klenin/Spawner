@@ -31,7 +31,6 @@ struct restrictions_class
     restriction_t get_restriction(const restriction_kind_t &kind) const;
     restriction_t &operator [](const restriction_kind_t &kind);
     restriction_t &operator [](int i);
-    //void create_restriction_objects(const session_class &session, handle_t *job, handle_t *completition_port);
     static restriction_kind_t restriction_by_name(const std::string &name);
 };
 

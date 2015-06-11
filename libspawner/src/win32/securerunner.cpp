@@ -84,16 +84,7 @@ void secure_runner::apply_restrictions()
 void secure_runner::create_process()
 {
     runner::create_process();
-    //SetProcessAffinityMask(process_info.hProcess, 1);
     create_restrictions();
-    //check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);// may be move this to wait function
-}
-
-thread_return_t secure_runner::process_completition_proc( thread_param_t param )
-{
-    secure_runner *self = (secure_runner*)param;
-    self->wait();
-    return 0;
 }
 
 thread_return_t secure_runner::check_limits_proc( thread_param_t param )
@@ -173,42 +164,6 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
         Sleep(1);
     }
     return 0;
-}
-
-void secure_runner::dump_threads( bool suspend )
-{
-    //if process is active and started!!!
-    if (!is_running())
-        return;
-    //while (threads.empty())
-    //{
-    //CloseHandle(threads.begin()
-    //}
-    threads.clear();
-    HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-    if (h != handle_default_value)
-    {
-        THREADENTRY32 te;
-        te.dwSize = sizeof(te);
-        if (Thread32First(h, &te))
-        {
-            do {
-                if (te.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) +
-                    sizeof(te.th32OwnerProcessID) && te.th32OwnerProcessID == process_info.dwProcessId)
-                {
-                    handle_t handle = OpenThread(THREAD_ALL_ACCESS, FALSE, te.th32ThreadID);
-                    if (suspend)
-                        SuspendThread(handle);
-                    //may be close here??
-                    threads.push_back(handle);
-                    /*printf("Process 0x%04x Thread 0x%04x\n",
-                    te.th32OwnerProcessID, te.th32ThreadID);*/
-                }
-                te.dwSize = sizeof(te);
-            } while (Thread32Next(h, &te));
-        }
-        CloseHandle(h);
-    }
 }
 
 void secure_runner::free()
@@ -322,9 +277,6 @@ void secure_runner::requisites()
     runner::requisites();
 
     check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
-    //completition = CreateThread(NULL, 0, process_completition_proc, this, 0, NULL);
-    //WaitForSingleObject(completition, 100); // TODO fix this
-    //create in another thread waiting function
 }
 
 terminate_reason_t secure_runner::get_terminate_reason() {
@@ -368,38 +320,8 @@ restrictions_class secure_runner::get_restrictions() const
 
 process_status_t secure_runner::get_process_status()
 {
-    if (process_status == process_finished_terminated || process_status == process_suspended)
+    if (process_status == process_finished_terminated
+     || process_status == process_suspended)
         return process_status;
     return runner::get_process_status();
-}
-
-bool secure_runner::is_running()
-{
-    if (running)
-        return true;
-    return (get_process_status() & process_still_active) != 0;
-}
-
-void secure_runner::suspend()
-{
-    if (get_process_status() != process_still_active)
-        return;
-    dump_threads(true);
-    process_status = process_suspended;
-    //SuspendThread(process_info.hThread);
-}
-
-void secure_runner::resume()
-{
-    if (get_process_status() != process_suspended)
-        return;
-    while (!threads.empty())
-    {
-        handle_t handle = threads.front();
-        threads.pop_front();
-        ResumeThread(handle);
-        CloseHandle(handle);
-    }
-    process_status = process_still_active;
-    get_process_status();
 }

@@ -46,6 +46,7 @@ protected:
     virtual void debug();
     virtual void requisites();
     static thread_return_t async_body(thread_param_t param);
+    void enumerate_threads_(std::function<void(handle_t)> on_thread);
 public:
     runner(const std::string &program, const options_class &options);
     virtual ~runner();
@@ -71,4 +72,7 @@ public:
     std::shared_ptr<pipe_c> get_pipe(const pipes_t &pipe_type);
     std::shared_ptr<input_pipe_c> get_input_pipe();
     std::shared_ptr<output_pipe_c> get_output_pipe();
+    void suspend();
+    void resume();
+    bool is_running();
 };
