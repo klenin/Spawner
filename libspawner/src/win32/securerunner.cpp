@@ -262,6 +262,10 @@ void secure_runner::wait()
         };
     } while (waiting);
 
+    if (on_terminate) {
+        on_terminate();
+    }
+
     if (postLoopWaiting)
     {
         GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);

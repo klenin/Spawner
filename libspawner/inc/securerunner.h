@@ -2,6 +2,7 @@
 
 #include <string>
 #include <atomic>
+#include <functional>
 
 #include "runner.h"
 
@@ -39,4 +40,5 @@ public:
     virtual report_class get_report();
     void prolong_time_limits();
     bool force_stop = false;
+    std::function<void()> on_terminate;
 };
