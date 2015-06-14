@@ -119,7 +119,8 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             break;
         }
 
-        if (self->prolong_time_limits_ || self->get_process_status() == process_suspended) {
+        if (self->prolong_time_limits_
+         || self->get_process_status_no_side_effects() == process_suspended) {
             self->base_time_processor_ = bai.BasicInfo.TotalUserTime.QuadPart;
             self->base_time_user_ = self->get_time_since_create();
             self->prolong_time_limits_ = false;

@@ -397,6 +397,10 @@ unsigned long runner::get_exit_code() {
     return dwExitCode;
 }
 
+process_status_t runner::get_process_status_no_side_effects() {
+    return process_status;
+}
+
 process_status_t runner::get_process_status() {
     //renew process status
     if (process_status & process_finished_normal
