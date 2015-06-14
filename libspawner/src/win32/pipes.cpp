@@ -50,7 +50,6 @@ void pipe_c::create_pipe()
     if (CreatePipe(&readPipe, &writePipe, &saAttr, 0) == 0) {
         PANIC(get_win_last_error_string());
     }
-    write_mutex.possess();
 }
 
 void pipe_c::close_pipe() {
@@ -61,7 +60,6 @@ void pipe_c::close_pipe() {
         CloseHandleSafe(writePipe);
     }
     finish();
-    write_mutex.release();
 }
 
 pipe_c::~pipe_c() {
@@ -221,7 +219,6 @@ pipe_t input_pipe_c::get_pipe()
 
 void hexDump(const void *addr, int len) {
     static mutex_c mutex;
-    mutex.possess();
     mutex.lock();
     int i;
     unsigned char buff[17];
@@ -250,7 +247,6 @@ void hexDump(const void *addr, int len) {
 
     dprintf ("  %s\n", buff);
     mutex.unlock();
-    mutex.release();
 }
 
 thread_return_t output_pipe_c::drain_pipe_thread(thread_param_t param)

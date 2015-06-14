@@ -26,10 +26,8 @@ public:
 class output_buffer_c: public virtual buffer_c {
 public:
     output_buffer_c() {
-        write_mutex_.possess();
     }
     virtual ~output_buffer_c() {
-        write_mutex_.release();
     }
     virtual bool writable() = 0;
     size_t write(const void *data, size_t size) {

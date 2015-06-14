@@ -11,14 +11,12 @@ spawner_new_c::spawner_new_c(settings_parser_c &parser)
     , order(0)
     , base_initialized(false)
     , control_mode_enabled(false) {
-    wait_normal_mutex_.possess();
 }
 
 spawner_new_c::~spawner_new_c() {
     for (auto& i : runners) {
         delete i;
     }
-    wait_normal_mutex_.release();
 }
 
 void spawner_new_c::json_report(runner *runner_instance,

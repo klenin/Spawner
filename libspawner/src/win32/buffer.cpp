@@ -106,11 +106,9 @@ output_stdout_buffer_c::output_stdout_buffer_c(const unsigned int &color_param)
     dont_close_handle_ = true;
     handle_t handle = GetStdHandle(STD_OUTPUT_HANDLE);
     init_handle(handle);
-    stdout_write_mutex_.possess();
 }
 
 output_stdout_buffer_c::~output_stdout_buffer_c() {
-    stdout_write_mutex_.release();
 }
 
 bool output_stdout_buffer_c::writable() {
