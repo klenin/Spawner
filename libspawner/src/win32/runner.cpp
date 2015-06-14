@@ -594,6 +594,7 @@ void runner::enumerate_threads_(std::function<void(handle_t)> on_thread) {
 
 void runner::suspend()
 {
+    suspend_mutex_.lock();
     if (get_process_status() != process_still_active) {
         return;
     }
@@ -601,10 +602,12 @@ void runner::suspend()
         SuspendThread(handle);
     });
     process_status = process_suspended;
+    suspend_mutex_.unlock();
 }
 
 void runner::resume()
 {
+    suspend_mutex_.lock();
     if (get_process_status() != process_suspended) {
         return;
     }
@@ -613,6 +616,7 @@ void runner::resume()
     });
     process_status = process_still_active;
     get_process_status();
+    suspend_mutex_.unlock();
 }
 
 bool runner::is_running()
