@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/writer.h"
@@ -22,6 +23,8 @@ protected:
     settings_parser_c &parser;
     std::vector<runner*> runners;
     size_t order;
+    bool control_mode_enabled;
+    std::map<std::shared_ptr<output_buffer_c>, int> buffer_to_runner_index_;
 
 public:
     spawner_new_c(settings_parser_c &parser);
