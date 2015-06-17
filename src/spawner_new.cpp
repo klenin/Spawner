@@ -220,6 +220,7 @@ void spawner_new_c::process_controller_message_(const std::string& message, outp
     case 'S': {
         int runner_index = normal_to_runner_index_(normal_index);
         static_cast<secure_runner*>(runners[runner_index])->force_stop = true;
+        break;
     }
     default:
         send_to_normal = true;
