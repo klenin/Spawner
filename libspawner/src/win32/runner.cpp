@@ -596,6 +596,7 @@ void runner::suspend()
 {
     suspend_mutex_.lock();
     if (get_process_status() != process_still_active) {
+        suspend_mutex_.unlock();
         return;
     }
     enumerate_threads_([](handle_t handle) {
@@ -609,6 +610,7 @@ void runner::resume()
 {
     suspend_mutex_.lock();
     if (get_process_status() != process_suspended) {
+        suspend_mutex_.unlock();
         return;
     }
     enumerate_threads_([](handle_t handle) {
