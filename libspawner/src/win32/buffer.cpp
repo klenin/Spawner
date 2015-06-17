@@ -32,6 +32,12 @@ size_t duplex_buffer_c::write_impl_(const void *data, size_t size) {
     return bytes_written;
 }
 
+int duplex_buffer_c::peek() const {
+    DWORD bytes_available = 0;
+    const BOOL peek_result = PeekNamedPipe(in, NULL, 0, NULL, &bytes_available, NULL);
+    return bytes_available;
+}
+
 handle_buffer_c::handle_buffer_c()
     : stream(handle_default_value) {
 }

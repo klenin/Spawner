@@ -21,6 +21,10 @@ class input_buffer_c: public virtual buffer_c {
 public:
     virtual bool readable() = 0;
     virtual size_t read(void *data, size_t size) = 0;
+    virtual int peek() const {
+        // dummy implementation for all buffers but duplex one
+        return 1;
+    }
 };
 
 class output_buffer_c: public virtual buffer_c {
@@ -55,6 +59,7 @@ public:
     virtual bool writable();
     virtual size_t read(void *data, size_t size);
     virtual size_t write_impl_(const void *data, size_t size);
+    virtual int peek() const;
 };
 
 class handle_buffer_c {
