@@ -363,9 +363,33 @@ bool spawner_new_c::init() {
     if (controller_index_ != -1) {
         awaited_normals_.resize(runners.size() - 1);
         for (int i = 0; i < runners.size(); i++) {
+            secure_runner* sr = static_cast<secure_runner*>(runners[i]);
             if (i != controller_index_) {
-                runners[i]->start_suspended = true;
+                sr->start_suspended = true;
             }
+            sr->on_terminate = [=]() {
+                on_terminate_mutex_.lock();
+                for (auto& r : runners) {
+                    if (r == sr) {
+                        continue;
+                    }
+                    for (auto& b : sr->duplex_buffers) {
+                        for (int pi = STD_INPUT_PIPE; pi <= STD_ERROR_PIPE; pi++) {
+                            auto& p = r->get_pipe(static_cast<pipes_t>(pi));
+                            p->remove_buffer(b);
+                        }
+                    }
+                }
+
+                if (i > 0 && awaited_normals_[i - 1]) {
+                    wait_normal_mutex_.lock();
+                    awaited_normals_[i - 1] = false;
+                    std::string message = std::to_string(i) + "I#\n";
+                    controller_buffer_->write(message.c_str(), message.size());
+                    wait_normal_mutex_.unlock();
+                }
+                on_terminate_mutex_.unlock();
+            };
         }
     }
 

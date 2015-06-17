@@ -30,6 +30,7 @@ protected:
     std::shared_ptr<pipe_buffer_c> controller_buffer_;
     int controller_index_ = -1;
     mutex_c wait_normal_mutex_;
+    mutex_c on_terminate_mutex_;
     std::vector<bool> awaited_normals_;
     void setup_stream_(const std::string& stream_str, pipes_t this_pipe_type, runner* this_runner);
     void process_controller_message_(const std::string& message, output_pipe_c* pipe);

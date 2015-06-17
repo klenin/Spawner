@@ -201,6 +201,7 @@ void secure_runner::wait()
     LPOVERLAPPED completedOverlapped;
     bool waiting;
     bool postLoopWaiting = true;
+    bool terminate = false;
     do
     {
         waiting = false;
@@ -210,14 +211,12 @@ void secure_runner::wait()
         switch (dwNumBytes)
         {
         case JOB_OBJECT_MSG_END_OF_PROCESS_TIME:
-            TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_time_limit;
-            process_status = process_finished_terminated;
+            terminate = true;
             break;
         case JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT:
-            TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_write_limit;
-            process_status = process_finished_terminated;
+            terminate = true;
             break;
         case JOB_OBJECT_MSG_EXIT_PROCESS:
             postLoopWaiting = false;
@@ -227,34 +226,28 @@ void secure_runner::wait()
             terminate_reason = terminate_reason_abnormal_exit_process;
             break;
         case JOB_OBJECT_MSG_PROCESS_MEMORY_LIMIT:
-            TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_memory_limit;
-            process_status = process_finished_terminated;
+            terminate = true;
             break;
         case JOB_OBJECT_MSG_JOB_MEMORY_LIMIT:
-            TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_memory_limit;
-            process_status = process_finished_terminated;
+            terminate = true;
             break;
         case JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT:
-            TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_user_time_limit;
-            process_status = process_finished_terminated;
+            terminate = true;
             break;
         case JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT:
-            TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_load_ratio_limit;
-            process_status = process_finished_terminated;
+            terminate = true;
             break;
         case JOB_OBJECT_MSG_PROCESS_COUNT_LIMIT:
-            TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_created_process;
-            process_status = process_finished_terminated;
+            terminate = true;
             break;
         case JOB_OBJECT_MSG_PROCESS_CONTROLLER_STOP:
-            TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_by_controller;
-            process_status = process_finished_terminated;
+            terminate = true;
             break;
         default:
             waiting = true;
@@ -264,6 +257,11 @@ void secure_runner::wait()
 
     if (on_terminate) {
         on_terminate();
+    }
+
+    if (terminate) {
+        process_status = process_finished_terminated;
+        TerminateJobObject(hJob, 0);
     }
 
     if (postLoopWaiting)
