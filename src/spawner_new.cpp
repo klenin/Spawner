@@ -302,6 +302,8 @@ void spawner_new_c::setup_stream_(const std::string& stream_str, pipes_t this_pi
     }
 
     std::shared_ptr<duplex_buffer_c> buffer = std::make_shared<duplex_buffer_c>();
+    in_pipe_runner->duplex_buffers.push_back(buffer);
+    out_pipe_runner->duplex_buffers.push_back(buffer);
     input_pipe->add_input_buffer(buffer);
     output_pipe->add_output_buffer(buffer);
 

@@ -78,4 +78,5 @@ public:
     void suspend();
     void resume();
     bool is_running();
+    std::vector<std::shared_ptr<duplex_buffer_c>> duplex_buffers;
 };
