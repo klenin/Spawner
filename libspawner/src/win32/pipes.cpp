@@ -177,20 +177,8 @@ input_pipe_c::input_pipe_c()
 
 }
 
-input_pipe_c::input_pipe_c(std::shared_ptr<input_buffer_c> input_buffer_param)
-    : pipe_c(PIPE_INPUT) {
-
-    input_buffers.push_back(input_buffer_param);
-}
-
 input_pipe_c::~input_pipe_c() {
     wait();
-}
-
-input_pipe_c::input_pipe_c(std::vector<std::shared_ptr<input_buffer_c>> input_buffer_param)
-    : pipe_c(PIPE_INPUT)
-    , input_buffers(input_buffer_param) {
-
 }
 
 void input_pipe_c::add_input_buffer(std::shared_ptr<input_buffer_c> input_buffer_param) {
@@ -338,20 +326,8 @@ output_pipe_c::output_pipe_c()
 
 }
 
-output_pipe_c::output_pipe_c(std::shared_ptr<output_buffer_c> output_buffer_param)
-    : pipe_c(PIPE_OUTPUT) {
-
-    output_buffers.push_back(output_buffer_param);
-}
-
 output_pipe_c::~output_pipe_c() {
     wait();
-}
-
-output_pipe_c::output_pipe_c(std::vector<std::shared_ptr<output_buffer_c>> output_buffer_param)
-    : pipe_c(PIPE_OUTPUT)
-    , output_buffers(output_buffer_param) {
-
 }
 
 void output_pipe_c::add_output_buffer(std::shared_ptr<output_buffer_c> output_buffer_param) {

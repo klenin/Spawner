@@ -62,8 +62,6 @@ protected:
 public:
     input_pipe_c();
     virtual ~input_pipe_c();
-    input_pipe_c(std::shared_ptr<input_buffer_c> input_buffer_param);
-    input_pipe_c(std::vector<std::shared_ptr<input_buffer_c>> input_buffer_param);
     virtual void add_input_buffer(std::shared_ptr<input_buffer_c> input_buffer_param);
     virtual void bufferize();
     virtual pipe_t get_pipe();
@@ -77,8 +75,6 @@ protected:
 public:
     output_pipe_c();
     virtual ~output_pipe_c();
-    output_pipe_c(std::shared_ptr<output_buffer_c> output_buffer_param);
-    output_pipe_c(std::vector<std::shared_ptr<output_buffer_c>> output_buffer_param);
     virtual void add_output_buffer(std::shared_ptr<output_buffer_c> output_buffer_param);
     virtual void bufferize();
     virtual pipe_t get_pipe();
