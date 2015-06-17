@@ -3,6 +3,8 @@
 #include <atomic>
 #include <windows.h>
 
+#include "error.h"
+
 class mutex_c {
 public:
     mutex_c() {
@@ -11,6 +13,9 @@ public:
                 // TODO: report invalid state
             }
             handle = CreateMutex(NULL, FALSE, NULL);
+            if (handle == NULL) {
+                PANIC(get_win_last_error_string());
+            }
         }
         std::atomic_fetch_add_explicit(&instance_count_, 1u, std::memory_order_relaxed);
     }
@@ -26,12 +31,33 @@ public:
         }
     }
 
-    bool lock() {
-        return WaitForSingleObject(handle, INFINITE) == WAIT_OBJECT_0;
+    void lock() {
+        DWORD wait_result = WaitForSingleObject(handle, INFINITE);
+        switch (wait_result) {
+        case WAIT_OBJECT_0:
+        case WAIT_TIMEOUT:
+            break;
+        default:
+            PANIC(get_win_last_error_string());
+        }
+    }
+
+    bool is_locked() {
+        DWORD wait_result = WaitForSingleObject(handle, 0);
+        switch (wait_result) {
+        case WAIT_OBJECT_0:
+            return false;
+        case WAIT_TIMEOUT:
+            return true;
+        default:
+            PANIC(get_win_last_error_string());
+        }
     }
 
     void unlock() {
-        ReleaseMutex(handle);
+        if (!ReleaseMutex(handle)) {
+            PANIC(get_win_last_error_string());
+        }
     }
 
 private:
