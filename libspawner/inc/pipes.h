@@ -40,7 +40,10 @@ protected:
     void wait();
     std::atomic<bool> stop_thread_ = false;
     std::atomic<bool> done_io_ = false;
+    mutex_c buffers_mutex_;
+    std::shared_ptr<buffer_c> last_buffer_;
     std::vector<std::shared_ptr<buffer_c>> buffers_;
+    virtual void remove_buffer_safe_impl_(const std::shared_ptr<buffer_c>& buffer) = 0;
 public:
     pipe_c();
     pipe_c(const std_pipe_t &pipe_type);
@@ -52,6 +55,7 @@ public:
     void finish();
     bool valid();
     virtual pipe_t get_pipe();
+    void remove_buffer(const std::shared_ptr<buffer_c>& buffer);
 };
 
 class input_pipe_c: public pipe_c
@@ -59,6 +63,7 @@ class input_pipe_c: public pipe_c
 protected:
     static thread_return_t fill_pipe_thread(thread_param_t param);
     std::vector<std::shared_ptr<input_buffer_c>> input_buffers;
+    virtual void remove_buffer_safe_impl_(const std::shared_ptr<buffer_c>& buffer);
 public:
     input_pipe_c();
     virtual ~input_pipe_c();
@@ -72,6 +77,7 @@ class output_pipe_c: public pipe_c
 protected:
     static thread_return_t drain_pipe_thread(thread_param_t param);
     std::string message_buffer;
+    void remove_buffer_safe_impl_(const std::shared_ptr<buffer_c>& buffer);
     std::vector<std::shared_ptr<output_buffer_c>> output_buffers;
 public:
     output_pipe_c();

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <AccCtrl.h>
 #include <Aclapi.h>//advapi32.lib
+#include <algorithm>
 
 #include "error.h"
 
@@ -147,26 +148,28 @@ thread_return_t input_pipe_c::fill_pipe_thread(thread_param_t param) {
             return 0;
         }
     }
-    size_t can_continue = 1;
-    while (can_continue) {
+
+    while (true) {
         if (self->stop_thread_) {
             break;
         }
-        can_continue = 0;
+        self->buffers_mutex_.lock();
         for (uint i = 0; i < self->input_buffers.size(); ++i) {
-            if (self->stop_thread_) {
-                break;
+            self->last_buffer_ = self->input_buffers[i];
+            if (self->input_buffers[i]->peek() > 0) {
+                read_count = self->input_buffers[i]->read(buffer, DEFAULT_BUFFER_SIZE);
+                if (!self->write(buffer, read_count)) {
+                    self->buffers_mutex_.unlock();
+                    self->done_io_ = true;
+                    return 0;
+                }
             }
-            read_count = self->input_buffers[i]->read(buffer, DEFAULT_BUFFER_SIZE);
-            if (self->stop_thread_) {
-                break;
+            else {
+                Sleep(10);
             }
-            if (!self->write(buffer, read_count)) {
-                self->done_io_ = true;
-                return 0;
-            }
-            can_continue += read_count!=0;
         }
+        Sleep(10);
+        self->buffers_mutex_.unlock();
     }
     self->done_io_ = true;
     return 0;
@@ -301,6 +304,7 @@ thread_return_t output_pipe_c::drain_pipe_thread(thread_param_t param)
             if (p1 > 0) {
                 std::string message = self->message_buffer.substr(0, p1 + 1);
                 self->message_buffer = self->message_buffer.substr(p1 + 1);
+                self->buffers_mutex_.lock();
                 if (self->process_message) {
                     self->process_message(message, self);
                 }
@@ -309,6 +313,7 @@ thread_return_t output_pipe_c::drain_pipe_thread(thread_param_t param)
                         self->write_buffer(i, message.c_str(), message.size());
                     }
                 }
+                self->buffers_mutex_.unlock();
             }
         } while (p1 != 0);
 
@@ -350,3 +355,36 @@ pipe_t output_pipe_c::get_pipe()
     return output_pipe();
 }
 
+void pipe_c::remove_buffer(const std::shared_ptr<buffer_c>& buffer) {
+    bool present = false;
+    for (auto& b : buffers_) {
+        if (b == buffer) {
+            present = true;
+        }
+    }
+    if (!present) {
+        return;
+    }
+    if (last_buffer_ == buffer) {
+        while (buffers_mutex_.is_locked()) {
+            CancelSynchronousIo_wrapper(buffer_thread);
+        }
+        buffers_mutex_.unlock();
+    }
+    buffers_mutex_.lock();
+    buffers_.erase(std::remove(buffers_.begin(), buffers_.end(), buffer), buffers_.end());
+    remove_buffer_safe_impl_(buffer);
+    buffers_mutex_.unlock();
+}
+
+void input_pipe_c::remove_buffer_safe_impl_(const std::shared_ptr<buffer_c>& buffer) {
+    input_buffers.erase(
+        std::remove(input_buffers.begin(), input_buffers.end(), buffer),
+        input_buffers.end());
+}
+
+void output_pipe_c::remove_buffer_safe_impl_(const std::shared_ptr<buffer_c>& buffer) {
+    output_buffers.erase(
+        std::remove(output_buffers.begin(), output_buffers.end(), buffer),
+        output_buffers.end());
+}
