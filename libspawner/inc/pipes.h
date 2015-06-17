@@ -40,7 +40,7 @@ protected:
     void wait();
     std::atomic<bool> stop_thread_ = false;
     std::atomic<bool> done_io_ = false;
-
+    std::vector<std::shared_ptr<buffer_c>> buffers_;
 public:
     pipe_c();
     pipe_c(const std_pipe_t &pipe_type);

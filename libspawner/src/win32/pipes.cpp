@@ -183,6 +183,7 @@ input_pipe_c::~input_pipe_c() {
 
 void input_pipe_c::add_input_buffer(std::shared_ptr<input_buffer_c> input_buffer_param) {
     input_buffers.push_back(input_buffer_param);
+    buffers_.push_back(input_buffer_param);
 }
 
 void input_pipe_c::bufferize()
@@ -332,6 +333,7 @@ output_pipe_c::~output_pipe_c() {
 
 void output_pipe_c::add_output_buffer(std::shared_ptr<output_buffer_c> output_buffer_param) {
     output_buffers.push_back(output_buffer_param);
+    buffers_.push_back(output_buffer_param);
 }
 
 void output_pipe_c::bufferize()
