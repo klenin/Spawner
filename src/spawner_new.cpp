@@ -226,21 +226,21 @@ void spawner_new_c::process_controller_message_(const std::string& message, outp
         break;
     }
 
-    for (uint i = 0; i < pipe->output_buffers.size(); ++i) {
-        auto& buffer = pipe->output_buffers[i];
+    for (uint i = 0; i < pipe->get_buffer_count(); ++i) {
+        auto& buffer = pipe->get_output_buffer(i);
         auto at_index = buffer_to_runner_index_.find(buffer);
         if (at_index == buffer_to_runner_index_.end()) {
-            buffer->write(message.c_str(), message.size());
+            pipe->write_buffer(i, message.c_str(), message.size());
         } else if (send_to_normal && at_index->second == normal_index) {
-            buffer->write(message.c_str() + hash_pos + 1, message.size() - hash_pos - 1);
+            pipe->write_buffer(i, message.c_str() + hash_pos + 1, message.size() - hash_pos - 1);
         }
     }
 }
 
 void spawner_new_c::process_normal_message_(const std::string& message, output_pipe_c* pipe, int normal_index) {
     std::string mod_message = std::to_string(normal_index) + "#" + message;
-    for (uint i = 0; i < pipe->output_buffers.size(); ++i) {
-        pipe->output_buffers[i]->write(mod_message.c_str(), mod_message.size());
+    for (uint i = 0; i < pipe->get_buffer_count(); ++i) {
+        pipe->write_buffer(i, mod_message.c_str(), mod_message.size());
     }
     wait_normal_mutex_.lock();
     if (awaited_normals_[normal_index - 1]) {

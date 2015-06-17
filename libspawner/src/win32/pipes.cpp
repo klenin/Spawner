@@ -305,7 +305,7 @@ thread_return_t output_pipe_c::drain_pipe_thread(thread_param_t param)
                 }
                 else {
                     for (uint i = 0; i < self->output_buffers.size(); ++i) {
-                        self->output_buffers[i]->write(message.c_str(), message.size());
+                        self->write_buffer(i, message.c_str(), message.size());
                     }
                 }
             }

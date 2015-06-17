@@ -72,13 +72,22 @@ class output_pipe_c: public pipe_c
 protected:
     static thread_return_t drain_pipe_thread(thread_param_t param);
     std::string message_buffer;
+    std::vector<std::shared_ptr<output_buffer_c>> output_buffers;
 public:
     output_pipe_c();
     virtual ~output_pipe_c();
     virtual void add_output_buffer(std::shared_ptr<output_buffer_c> output_buffer_param);
     virtual void bufferize();
     virtual pipe_t get_pipe();
-
+    size_t get_buffer_count() const {
+        return output_buffers.size();
+    }
+    void write_buffer(int buffer_index, const void *data, size_t size) {
+        last_buffer_ = output_buffers[buffer_index];
+        output_buffers[buffer_index]->write(data, size);
+    }
+    const std::shared_ptr<output_buffer_c> get_output_buffer(int i) const {
+        return output_buffers[i];
+    }
     std::function<void(std::string&, output_pipe_c*)> process_message;
-    std::vector<std::shared_ptr<output_buffer_c>> output_buffers;
 };
