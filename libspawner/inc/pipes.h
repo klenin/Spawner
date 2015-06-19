@@ -26,6 +26,8 @@ enum std_pipe_t {
 
 class pipe_c
 {
+private:
+    mutex_c write_mutex;
 protected:
     void create_pipe();
     handle_t buffer_thread;
@@ -38,7 +40,10 @@ protected:
     void wait();
     std::atomic<bool> stop_thread_ = false;
     std::atomic<bool> done_io_ = false;
-
+    mutex_c buffers_mutex_;
+    std::shared_ptr<buffer_c> last_buffer_;
+    std::vector<std::shared_ptr<buffer_c>> buffers_;
+    virtual void remove_buffer_safe_impl_(const std::shared_ptr<buffer_c>& buffer) = 0;
 public:
     pipe_c();
     pipe_c(const std_pipe_t &pipe_type);
@@ -50,6 +55,7 @@ public:
     void finish();
     bool valid();
     virtual pipe_t get_pipe();
+    void remove_buffer(const std::shared_ptr<buffer_c>& buffer);
 };
 
 class input_pipe_c: public pipe_c
@@ -57,11 +63,10 @@ class input_pipe_c: public pipe_c
 protected:
     static thread_return_t fill_pipe_thread(thread_param_t param);
     std::vector<std::shared_ptr<input_buffer_c>> input_buffers;
+    virtual void remove_buffer_safe_impl_(const std::shared_ptr<buffer_c>& buffer);
 public:
     input_pipe_c();
     virtual ~input_pipe_c();
-    input_pipe_c(std::shared_ptr<input_buffer_c> input_buffer_param);
-    input_pipe_c(std::vector<std::shared_ptr<input_buffer_c>> input_buffer_param);
     virtual void add_input_buffer(std::shared_ptr<input_buffer_c> input_buffer_param);
     virtual void bufferize();
     virtual pipe_t get_pipe();
@@ -72,15 +77,23 @@ class output_pipe_c: public pipe_c
 protected:
     static thread_return_t drain_pipe_thread(thread_param_t param);
     std::string message_buffer;
+    void remove_buffer_safe_impl_(const std::shared_ptr<buffer_c>& buffer);
+    std::vector<std::shared_ptr<output_buffer_c>> output_buffers;
 public:
     output_pipe_c();
     virtual ~output_pipe_c();
-    output_pipe_c(std::shared_ptr<output_buffer_c> output_buffer_param);
-    output_pipe_c(std::vector<std::shared_ptr<output_buffer_c>> output_buffer_param);
     virtual void add_output_buffer(std::shared_ptr<output_buffer_c> output_buffer_param);
     virtual void bufferize();
     virtual pipe_t get_pipe();
-
+    size_t get_buffer_count() const {
+        return output_buffers.size();
+    }
+    void write_buffer(int buffer_index, const void *data, size_t size) {
+        last_buffer_ = output_buffers[buffer_index];
+        output_buffers[buffer_index]->write(data, size);
+    }
+    const std::shared_ptr<output_buffer_c> get_output_buffer(int i) const {
+        return output_buffers[i];
+    }
     std::function<void(std::string&, output_pipe_c*)> process_message;
-    std::vector<std::shared_ptr<output_buffer_c>> output_buffers;
 };

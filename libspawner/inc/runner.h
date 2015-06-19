@@ -20,6 +20,7 @@ private:
     env_vars_list_t read_environment(const WCHAR* source) const;
     env_vars_list_t set_environment_for_process() const;
     void restore_original_environment(const env_vars_list_t& original) const;
+    mutex_c suspend_mutex_;
 protected:
     unsigned long long creation_time;
     DWORD process_creation_flags;
@@ -46,11 +47,13 @@ protected:
     virtual void debug();
     virtual void requisites();
     static thread_return_t async_body(thread_param_t param);
+    void enumerate_threads_(std::function<void(handle_t)> on_thread);
 public:
     runner(const std::string &program, const options_class &options);
     virtual ~runner();
     unsigned long get_exit_code();
     virtual process_status_t get_process_status();
+    process_status_t get_process_status_no_side_effects();
     exception_t get_exception();
     unsigned long get_id();
     std::string get_program() const;
@@ -69,4 +72,11 @@ public:
     virtual void safe_release();
     void set_pipe(const pipes_t &pipe_type, std::shared_ptr<pipe_c> pipe_object);
     std::shared_ptr<pipe_c> get_pipe(const pipes_t &pipe_type);
+    std::shared_ptr<input_pipe_c> get_input_pipe();
+    std::shared_ptr<output_pipe_c> get_output_pipe();
+    bool start_suspended = false;
+    void suspend();
+    void resume();
+    bool is_running();
+    std::vector<std::shared_ptr<duplex_buffer_c>> duplex_buffers;
 };

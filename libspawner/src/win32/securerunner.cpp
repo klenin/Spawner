@@ -84,23 +84,13 @@ void secure_runner::apply_restrictions()
 void secure_runner::create_process()
 {
     runner::create_process();
-    //SetProcessAffinityMask(process_info.hProcess, 1);
     create_restrictions();
-    //check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);// may be move this to wait function
-}
-
-thread_return_t secure_runner::process_completition_proc( thread_param_t param )
-{
-    secure_runner *self = (secure_runner*)param;
-    self->wait();
-    return 0;
 }
 
 thread_return_t secure_runner::check_limits_proc( thread_param_t param )
 {
     secure_runner *self = (secure_runner*)param;
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
-    restrictions_class restrictions = self->restrictions;
 
     double total_rate = 10000.0;
     LONGLONG last_quad_part = 0;
@@ -112,6 +102,8 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
     unsigned long long dt = 0, idle_time = 0;
 
     while (1) {
+        restrictions_class restrictions = self->restrictions;
+
         if (!QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL))
             break;
 
@@ -127,13 +119,22 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             break;
         }
 
+        if (self->prolong_time_limits_
+         || self->get_process_status_no_side_effects() == process_suspended) {
+            self->base_time_processor_ = bai.BasicInfo.TotalUserTime.QuadPart;
+            self->base_time_user_ = self->get_time_since_create();
+            self->prolong_time_limits_ = false;
+        }
+
         if (restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit &&
-            (DOUBLE)bai.BasicInfo.TotalUserTime.QuadPart > 10*restrictions.get_restriction(restriction_processor_time_limit)) {
+            (DOUBLE)(bai.BasicInfo.TotalUserTime.QuadPart - self->base_time_processor_) >
+            10 * restrictions.get_restriction(restriction_processor_time_limit)) {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);
             break;
         }
         if (restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit &&
-            self->get_time_since_create() > 10*restrictions.get_restriction(restriction_user_time_limit)) {
+            (self->get_time_since_create() - self->base_time_user_) >
+            10 * restrictions.get_restriction(restriction_user_time_limit)) {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);//freezed
             break;
         }
@@ -170,45 +171,13 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_COUNT_LIMIT, COMPLETION_KEY, NULL);
             break;
         }
+        if (self->force_stop) {
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_CONTROLLER_STOP, COMPLETION_KEY, NULL);
+            break;
+        }
         Sleep(1);
     }
     return 0;
-}
-
-void secure_runner::dump_threads( bool suspend )
-{
-    //if process is active and started!!!
-    if (!is_running())
-        return;
-    //while (threads.empty())
-    //{
-    //CloseHandle(threads.begin()
-    //}
-    threads.clear();
-    HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-    if (h != handle_default_value)
-    {
-        THREADENTRY32 te;
-        te.dwSize = sizeof(te);
-        if (Thread32First(h, &te))
-        {
-            do {
-                if (te.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) +
-                    sizeof(te.th32OwnerProcessID) && te.th32OwnerProcessID == process_info.dwProcessId)
-                {
-                    handle_t handle = OpenThread(THREAD_ALL_ACCESS, FALSE, te.th32ThreadID);
-                    if (suspend)
-                        SuspendThread(handle);
-                    //may be close here??
-                    threads.push_back(handle);
-                    /*printf("Process 0x%04x Thread 0x%04x\n",
-                    te.th32OwnerProcessID, te.th32ThreadID);*/
-                }
-                te.dwSize = sizeof(te);
-            } while (Thread32Next(h, &te));
-        }
-        CloseHandle(h);
-    }
 }
 
 void secure_runner::free()
@@ -232,6 +201,7 @@ void secure_runner::wait()
     LPOVERLAPPED completedOverlapped;
     bool waiting;
     bool postLoopWaiting = true;
+    bool terminate = false;
     do
     {
         waiting = false;
@@ -241,14 +211,12 @@ void secure_runner::wait()
         switch (dwNumBytes)
         {
         case JOB_OBJECT_MSG_END_OF_PROCESS_TIME:
-            TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_time_limit;
-            process_status = process_finished_terminated;
+            terminate = true;
             break;
         case JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT:
-            TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_write_limit;
-            process_status = process_finished_terminated;
+            terminate = true;
             break;
         case JOB_OBJECT_MSG_EXIT_PROCESS:
             postLoopWaiting = false;
@@ -258,35 +226,43 @@ void secure_runner::wait()
             terminate_reason = terminate_reason_abnormal_exit_process;
             break;
         case JOB_OBJECT_MSG_PROCESS_MEMORY_LIMIT:
-            TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_memory_limit;
-            process_status = process_finished_terminated;
+            terminate = true;
             break;
         case JOB_OBJECT_MSG_JOB_MEMORY_LIMIT:
-            TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_memory_limit;
-            process_status = process_finished_terminated;
+            terminate = true;
             break;
         case JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT:
-            TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_user_time_limit;
-            process_status = process_finished_terminated;
+            terminate = true;
             break;
         case JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT:
-            TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_load_ratio_limit;
-            process_status = process_finished_terminated;
+            terminate = true;
             break;
         case JOB_OBJECT_MSG_PROCESS_COUNT_LIMIT:
-            TerminateJobObject(hJob, 0);
             terminate_reason = terminate_reason_created_process;
-            process_status = process_finished_terminated;
+            terminate = true;
+            break;
+        case JOB_OBJECT_MSG_PROCESS_CONTROLLER_STOP:
+            terminate_reason = terminate_reason_by_controller;
+            terminate = true;
             break;
         default:
             waiting = true;
             break;
         };
     } while (waiting);
+
+    if (on_terminate) {
+        on_terminate();
+    }
+
+    if (terminate) {
+        process_status = process_finished_terminated;
+        TerminateJobObject(hJob, 0);
+    }
 
     if (postLoopWaiting)
     {
@@ -300,6 +276,7 @@ void secure_runner::wait()
 secure_runner::secure_runner(const std::string &program,
     const options_class &options, const restrictions_class &restrictions)
     : runner(program, options)
+    , start_restrictions(restrictions)
     , restrictions(restrictions)
     , hIOCP(handle_default_value)
     , hJob(handle_default_value)
@@ -322,9 +299,6 @@ void secure_runner::requisites()
     runner::requisites();
 
     check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
-    //completition = CreateThread(NULL, 0, process_completition_proc, this, 0, NULL);
-    //WaitForSingleObject(completition, 100); // TODO fix this
-    //create in another thread waiting function
 }
 
 terminate_reason_t secure_runner::get_terminate_reason() {
@@ -368,38 +342,12 @@ restrictions_class secure_runner::get_restrictions() const
 
 process_status_t secure_runner::get_process_status()
 {
-    if (process_status == process_finished_terminated || process_status == process_suspended)
+    if (process_status == process_finished_terminated
+     || process_status == process_suspended)
         return process_status;
     return runner::get_process_status();
 }
 
-bool secure_runner::is_running()
-{
-    if (running)
-        return true;
-    return (get_process_status() & process_still_active) != 0;
-}
-
-void secure_runner::suspend()
-{
-    if (get_process_status() != process_still_active)
-        return;
-    dump_threads(true);
-    process_status = process_suspended;
-    //SuspendThread(process_info.hThread);
-}
-
-void secure_runner::resume()
-{
-    if (get_process_status() != process_suspended)
-        return;
-    while (!threads.empty())
-    {
-        handle_t handle = threads.front();
-        threads.pop_front();
-        ResumeThread(handle);
-        CloseHandle(handle);
-    }
-    process_status = process_still_active;
-    get_process_status();
+void secure_runner::prolong_time_limits() {
+    prolong_time_limits_ = true;
 }
