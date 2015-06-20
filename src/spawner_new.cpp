@@ -375,7 +375,7 @@ bool spawner_new_c::init() {
                     }
                     for (auto& b : sr->duplex_buffers) {
                         for (int pi = STD_INPUT_PIPE; pi <= STD_ERROR_PIPE; pi++) {
-                            auto& p = r->get_pipe(static_cast<pipes_t>(pi));
+                            auto&& p = r->get_pipe(static_cast<const pipes_t>(pi));
                             p->remove_buffer(b);
                         }
                     }

@@ -1,5 +1,6 @@
 #include <map>
 #include <string>
+#include <sstream>
 #include <Windows.h>
 
 #include "inc/delegate.h"

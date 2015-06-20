@@ -1,63 +1,63 @@
 # Compatibility
-CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
+cmake_minimum_required(VERSION 2.6)
 
 # Project name
-PROJECT (sp)
+project(sp)
 
 # Project version
-SET (${PROJECT_NAME}_MAJOR_VERSION 0)
-SET (${PROJECT_NAME}_MINOR_VERSION 1)
-SET (${PROJECT_NAME}_PATCH_LEVEL 0)
+set(${PROJECT_NAME}_MAJOR_VERSION 0)
+set(${PROJECT_NAME}_MINOR_VERSION 1)
+set(${PROJECT_NAME}_PATCH_LEVEL 0)
 
-SET (SPAWNER_PATH "${CMAKE_BINARY_DIR}/sp")
-SET (BUILD_DIR "${CMAKE_BINARY_DIR}")
-SET (ROOT_DIR "${PROJECT_SOURCE_DIR}")
-SET (PROTOTYPE_TESTER "${ROOT_DIR}/bin/sp.exe")
+set(SPAWNER_PATH "${CMAKE_BINARY_DIR}/sp")
+set(BUILD_DIR "${CMAKE_BINARY_DIR}")
+set(ROOT_DIR "${PROJECT_SOURCE_DIR}")
+set(PROTOTYPE_TESTER "${ROOT_DIR}/bin/sp.exe")
 
-ADD_SUBDIRECTORY("${PROJECT_SOURCE_DIR}/libspawner" libspawner)
+add_subdirectory("${PROJECT_SOURCE_DIR}/libspawner" libspawner)
 
-INCLUDE_DIRECTORIES ("${PROJECT_SOURCE_DIR}/inc")
-INCLUDE_DIRECTORIES ("${PROJECT_SOURCE_DIR}/libspawner")
-INCLUDE_DIRECTORIES ("${PROJECT_SOURCE_DIR}/lib/rapidjson/include")
+include_directories("${PROJECT_SOURCE_DIR}/inc")
+include_directories("${PROJECT_SOURCE_DIR}/libspawner")
+include_directories("${PROJECT_SOURCE_DIR}/lib/rapidjson/include")
 
-#OPTION(MYPROJECT_DEBUG "Build the project using debugging code" ON)
-#LIST (APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+if(CMAKE_BUILD_TYPE)
+else()
+    set(CMAKE_BUILD_TYPE Release)
+endif()
 
-IF (CMAKE_BUILD_TYPE)
-ELSE (CMAKE_BUILD_TYPE)
-    SET (CMAKE_BUILD_TYPE Release)
-ENDIF (CMAKE_BUILD_TYPE)
-SET (SP_BUILD_TYPE ${CMAKE_BUILD_TYPE})
+set(SP_BUILD_TYPE ${CMAKE_BUILD_TYPE})
 
-# fix relative path
-FILE (GLOB SOURCES ./src/*.cpp)
-FILE (GLOB HEADERS ./inc/*.h)
+set(SOURCES
+    src/arguments.cpp
+    src/main.cpp
+    src/spawner_base.cpp
+    src/spawner_new.cpp
+    src/spawner_old.cpp
+    src/spawner_pcms2.cpp
+)
 
-FILE (GLOB LIB_WIN32_SOURCES "./src/win32/*.cpp")
-FILE (GLOB LIB_NIX_SOURCES ./src/nix/*.cpp)
+set(HEADERS
+    inc/arguments.h
+    inc/spawner_base.h
+    inc/spawner_new.h
+    inc/spawner_old.h
+    inc/spawner_pcms2.h
+)
 
-#SET (SOURCES ${SOURCES} "./src/main.cpp")
+set(LIBRARIES libspawner)
 
-SET (LIBRARIES libspawner)
+if(WIN32)
+    find_library(USERENV userenv)
+    if(USERENV)
+        set(LIBRARIES ${LIBRARIES} ${USERENV})
+    endif()
+endif()
 
-IF (UNIX)
-    SET (SOURCES ${SOURCES} ${NIX_SOURCES})
-ELSE (UNIX)
-    IF (WIN32)
-        SET (SOURCES ${SOURCES} ${WIN32_SOURCES})
-        FIND_LIBRARY(USERENV userenv)
-        IF (USERENV)
-            SET (LIBRARIES ${LIBRARIES} ${USERENV})
-        ENDIF (USERENV)
-    ENDIF (WIN32)
-ENDIF (UNIX)
+set(PROJECT_EXECUTABLE ${PROJECT_NAME})
+set(BIN_PATH "../bin/new")
+set(BIN_SPECIFIC_PATH "../bin/new/${CMAKE_GENERATOR}")
 
-SET (PROJECT_EXECUTABLE ${PROJECT_NAME})
-SET(CMAKE_EXE_LINKER_FLAGS "-static")
-SET(BIN_PATH "../bin/new")
-SET(BIN_SPECIFIC_PATH "../bin/new/${CMAKE_GENERATOR}")
-
-ADD_EXECUTABLE (${PROJECT_EXECUTABLE} ${SOURCES} ${HEADERS})
+add_executable(${PROJECT_EXECUTABLE} ${SOURCES} ${HEADERS})
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${BIN_PATH}
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> ${BIN_PATH}
@@ -65,4 +65,9 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> ${BIN_SPECIFIC_PATH}
 )
 
-TARGET_LINK_LIBRARIES(${PROJECT_EXECUTABLE} ${LIBRARIES})
+target_link_libraries(${PROJECT_EXECUTABLE} ${LIBRARIES})
+
+set_property(TARGET sp PROPERTY CXX_STANDARD 11)
+set_property(TARGET sp PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET libspawner PROPERTY CXX_STANDARD 11)
+set_property(TARGET libspawner PROPERTY CXX_STANDARD_REQUIRED ON)

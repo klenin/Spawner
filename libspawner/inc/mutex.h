@@ -61,6 +61,6 @@ public:
     }
 
 private:
-    mutable std::atomic<unsigned> instance_count_ = 0;
+    mutable std::atomic<unsigned> instance_count_{0};
     HANDLE handle = INVALID_HANDLE_VALUE;
 };

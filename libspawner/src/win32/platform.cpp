@@ -75,4 +75,5 @@ BOOL WINAPI CancelSynchronousIo_wrapper(_In_ HANDLE handle)
     if (CancelSynchronousIo_dyn != nullptr) {
         return CancelSynchronousIo_dyn(handle);
     }
+    return FALSE;
 }
