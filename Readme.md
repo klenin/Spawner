@@ -6,8 +6,7 @@
 
 # Building
 
-You must have cmake and Visual Studio 2013 installed.
-Building with MinGW hasn't been tested for long.
+## Visual Studio 2013+
 
 ```
 git clone git@github.com:klenin/Spawner.git
@@ -17,9 +16,48 @@ git submodule update
 mkdir build
 cd build
 cmake ..
+sp.sln
 ```
 
-Visual Studio 2013 solution `sp.sln` will be generated in `./Spawner/build`.
+Visual Studio 2013+ solution `sp.sln` will be generated in `./Spawner/build`.
+
+## GCC
+
+There are numerous gcc distributions for windows.
+- [MinGW](http://www.mingw.org/) has not been updated for long and has this [bug](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=52015) which prevents project from being compiled.
+- [MinGW-w64](http://sourceforge.net/projects/mingw-w64/) has not been tested
+- [Nuwen MinGW](http://nuwen.net/mingw.html) is supported
+- [MSYS2](https://msys2.github.io/) is supported
+
+Basic steps are the same:
+```
+git clone git@github.com:klenin/Spawner.git
+cd Spawner
+git submodule init
+git submodule update
+mkdir build
+cd build
+```
+
+Now g++ and make must be in your PATH.
+
+With Nuwen-MinGW you might need to use
+```
+set LIB=C:\Nuwen-MinGW\MinGW\x86_64-w64-mingw32\lib
+```
+in order for cmake to find libuserenv.
+
+With MinGW use:
+```
+cmake -G "MinGW Makefiles" -D CMAKE_CXX_COMPILER=g++.exe -D CMAKE_MAKE_PROGRAM=make.exe ..
+make
+```
+
+And with MSYS2:
+```
+cmake -G "MSYS Makefiles"  -D CMAKE_CXX_COMPILER=g++ -D CMAKE_MAKE_PROGRAM=make ..
+make
+```
 
 sp99
 ---------------------------------------
