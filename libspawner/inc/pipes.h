@@ -38,8 +38,8 @@ protected:
     pipe_t input_pipe();
     pipe_t output_pipe();
     void wait();
-    std::atomic<bool> stop_thread_ = false;
-    std::atomic<bool> done_io_ = false;
+    std::atomic<bool> stop_thread_{false};
+    std::atomic<bool> done_io_{false};
     mutex_c buffers_mutex_;
     std::shared_ptr<buffer_c> last_buffer_;
     std::vector<std::shared_ptr<buffer_c>> buffers_;

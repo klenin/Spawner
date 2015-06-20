@@ -151,7 +151,9 @@ int main(int argc, char *argv[]) {
     handler = new command_handler_c();
     // TODO: codestyle: replace \)\r\n\{ with \) \{\r\n
     // Suppress msg window on abort; TODO: check if it's ms spec
+#if defined(_MSC_VER)
     _set_abort_behavior(0, _WRITE_ABORT_MSG);
+#endif
     SetConsoleCtrlHandler(CtrlHandlerRoutine, TRUE);
     set_on_panic_action([&]() {
         if (handler != nullptr) {

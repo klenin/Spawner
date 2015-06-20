@@ -11,7 +11,7 @@ void begin_panic_();
 bool do_we_panic_();
 void exec_on_panic_action_();
 
-void panic_(const std::string& error_message, char* filename, int line_number) {
+void panic_(const std::string& error_message, const char* filename, int line_number) {
     std::stringstream error_text;
     error_text << filename <<  ":"
                << line_number << ":"
@@ -100,23 +100,25 @@ void exec_on_panic_action_() {
     }
 }
 
-std::string get_stacktrace_string() {
-    std::stringstream r;
-    auto collect = [&](const char* s) {
-        r << s;
-    };
-    class StackWalkerToString : public StackWalker {
-        std::function<void(const char*)> f_;
-    public:
-        StackWalkerToString(std::function<void(const char*)> f) :f_(f) {}
-    protected:
-        virtual void OnOutput(LPCSTR szText) {
-            f_(szText);
-        }
-    } sw(collect);
-    sw.ShowCallstack();
-    return r.str();
-}
+#if defined(WANT_STACKWALKER)
+ std::string get_stacktrace_string() {
+     std::stringstream r;
+     auto collect = [&](const char* s) {
+         r << s;
+     };
+     class StackWalkerToString : public StackWalker {
+         std::function<void(const char*)> f_;
+     public:
+         StackWalkerToString(std::function<void(const char*)> f) :f_(f) {}
+     protected:
+         virtual void OnOutput(LPCSTR szText) {
+             f_(szText);
+         }
+     } sw(collect);
+     sw.ShowCallstack();
+     return r.str();
+ }
+#endif
 
 void make_minidump(EXCEPTION_POINTERS* e) {
     auto hDbgHelp = LoadLibraryA("dbghelp");

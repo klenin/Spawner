@@ -15,7 +15,7 @@ protected:
     restrictions_class restrictions;
     thread_t check_thread;
     terminate_reason_t terminate_reason;
-    std::atomic<bool> prolong_time_limits_ = false;
+    std::atomic<bool> prolong_time_limits_{false};
     LONGLONG base_time_processor_ = 0;
     unsigned long long base_time_user_ = 0;
 

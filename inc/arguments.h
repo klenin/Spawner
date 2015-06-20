@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <utility>
+#include <algorithm>
 
 #include "inc/compatibility.h"
 #include "inc/uconvert.h"
@@ -245,7 +246,7 @@ public:
             "clear",
         };
 
-        if (find(acceptables.begin(), acceptables.end(), m) != acceptables.end()) {
+        if (std::find(acceptables.begin(), acceptables.end(), m) != acceptables.end()) {
             value = m;
 
             return true;

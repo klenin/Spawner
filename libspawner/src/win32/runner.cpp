@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <algorithm>
 #include <WinBase.h>
 #include <UserEnv.h>
 
@@ -96,7 +97,7 @@ runner::env_vars_list_t runner::set_environment_for_process() const
 
         for (auto i = curr_vars.cbegin(); i != curr_vars.cend(); ++i)
         {
-            if (find(default_vars.cbegin(), default_vars.cend(), *i) == default_vars.cend())
+            if (std::find(default_vars.cbegin(), default_vars.cend(), *i) == default_vars.cend())
             {
                 SetEnvironmentVariableA(i->first.c_str(), NULL);
             }
@@ -128,7 +129,7 @@ void runner::restore_original_environment(const runner::env_vars_list_t& origina
 
     for (auto i = curr_vars.cbegin(); i != curr_vars.cend(); ++i)
     {
-        if (find(original.cbegin(), original.cend(), *i) == original.cend())
+        if (std::find(original.cbegin(), original.cend(), *i) == original.cend())
         {
             SetEnvironmentVariableA(i->first.c_str(), NULL);
         }

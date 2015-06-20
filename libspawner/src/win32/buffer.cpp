@@ -1,6 +1,8 @@
 #include "buffer.h"
 
 #include <memory>
+#include <cmath>
+#include <cstdio>
 
 #include "error.h"
 #include "pipes.h"

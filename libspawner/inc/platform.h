@@ -95,7 +95,7 @@ const handle_t handle_default_value = INVALID_HANDLE_VALUE;
 
 #endif//_WIN32
 
-BOOL WINAPI CancelSynchronousIo_wrapper(_In_ HANDLE);
+BOOL WINAPI CancelSynchronousIo_wrapper(HANDLE);
 
 void platform_init();
 
