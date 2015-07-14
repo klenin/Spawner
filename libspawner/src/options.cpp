@@ -94,7 +94,7 @@ void options_class::add_stdinput(const std::string &name) {
     if (std::find(stdinput.begin(), stdinput.end(), name) != stdinput.end()) {
         return;
     }
-    if (name == CLEAR_STRING) {
+    if (name == CLEAR_STRING || name.empty()) {
         stdinput.clear();
         return;
     }
@@ -105,7 +105,7 @@ void options_class::add_stdoutput(const std::string &name) {
     if (std::find(stdoutput.begin(), stdoutput.end(), name) != stdoutput.end()) {
         return;
     }
-    if (name == CLEAR_STRING) {
+	if (name == CLEAR_STRING || name.empty()) {
         stdoutput.clear();
         return;
     }
@@ -116,7 +116,7 @@ void options_class::add_stderror(const std::string &name) {
     if (std::find(stderror.begin(), stderror.end(), name) != stderror.end()) {
         return;
     }
-    if (name == CLEAR_STRING) {
+	if (name == CLEAR_STRING || name.empty()) {
         stdoutput.clear();
         return;
     }
