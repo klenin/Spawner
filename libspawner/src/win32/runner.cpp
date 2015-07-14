@@ -350,6 +350,7 @@ void runner::requisites() {
         if (ResumeThread(process_info.hThread) == (DWORD)-1) {
             PANIC(get_win_last_error_string());
         }
+        process_status = process_still_active;
     } else {
         process_status = process_suspended;
     }
