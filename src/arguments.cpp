@@ -1,6 +1,12 @@
 #include "arguments.h"
 #include <iostream>
 
+#if !defined(_WIN32) && !defined(_WIN64)
+#include <stdlib.h> // stdlib
+#include <string.h> // strnlen,strncpy
+#include <stdarg.h> // va_{strt,arg}
+#endif
+
 compact_list_c::compact_list_c(){}
 
 compact_list_c::compact_list_c(int dummy_value, ...) {
@@ -300,12 +306,24 @@ bool environment_variable_parser_c::invoke_initialization(abstract_settings_pars
     }
 
     for (auto i = parameters.begin(); i != parameters.end(); i++) {
-        auto result = GetEnvironmentVariableA(i->first.c_str(), buffer, sizeof(buffer));
-        if (result > sizeof(buffer)) {
+        static int result;
+#if defined(_WIN32) || defined(_WIN64)
+	result = GetEnvironmentVariableA(i->first.c_str(), buffer, sizeof(buffer));
+#else
+        char *s = NULL;
+        s = getenv(i->first.c_str());
+        if (s != NULL) {
+            result = strnlen(s, sizeof(buffer));
+            if ((result > 0) && (result <= sizeof(buffer)))
+                strncpy(buffer, s, result);
+        } else
+            result = 0;
+#endif
+	if (result > sizeof(buffer)) {
             std::cerr << "Invalid parameter value for \"" << i->first << "\" with error: Buffer overflow" << std::endl;
         } else if (result > 0) {
             try {
-                i->second->apply(std::string(buffer));
+                i->second->apply(std::string(buffer, result));
             } catch (std::string &error) {
                 std::cerr << "Invalid parameter value for \"" << i->first << "\" with error: " << error << std::endl;
             }
