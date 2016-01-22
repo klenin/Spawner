@@ -2,20 +2,22 @@
 #define _SPAWNER_STATUS_H_
 
 #include "platform.h"
+#if !defined(_WIN32) && !defined(_WIN64)
+#include "signal.h"
+#endif
 
 enum process_status_t
 {
     process_still_active        = 0x2, //b 0000 0010
-    process_suspended           = 0x6, //b 0000 0110
-    process_finished_normal     = 0x1, //b 0000 0001
-    process_finished_abnormally = 0x5, //b 0000 0101
-    process_finished_terminated = 0x9, //b 0000 1001
+    process_suspended           = 0x6, //b 0000 0110 // stopped by a signal
+    process_finished_normal     = 0x1, //b 0000 0001 // exit return from main
+    process_finished_abnormally = 0x5, //b 0000 0101 // coredump
+    process_finished_terminated = 0x9, //b 0000 1001 // terminated by a signal
     process_not_started         = 0x80,//b 1000 0000
     process_spawner_crash    = 0x90,   //b 1001 0000
 };
 
-#ifdef _WIN32
-
+#if defined(_WIN32) || defined(_WIN64)
 enum exception_t
 {
     exception_unknown                   = 3,
@@ -44,6 +46,28 @@ enum exception_t
     exception_exception_no              = 0x0,
     //exception_possible_deadlock         = EXCEPTION_POSSIBLE_DEADLOCK,
 };
+#else
+enum signal_t
+{
+    signal_sighup = SIGHUP,
+    signal_sigint = SIGINT,
+    signal_sigquit = SIGQUIT,
+    signal_sigill = SIGILL,
+    signal_abort = SIGABRT,
+    signal_sigfpe = SIGFPE,
+    signal_sigkill = SIGKILL,
+    signal_sigbus = SIGBUS,
+    signal_sigsegv = SIGSEGV,
+    signal_sigterm = SIGTERM,
+    signal_sigstop = SIGSTOP,
+    signal_sigtstp = SIGTSTP,
+    signal_sigcont = SIGCONT,
+    signal_sigsys = SIGSYS,
+    signal_sigxcpu = SIGXCPU,
+    signal_sigxfsz = SIGXFSZ,
+    signal_signal_no = 0x0, // no signal recieved.
+};
+#endif
 
 enum terminate_reason_t
 {
@@ -59,7 +83,5 @@ enum terminate_reason_t
     terminate_reason_created_process,
     terminate_reason_by_controller,
 };
-
-#endif//_WIN32
 
 #endif//_SPAWNER_STATUS_H_
