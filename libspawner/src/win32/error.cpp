@@ -1,6 +1,7 @@
 #include "error.h"
 
 #include <sstream>
+#if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 
 #if defined(_MSC_VER)
@@ -8,6 +9,7 @@
 #endif
 
 #include "stack_walker.h"
+#endif
 
 void abort_at_panic_();
 void begin_panic_();
@@ -34,10 +36,12 @@ void abort_at_panic_()
 #elif defined(WIN32)
     ExitProcess(1);
 #else
-    ::abort();
+    //::abort();
+    exit(EXIT_FAILURE);
 #endif
 }
 
+#if defined(_WIN32) || defined(_WIN64)
 std::string get_win_last_error_string() {
     DWORD error_code = GetLastError();
     char* error_text = nullptr;
@@ -66,6 +70,7 @@ std::string get_win_last_error_string() {
     LocalFree(error_text);
     return r.str();
 }
+#endif
 
 static std::function<void()> on_panic_action_ = nullptr;
 static std::string error_text_ = "<none>";
@@ -123,6 +128,7 @@ void exec_on_panic_action_() {
  }
 #endif
 
+#if defined(_WIN32) || defined(_WIN64)
 void make_minidump(EXCEPTION_POINTERS* e) {
 #if defined(_MSC_VER)
     auto hDbgHelp = LoadLibraryA("dbghelp");
@@ -165,4 +171,4 @@ void make_minidump(EXCEPTION_POINTERS* e) {
 
 #endif
 }
-
+#endif
