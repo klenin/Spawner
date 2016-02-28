@@ -99,7 +99,7 @@ void delegate_runner::create_process() {
 	free(cwd);
     }
 
-    options.push_argument_front("-wd=\"" + working_directory + "\"");
+    options.push_argument_front("-wd=" + working_directory);
 
     if (options.hide_report)
     {

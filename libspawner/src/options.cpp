@@ -20,6 +20,7 @@ options_class::options_class(const options_class &options)
     , working_directory(options.working_directory)
     , login(options.login)
     , password(options.password)
+    , shared_memory(options.shared_memory)
     , report_file(options.report_file) {
 
     for (auto i = options.stdinput.begin(); i != options.stdinput.end(); i++) {
