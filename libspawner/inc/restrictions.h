@@ -3,6 +3,9 @@
 
 #include <string>
 #include <inc/session.h>
+#if !defined(_WIN32) && !defined(_WIN64)
+#include <climits>
+#endif
 
 enum restriction_kind_t
 {
@@ -17,10 +20,17 @@ enum restriction_kind_t
     restriction_max                     = 0x8
 };
 
+#if defined(_WIN32) || defined(_WIN64)
 typedef unsigned int restriction_t;
 
 const restriction_t restriction_no_limit = 0xffffffff;
 const restriction_t restriction_limited  = 0x00000001;
+#else
+typedef unsigned long restriction_t;
+
+const restriction_t restriction_no_limit = ULONG_MAX;
+const restriction_t restriction_limited = 1;
+#endif
 //TODO move source to platform independent .cpp
 struct restrictions_class
 {
