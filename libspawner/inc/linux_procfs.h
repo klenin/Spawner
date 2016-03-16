@@ -1,9 +1,6 @@
 #ifndef _PROCFS_CLASS_H_
 #define _PROCFS_CLASS_H_
-#include <iostream>
-#include <fstream>
 #include <string>
-#include <sstream>
 
 #include <unistd.h>
 
@@ -32,7 +29,6 @@ struct procfs_class {
 	size_t vss_max;
 
 	std::string io_path, stat_path;
-	std::ifstream stat_stream, io_stream;
 
 	bool probe_pid(pid_t);
 	bool fill_stat();
