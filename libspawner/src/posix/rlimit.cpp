@@ -5,7 +5,7 @@ int impose_rlimit(int resource, long limit) {
 	long hard;
 
 	hard = limit;
-	if (limit == RLIMIT_CPU)
+	if (resource == RLIMIT_CPU)
 		++hard;
 
 	rl.rlim_cur = limit;
