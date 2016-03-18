@@ -2,16 +2,21 @@
 
 int impose_rlimit(int resource, long limit) {
 	struct rlimit rl;
+	long hard;
 
-	rl.rlim_max = limit;
+	hard = limit;
+	if (limit == RLIMIT_CPU)
+		++hard;
+
 	rl.rlim_cur = limit;
-
+	rl.rlim_max = hard;
+	
 	if (setrlimit(resource, &rl))
-		return 1;
+		return RL_FAIL_SET;
 	if (getrlimit(resource, &rl))
-		return 2; 
-	if ((rl.rlim_cur != limit) || (rl.rlim_max != limit))
-		return 3;
+		return RL_FAIL_GET; 
+	if ((rl.rlim_cur != limit) || (rl.rlim_max != hard))
+		return RL_FAIL_VALIDATE;
 
 	return 0; 
 }
