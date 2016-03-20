@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 std::string ExitCodeToString(const unsigned int &code) {
+#if defined(_WIN32) || defined(_WIN64)
     switch (code) {
         case STATUS_ACCESS_VIOLATION:
             return "AccessViolation";
@@ -55,6 +56,7 @@ std::string ExitCodeToString(const unsigned int &code) {
         case STATUS_STACK_OVERFLOW:
             return "StackOverflow";
     }
+#endif
 
     std::ostringstream s;
     s << code;
@@ -92,6 +94,7 @@ void SetRestriction(restrictions_class &restrictions, const restriction_kind_t &
 
 }
 
+#if defined(_WIN32) || defined(_WIN64)
 void ReadEnvironmentVariables(options_class &options, restrictions_class &restrictions) {
     CHAR buffer[1024];
     const struct {
@@ -149,6 +152,7 @@ void ReadEnvironmentVariables(options_class &options, restrictions_class &restri
         options.stdinput.push_back(buffer);
     }
 }
+#endif
 
 std::string GenerateSpawnerReport(const report_class &rep, const options_class &options, const restrictions_class &restrictions) {
     std::ostringstream osstream;
@@ -157,7 +161,11 @@ std::string GenerateSpawnerReport(const report_class &rep, const options_class &
     osstream << "Parameters:                " << options.format_arguments() << std::endl;
     osstream << "SecurityLevel:             " << (restrictions.get_restriction(restriction_security_limit) == restriction_limited) << std::endl;
     osstream << "CreateProcessMethod:       " << (options.login==""?"CreateProcess":"WithLogon") << std::endl;
+#if defined(_WIN32) || defined(_WIN64)    
+    osstream << "UserName:                  " << rep.login.c_str() << std::endl;
+#else // switch back from wide
     osstream << "UserName:                  " << w2a(rep.login.c_str()) << std::endl;
+#endif
     osstream << "UserTimeLimit:             " << convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), restrictions.get_restriction(restriction_processor_time_limit), " (u)", restriction_no_limit) << std::endl;
     osstream << "DeadLine:                  " << convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), restrictions.get_restriction(restriction_user_time_limit), " (u)", restriction_no_limit) << std::endl;
     osstream << "MemoryLimit:               " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), restrictions.get_restriction(restriction_memory_limit), " (du)", restriction_no_limit) << std::endl;
@@ -167,7 +175,16 @@ std::string GenerateSpawnerReport(const report_class &rep, const options_class &
     osstream << "PeakMemoryUsed:            " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.peak_memory_used, " (Mb)") << std::endl;
     osstream << "Written:                   " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), rep.write_transfer_count, " (Mb)") << std::endl;
     osstream << "TerminateReason:           " << get_terminate_reason(rep.terminate_reason) << std::endl;
-    osstream << "ExitStatus:                " << ExitCodeToString(rep.exit_code) << std::endl;
+    osstream << "ExitStatus:                ";
+#if defined(_WIN32) || defined(_WIN64)
+    osstream << ExitCodeToString(rep.exit_code);
+#else
+    if (rep.signum)
+        osstream << get_signal_info(rep.signum, "%n (%t)");
+    else
+	osstream << ExitCodeToString(rep.exit_code);
+#endif
+    osstream << std::endl;
     osstream << "----------------------------------------------" << std::endl;
     osstream << "SpawnerError:              " << get_error_text() << std::endl;
     return osstream.str();

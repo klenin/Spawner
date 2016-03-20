@@ -11,7 +11,9 @@ std::string ExitCodeToString(const unsigned int &code);
 
 std::string GenerateSpawnerReport(const report_class &rep, const options_class &options, const restrictions_class &restrictions);
 
+#if defined(_WIN32) || defined(_WIN64)
 void ReadEnvironmentVariables(options_class &options, restrictions_class &restrictions);
+#endif
 
 void SetRestriction(restrictions_class &restrictions, const restriction_kind_t &restriction_kind, const std::string &value);
 
