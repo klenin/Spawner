@@ -59,13 +59,11 @@ enum signal_t
     signal_sigbus = SIGBUS,
     signal_sigsegv = SIGSEGV,
     signal_sigterm = SIGTERM,
-    signal_sigstop = SIGSTOP,
-    signal_sigtstp = SIGTSTP,
-    signal_sigcont = SIGCONT,
     signal_sigsys = SIGSYS,
     signal_sigxcpu = SIGXCPU,
     signal_sigxfsz = SIGXFSZ,
-    signal_signal_no = 0x0, // no signal recieved.
+    signal_signal_no = 0, // no signal recieved
+    signal_unregistered = 0xff,
 };
 #endif
 
