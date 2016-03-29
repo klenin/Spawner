@@ -36,6 +36,7 @@ void delegate_runner::create_process() {
 
     if (options.use_cmd)
     {
+	PANIC("--cmd not supported here")
 	options.push_argument_front("--cmd");
     }
 
@@ -119,7 +120,13 @@ void delegate_runner::create_process() {
     options.push_argument_front("-env=" + options.environmentMode);
     std::string shared_memory_name = "/" + options.session.hash();
     options.push_argument_front("--shared-memory=" + shared_memory_name);
-
+    
+    // XXX set umask to all-zero to allow creating a file with 0666 permissions
+    // (defaults are to disallow o+w).
+    // Access rights to shmem file shall be limited to group+rw (0660) in
+    // future. I recommend to use a delegate runner with seccomp enabled to
+    // limit access to teh shared memory.
+    mode_t old = umask(0000);
     int shm_fd = shm_open(shared_memory_name.c_str(), O_CREAT | O_RDWR, 0666);
     if (shm_fd == -1)
         PANIC("Failed to shm_open()");
@@ -127,6 +134,7 @@ void delegate_runner::create_process() {
 	shm_unlink(shared_memory_name.c_str());
     	PANIC("Failed to ftruncate() shmem to specified size");
     }
+    umask(old);
     options.shared_memory = shared_memory_name;
     options.push_argument_front("--delegated=1");
     
