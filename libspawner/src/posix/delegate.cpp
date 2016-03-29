@@ -36,14 +36,14 @@ void delegate_runner::create_process() {
 
     if (options.use_cmd)
     {
-	PANIC("--cmd not supported here")
+	PANIC("--cmd not supported here");
 	options.push_argument_front("--cmd");
     }
 
-    options.use_cmd = true;
+    //options.use_cmd = true;
 
     const std::map< restriction_kind_t, std::string > cmd_units = {
-        { restriction_user_time_limit, "ms" },
+        { restriction_user_time_limit, "us" },
         { restriction_memory_limit, "B" },
         { restriction_processor_time_limit, "us" },
         { restriction_security_limit, "" },
@@ -54,9 +54,9 @@ void delegate_runner::create_process() {
     };
 
     const std::map< restriction_kind_t, std::string > cmd_arg = {
-        { restriction_user_time_limit, "tl" },
+        { restriction_user_time_limit, "d" },
         { restriction_memory_limit, "ml" },
-        { restriction_processor_time_limit, "d" },
+        { restriction_processor_time_limit, "tl" },
         { restriction_security_limit, "s" },
         { restriction_write_limit, "wl" },
         { restriction_load_ratio, "lr" },
