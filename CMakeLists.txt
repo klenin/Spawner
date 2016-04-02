@@ -20,6 +20,17 @@ include_directories("${PROJECT_SOURCE_DIR}/inc")
 include_directories("${PROJECT_SOURCE_DIR}/libspawner")
 include_directories("${PROJECT_SOURCE_DIR}/lib/rapidjson/include")
 
+if(UNIX)
+    include_directories("${PROJECT_SOURCE_DIR}/libspawner/inc/posix")
+elseif(WIN32)
+    include_directories("${PROJECT_SOURCE_DIR}/libspawner/inc/win32")
+endif()
+
+# Always include symbols
+if(UNIX)
+    set(CMAKE_BUILD_TYPE "Debug")
+endif()
+
 if(CMAKE_BUILD_TYPE)
 else()
     set(CMAKE_BUILD_TYPE Release)
@@ -51,6 +62,14 @@ if(WIN32)
     if(USERENV)
         set(LIBRARIES ${LIBRARIES} ${USERENV})
     endif()
+endif()
+
+if(UNIX)
+    # Linux requires -lrt for shm_{open,...}
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(LIBRARIES ${LIBRARIES} "rt")
+    endif()
+    set(LIBRARIES ${LIBRARIES} "pthread")
 endif()
 
 set(PROJECT_EXECUTABLE ${PROJECT_NAME})

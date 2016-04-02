@@ -9,6 +9,7 @@ set(${PROJECT_NAME}_MAJOR_VERSION 0)
 set(${PROJECT_NAME}_MINOR_VERSION 2)
 set(${PROJECT_NAME}_PATCH_LEVEL 0)
 
+
 include_directories("${PROJECT_SOURCE_DIR}/inc")
 include_directories("${PROJECT_SOURCE_DIR}/inc/md5")
 include_directories("${PROJECT_SOURCE_DIR}")
@@ -19,27 +20,43 @@ set(SOURCES
     src/md5/md5.c
     src/options.cpp
     src/restrictions.cpp
+    src/multibyte.cpp
+    src/session.cpp
+    src/uconvert.cpp
 )
 
 set(HEADERS
     sp.h
     inc/md5/md5.h
-    inc/buffer.h
     inc/delegate.h
     inc/options.h
-    inc/platform.h
     inc/restrictions.h
     inc/securerunner.h
-    inc/stack_walker.h
     inc/uconvert.h
     inc/compatibility.h
     inc/error.h
-    inc/mutex.h
-    inc/pipes.h
     inc/report.h
     inc/runner.h
     inc/session.h
     inc/status.h
+)
+set(LIB_WIN32_HEADERS
+    inc/buffer.h
+    inc/pipes.h
+    inc/mutex.h
+    inc/win32/platform.h
+    inc/win32/exceptions.h
+    inc/stack_walker.h
+)
+set(LIB_POSIX_HEADERS
+    inc/posix/platform.h
+    inc/posix/signals.h
+    inc/posix/rlimit.h
+)
+set(LIB_LINUX_HEADERS
+    inc/posix/linux_affinity.h
+    inc/posix/linux_procfs.h
+    inc/posix/linux_seccomp.h
 )
 
 set(LIB_WIN32_SOURCES
@@ -52,21 +69,40 @@ set(LIB_WIN32_SOURCES
     src/win32/report.cpp
     src/win32/runner.cpp
     src/win32/securerunner.cpp
-    src/win32/session.cpp
-    src/win32/uconvert.cpp
+)
+set(LIB_UNIX_SOURCES
+    src/win32/compatibility.cpp
+    src/win32/error.cpp
+    src/posix/delegate.cpp
+    src/posix/report.cpp
+    src/posix/runner.cpp
+    src/posix/securerunner.cpp
+    src/posix/rlimit.cpp
+    src/posix/platform.cpp
+)
+
+set(LIB_LINUX_SOURCES
+    src/posix/linux_affinity.cpp
+    src/posix/linux_seccomp.cpp
+    src/posix/linux_procfs.cpp
 )
 
 if(UNIX)
-    set(SOURCES ${SOURCES} ${LIB_NIX_SOURCES})
-else()
-    if(WIN32)
-        set(SOURCES ${SOURCES} ${LIB_WIN32_SOURCES})
+    set(SOURCES ${SOURCES} ${LIB_UNIX_SOURCES})
+    set(HEADERS ${HEADERS} ${LIB_UNIX_HEADERS})
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(SOURCES ${SOURCES} ${LIB_LINUX_SOURCES})
+        set(HEADERS ${HEADERS} ${LIB_LINUX_HEADERS})
     endif()
-endif()
-
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-    set(SOURCES ${SOURCES} src/stack_walker.cpp)
-    add_definitions(-DWANT_STACKWALKER)
+    include_directories("${PROJECT_SOURCE_DIR}/inc/posix")
+elseif(WIN32)
+    set(SOURCES ${SOURCES} ${LIB_WIN32_SOURCES})
+    set(HEADERS ${HEADERS} ${LIB_WIN32_HEADERS})
+    include_directories("${PROJECT_SOURCE_DIR}/inc/win32")
+    if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+        set(SOURCES ${SOURCES} src/stack_walker.cpp)
+        add_definitions(-DWANT_STACKWALKER)
+    endif()
 endif()
 
 set(PROJECT_LIBRARY ${PROJECT_NAME})

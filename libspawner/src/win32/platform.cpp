@@ -1,6 +1,7 @@
-#include "platform.h"
 #include <fstream>
 #include <string>
+#include "platform.h"
+
 //#include <Windows.h>
 #ifdef OPEN_JOB_OBJECT_DYNAMIC_LOAD
 void load_open_job_object() {
@@ -34,28 +35,6 @@ void CloseHandleSafe_real(HANDLE &handle)
     handle = handle_default_value;
 }
 
-wchar_t *a2w(const char *str)
-{
-    if (!str)
-        return NULL;
-    size_t len = strlen(str);
-    wchar_t *wstr = new wchar_t[len + 1];
-    wstr[len] = 0;
-    mbstowcs(wstr, str, len);
-    return wstr;
-}
-
-char *w2a(const wchar_t *str) {
-    if (!str)
-        return NULL;
-    size_t len = wcslen(str);
-    char *cstr = new char[len + 1];
-    cstr[len] = 0;
-    wcstombs(cstr, str, len);
-    return cstr;
-
-}
-
 typedef BOOL(WINAPI *CancelSynchronousIo_func_type)(_In_ HANDLE);
 CancelSynchronousIo_func_type CancelSynchronousIo_dyn = nullptr;
 
@@ -76,4 +55,9 @@ BOOL WINAPI CancelSynchronousIo_wrapper(_In_ HANDLE handle)
         return CancelSynchronousIo_dyn(handle);
     }
     return FALSE;
+}
+
+int get_spawner_pid()
+{
+    return (int) GetCurrentProcessId();
 }

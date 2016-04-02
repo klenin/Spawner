@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _PLATFORM_H_
+#define _PLATFORM_H_
 
 /************************************************************************/
 /* GLOBAL TODO                                                          */
@@ -7,6 +8,7 @@
 /************************************************************************/
 
 #include <stdlib.h>
+#include <string.h>
 #ifdef _WIN32
 
 //#ifndef _MSC_VER
@@ -91,18 +93,16 @@ const unsigned long infinite = INFINITE;
 
 const handle_t handle_default_value = INVALID_HANDLE_VALUE;
 
-#else
-
-#endif//_WIN32
-
 BOOL WINAPI CancelSynchronousIo_wrapper(HANDLE);
-
-void platform_init();
-
-wchar_t *a2w(const char *str);
-char *w2a(const wchar_t *str);
 
 #ifndef uint
 typedef unsigned int uint_32;
 typedef uint_32 uint;
 #endif//uint
+
+#endif//_WIN32
+
+void platform_init();
+int get_spawner_pid();
+
+#endif //_PLATFORM_H_

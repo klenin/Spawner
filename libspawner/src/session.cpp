@@ -1,23 +1,14 @@
 #include <session.h>
-#include <platform.h>
 #include <memory.h>
 #include <iomanip>
-
-#if !defined(_WIN32) && !defined(_WIN64)
-#include <sys/types.h>
-#include <unistd.h>
-#endif
+#include "platform.h"
 
 //session_manager_class session_manager_class::session_manager_instance;
 session_class session_class::base_session;
 
 session_class::session_class() {
     md5_init(&md5_state);
-#if !defined(_WIN32) && !defined(_WIN64)
-    (*this) << getpid();
-#else 
-    (*this) << GetCurrentProcessId();
-#endif
+    (*this) << get_spawner_pid();
 }
 
 session_class::session_class(const session_class &session) {
