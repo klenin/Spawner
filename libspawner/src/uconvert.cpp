@@ -241,11 +241,8 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
         }
     }
 
-#if defined(_WIN32) || defined(_WIN64)
-    double result = abs(convert(from, to, value));
-#else
     double result = labs(convert(from, to, value));
-#endif
+    
     return (unsigned long)result;
 }
 
