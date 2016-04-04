@@ -80,7 +80,7 @@ void pull_shm_report(const char *shm_name, std::string &report)
     HANDLE hIn = OpenFileMappingA(
         FILE_MAP_ALL_ACCESS,
         FALSE,
-        options_item.shared_memory.c_str()
+        shm_name 
     );
 
     LPTSTR pRep = (LPTSTR)MapViewOfFile(
