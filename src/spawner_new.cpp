@@ -494,25 +494,7 @@ void spawner_new_c::print_report() {
 
             if (options_item.login.length() > 0)
             {
-                HANDLE hIn = OpenFileMappingA(
-                    FILE_MAP_ALL_ACCESS,
-                    FALSE,
-                    options_item.shared_memory.c_str()
-                    );
-
-                LPTSTR pRep = (LPTSTR)MapViewOfFile(
-                    hIn,
-                    FILE_MAP_ALL_ACCESS,
-                    0,
-                    0,
-                    options_class::SHARED_MEMORY_BUF_SIZE
-                    );
-
-                report = pRep;
-
-                UnmapViewOfFile(pRep);
-
-                CloseHandle(hIn);
+                pull_shm_report(options_item.shared_memory.c_str(), report);
             }
 
             if (report.length() == 0)
@@ -537,14 +519,7 @@ void spawner_new_c::print_report() {
 
             if (options_item.delegated)
             {
-                HANDLE hOut = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, options_item.shared_memory.c_str());
-                LPCSTR pRep = (LPTSTR)MapViewOfFile(hOut, FILE_MAP_ALL_ACCESS, 0, 0, options_class::SHARED_MEMORY_BUF_SIZE);
-
-                memcpy((PVOID)pRep, report.c_str(), sizeof(char) * report.length());
-
-                UnmapViewOfFile(pRep);
-
-                CloseHandle(hOut);
+                push_shm_report(options_item.shared_memory.c_str(), report);
             }
             else
             {

@@ -2,6 +2,7 @@
 #include <string>
 #include "platform.h"
 
+#include <WinBase.h>
 //#include <Windows.h>
 #ifdef OPEN_JOB_OBJECT_DYNAMIC_LOAD
 void load_open_job_object() {
@@ -60,4 +61,39 @@ BOOL WINAPI CancelSynchronousIo_wrapper(_In_ HANDLE handle)
 int get_spawner_pid()
 {
     return (int) GetCurrentProcessId();
+}
+
+void push_shm_report(const char *shm_name, const std::string &report)
+{
+    HANDLE hOut = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, shm_name);
+    LPCSTR pRep = (LPTSTR)MapViewOfFile(hOut, FILE_MAP_ALL_ACCESS, 0, 0, options_class::SHARED_MEMORY_BUF_SIZE);
+
+    memcpy((PVOID)pRep, report.c_str(), sizeof(char) * report.length());
+
+    UnmapViewOfFile(pRep);
+
+    CloseHandle(hOut);
+}
+
+void pull_shm_report(const char *shm_name, std::string &report)
+{
+    HANDLE hIn = OpenFileMappingA(
+        FILE_MAP_ALL_ACCESS,
+        FALSE,
+        options_item.shared_memory.c_str()
+    );
+
+    LPTSTR pRep = (LPTSTR)MapViewOfFile(
+        hIn,
+        FILE_MAP_ALL_ACCESS,
+        0,
+        0,
+        options_class::SHARED_MEMORY_BUF_SIZE
+    );
+
+    report = pRep;
+
+    UnmapViewOfFile(pRep);
+
+    CloseHandle(hIn);
 }

@@ -105,4 +105,7 @@ typedef uint_32 uint;
 void platform_init();
 int get_spawner_pid();
 
+void push_shm_report(const char *, const std::string &);
+void pull_shm_report(const char *, std::string &);
+
 #endif //_PLATFORM_H_
