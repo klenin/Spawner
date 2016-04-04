@@ -8,6 +8,9 @@
 #include <fcntl.h>
 #include <string.h>
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "error.h"
 #include "options.h"
 
@@ -95,4 +98,20 @@ default: break;
 		report = (const char *)report_addr;
 	munmap(report_addr, (size_t)options_class::SHARED_MEMORY_BUF_SIZE);
 	shm_unlink(shm_name);
+}
+
+size_t get_env_var(const char *name, char *buff, size_t size) {
+	char *s = nullptr;
+	int result = 0;
+
+	s = getenv(name);
+	if (s != nullptr) {
+		result = strnlen(s, size);
+		if (result) {
+			strncpy(buff, s, result);
+			return result;
+		}
+	}
+
+	return result;
 }

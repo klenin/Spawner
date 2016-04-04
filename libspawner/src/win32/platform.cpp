@@ -3,6 +3,8 @@
 #include "platform.h"
 
 #include <WinBase.h>
+// windows8 requires Processenv.h for GetEnvironmentVariableA()
+
 //#include <Windows.h>
 #ifdef OPEN_JOB_OBJECT_DYNAMIC_LOAD
 void load_open_job_object() {
@@ -96,4 +98,9 @@ void pull_shm_report(const char *shm_name, std::string &report)
     UnmapViewOfFile(pRep);
 
     CloseHandle(hIn);
+}
+
+size_t get_env_var(const char *name, char *buff, size_t size)
+{
+    return GetEnvironmentVariableA(name, buff, size);
 }

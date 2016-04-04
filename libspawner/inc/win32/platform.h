@@ -108,4 +108,6 @@ int get_spawner_pid();
 void push_shm_report(const char *, const std::string &);
 void pull_shm_report(const char *, std::string &);
 
+size_t get_env_var(const char *, char *, size_t);
+
 #endif //_PLATFORM_H_
