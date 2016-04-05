@@ -1,5 +1,5 @@
-#ifndef _PLATFORM_H_
-#define _PLATFORM_H_
+#ifndef _WIN_PLATFORM_H_
+#define _WIN_PLATFORM_H_
 
 /************************************************************************/
 /* GLOBAL TODO                                                          */
@@ -9,6 +9,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "inc/pipes.h"
+
 #ifdef _WIN32
 
 //#ifndef _MSC_VER
@@ -19,6 +21,9 @@
 #include <windows.h>
 #include <tlhelp32.h>
 //#include <winioctl.h>
+
+// oostream in the Windows world works with wide strings (no need to w2a()).
+#define platform_login_str(x) (x)
 
 typedef HANDLE thread_t;
 
@@ -110,4 +115,6 @@ void pull_shm_report(const char *, std::string &);
 
 size_t get_env_var(const char *, char *, size_t);
 
-#endif //_PLATFORM_H_
+void ReadEnvironmentVariables(options_class &, restrictions_class &);
+
+#endif //_WIN_PLATFORM_H_

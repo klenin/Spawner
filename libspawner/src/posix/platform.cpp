@@ -115,3 +115,14 @@ size_t get_env_var(const char *name, char *buff, size_t size) {
 
 	return result;
 }
+
+std::string ExtractExitStatus(const report_class &report) {
+	std::ostringstream s;
+
+	if (report.signum)
+		s << get_signal_info(report.signum, "%n (%t)");
+	else
+		s << report.exit_code;
+
+	return s.str();
+}

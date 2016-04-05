@@ -141,7 +141,7 @@ void spawner_new_c::json_report(runner *runner_instance,
     rapidjson_write("ExitCode");
     writer.Uint(runner_report.exit_code);
     rapidjson_write("ExitStatus");
-    rapidjson_write(ExitCodeToString(runner_report.exit_code).c_str());
+    rapidjson_write(ExtractExitStatus(runner_report).c_str());
     rapidjson_write("SpawnerError");
     writer.StartArray();
     std::vector<std::string> errors;

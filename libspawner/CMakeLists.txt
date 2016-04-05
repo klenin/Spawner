@@ -23,6 +23,7 @@ set(SOURCES
     src/multibyte.cpp
     src/session.cpp
     src/uconvert.cpp
+    src/compatibility.cpp
 )
 
 set(HEADERS
@@ -61,7 +62,6 @@ set(LIB_LINUX_HEADERS
 
 set(LIB_WIN32_SOURCES
     src/win32/buffer.cpp
-    src/win32/compatibility.cpp
     src/win32/delegate.cpp
     src/win32/error.cpp
     src/win32/pipes.cpp
@@ -71,7 +71,6 @@ set(LIB_WIN32_SOURCES
     src/win32/securerunner.cpp
 )
 set(LIB_UNIX_SOURCES
-    src/win32/compatibility.cpp
     src/win32/error.cpp
     src/posix/delegate.cpp
     src/posix/report.cpp
