@@ -48,7 +48,7 @@ set(LIB_WIN32_HEADERS
     inc/mutex.h
     inc/win32/platform.h
     inc/win32/exceptions.h
-    inc/stack_walker.h
+    inc/win32/stack_walker.h
 )
 set(LIB_POSIX_HEADERS
     inc/posix/platform.h
@@ -98,7 +98,7 @@ elseif(WIN32)
     set(HEADERS ${HEADERS} ${LIB_WIN32_HEADERS})
     include_directories("${PROJECT_SOURCE_DIR}/inc/win32")
     if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-        set(SOURCES ${SOURCES} src/stack_walker.cpp)
+        set(SOURCES ${SOURCES} src/win32/stack_walker.cpp)
         add_definitions(-DWANT_STACKWALKER)
     endif()
 endif()
