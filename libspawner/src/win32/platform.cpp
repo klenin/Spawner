@@ -8,10 +8,16 @@
 #include <stdlib.h>
 #include <string>
 
-#include <WinBase.h>
 // windows8 requires Processenv.h for GetEnvironmentVariableA()
+#include <WinBase.h>
+#include <Windows.h>
+#if defined(_MSC_VER)
+#include <dbghelp.h>
+#endif
 
-//#include <Windows.h>
+#include "stack_walker.h"
+
+
 #ifdef OPEN_JOB_OBJECT_DYNAMIC_LOAD
 void load_open_job_object() {
     HINSTANCE hDLL = LoadLibrary("kernel32.dll");
@@ -224,4 +230,100 @@ void ReadEnvironmentVariables(options_class &options, restrictions_class &restri
     if (GetEnvironmentVariable("SP_INPUT_FILE", buffer, sizeof(buffer))) {
         options.stdinput.push_back(buffer);
     }
+}
+
+#if defined(WANT_STACKWALKER)
+std::string get_stacktrace_string() {
+    std::stringstream r;
+    auto collect = [&](const char* s) {
+        r << s;
+    };
+    class StackWalkerToString : public StackWalker {
+        std::function<void(const char*)> f_;
+    public:
+        StackWalkerToString(std::function<void(const char*)> f) :f_(f) {}
+    protected:
+        virtual void OnOutput(LPCSTR szText) {
+            f_(szText);
+        }
+    } sw(collect);
+    sw.ShowCallstack();
+    return r.str();
+}
+#endif
+
+void make_minidump(EXCEPTION_POINTERS* e) {
+#if defined(_MSC_VER)
+    auto hDbgHelp = LoadLibraryA("dbghelp");
+    if (hDbgHelp == nullptr)
+        return;
+
+    auto pMiniDumpWriteDump = (decltype(&MiniDumpWriteDump))GetProcAddress(hDbgHelp, "MiniDumpWriteDump");
+    if (pMiniDumpWriteDump == nullptr)
+        return;
+
+    char name[MAX_PATH];
+    {
+        auto nameEnd = name + GetModuleFileNameA(GetModuleHandleA(0), name, MAX_PATH);
+        SYSTEMTIME t;
+        GetSystemTime(&t);
+        wsprintfA(nameEnd - strlen(".exe"),
+            "_%4d%02d%02d_%02d%02d%02d.dmp",
+            t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
+    }
+
+    auto hFile = CreateFileA(name, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return;
+
+    MINIDUMP_EXCEPTION_INFORMATION exceptionInfo;
+    exceptionInfo.ThreadId = GetCurrentThreadId();
+    exceptionInfo.ExceptionPointers = e;
+    exceptionInfo.ClientPointers = FALSE;
+
+    auto dumped = pMiniDumpWriteDump(
+        GetCurrentProcess(),
+        GetCurrentProcessId(),
+        hFile,
+        MINIDUMP_TYPE(MiniDumpWithIndirectlyReferencedMemory | MiniDumpScanMemory),
+        e ? &exceptionInfo : nullptr,
+        nullptr,
+        nullptr);
+
+    CloseHandle(hFile);
+
+#endif
+}
+
+std::string get_win_last_error_string() {
+    DWORD error_code = GetLastError();
+    char* error_text = nullptr;
+
+    auto format_message = [&](const DWORD lang_id) -> DWORD {
+        return FormatMessageA(
+            FORMAT_MESSAGE_FROM_SYSTEM
+            | FORMAT_MESSAGE_ALLOCATE_BUFFER
+            | FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL,
+            error_code,
+            lang_id,
+            (LPSTR)&error_text,
+            0, NULL);
+    };
+
+    if (format_message(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)) == 0) {
+        format_message(MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
+    }
+
+    std::stringstream r;
+    r << "error code: " << error_code;
+    if (error_text != nullptr) {
+        r << ": " << error_text;
+    }
+    LocalFree(error_text);
+    return r.str();
+}
+
+void platform_exit_failure() {
+	ExitProcess(1);
 }

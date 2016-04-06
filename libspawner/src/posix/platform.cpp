@@ -3,11 +3,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
-
 #include <stdlib.h>
 #include <string.h>
 
@@ -33,7 +31,7 @@ void push_shm_report(const char *shm_name, const std::string &report)
 		default: break;
 		}
 		*/
-		PANIC("Failed to shm_open() while pusing the report");
+		PANIC("Failed to shm_open() while pushing the report");
 	}
 	void *report_addr = mmap(0, options_class::SHARED_MEMORY_BUF_SIZE,
 	    PROT_WRITE, MAP_SHARED, shm_fd, 0);
@@ -125,4 +123,8 @@ std::string ExtractExitStatus(const report_class &report) {
 		s << report.exit_code;
 
 	return s.str();
+}
+
+void platform_exit_failure() {
+	exit(EXIT_FAILURE);
 }
