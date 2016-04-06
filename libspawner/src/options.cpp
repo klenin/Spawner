@@ -21,6 +21,7 @@ options_class::options_class(const options_class &options)
     , login(options.login)
     , password(options.password)
     , shared_memory(options.shared_memory)
+    , monitorInterval(options.monitorInterval)
     , report_file(options.report_file) {
 
     for (auto i = options.stdinput.begin(); i != options.stdinput.end(); i++) {
