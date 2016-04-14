@@ -118,7 +118,7 @@ std::string ExtractExitStatus(const report_class &report) {
 	std::ostringstream s;
 
 	if (report.signum)
-		s << get_signal_info(report.signum, "%n (%t)");
+		s << get_event_info(report.signum, "%n (%t)");
 	else
 		s << report.exit_code;
 

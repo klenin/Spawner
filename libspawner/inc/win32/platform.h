@@ -117,4 +117,13 @@ size_t get_env_var(const char *, char *, size_t);
 
 void ReadEnvironmentVariables(options_class &, restrictions_class &);
 
+#if defined(WANT_STACKWALKER)
+std::string get_stacktrace_string();
+#endif
+
+void make_minidump(EXCEPTION_POINTERS* e);
+std::string get_win_last_error_string();
+
+void platform_exit_failure();
+
 #endif //_WIN_PLATFORM_H_

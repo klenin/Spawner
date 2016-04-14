@@ -25,6 +25,7 @@ set(SOURCES
     src/uconvert.cpp
     src/compatibility.cpp
     src/error.cpp
+    src/report.cpp
 )
 
 set(HEADERS
@@ -42,6 +43,7 @@ set(HEADERS
     inc/session.h
     inc/status.h
 )
+
 set(LIB_WIN32_HEADERS
     inc/buffer.h
     inc/pipes.h
@@ -49,12 +51,16 @@ set(LIB_WIN32_HEADERS
     inc/win32/platform.h
     inc/win32/exceptions.h
     inc/win32/stack_walker.h
+    inc/win32/platform_report.h
 )
+
 set(LIB_POSIX_HEADERS
     inc/posix/platform.h
     inc/posix/signals.h
     inc/posix/rlimit.h
+    inc/posix/platform_report.h
 )
+
 set(LIB_LINUX_HEADERS
     inc/posix/linux_affinity.h
     inc/posix/linux_procfs.h
@@ -66,17 +72,16 @@ set(LIB_WIN32_SOURCES
     src/win32/delegate.cpp
     src/win32/pipes.cpp
     src/win32/platform.cpp
-    src/win32/report.cpp
+    src/win32/platform_report.cpp
     src/win32/runner.cpp
     src/win32/securerunner.cpp
 )
 set(LIB_UNIX_SOURCES
     src/posix/delegate.cpp
-    src/posix/report.cpp
+    src/posix/platform.cpp
     src/posix/runner.cpp
     src/posix/securerunner.cpp
     src/posix/rlimit.cpp
-    src/posix/platform.cpp
 )
 
 set(LIB_LINUX_SOURCES
