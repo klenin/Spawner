@@ -72,7 +72,6 @@ set(LIB_WIN32_SOURCES
     src/win32/delegate.cpp
     src/win32/pipes.cpp
     src/win32/platform.cpp
-    src/win32/platform_report.cpp
     src/win32/runner.cpp
     src/win32/securerunner.cpp
 )
