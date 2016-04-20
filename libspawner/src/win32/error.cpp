@@ -2,7 +2,10 @@
 
 #include <sstream>
 #include <windows.h>
+
+#if defined(_MSC_VER)
 #include <dbghelp.h>
+#endif
 
 #include "stack_walker.h"
 
@@ -121,6 +124,7 @@ void exec_on_panic_action_() {
 #endif
 
 void make_minidump(EXCEPTION_POINTERS* e) {
+#if defined(_MSC_VER)
     auto hDbgHelp = LoadLibraryA("dbghelp");
     if (hDbgHelp == nullptr)
         return;
@@ -159,6 +163,6 @@ void make_minidump(EXCEPTION_POINTERS* e) {
 
     CloseHandle(hFile);
 
-    return;
+#endif
 }
 
