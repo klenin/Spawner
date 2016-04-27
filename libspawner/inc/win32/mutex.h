@@ -1,9 +1,11 @@
-#pragma once
+#ifndef _WIN_MUTEX_H_
+#define _WIN_MUTEX_H_
 
 #include <atomic>
 #include <windows.h>
 
-#include "error.h"
+#include "inc/error.h"
+#include "platform.h"
 
 class mutex_c {
 public:
@@ -64,3 +66,4 @@ private:
     mutable std::atomic<unsigned> instance_count_{0};
     HANDLE handle = INVALID_HANDLE_VALUE;
 };
+#endif // _WIN_MUTEX_H_

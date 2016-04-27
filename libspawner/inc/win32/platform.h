@@ -9,7 +9,9 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "inc/pipes.h"
+#include "inc/restrictions.h"
+#include "inc/options.h"
+#include "platform_report.h"
 
 #ifdef _WIN32
 
@@ -21,9 +23,6 @@
 #include <windows.h>
 #include <tlhelp32.h>
 //#include <winioctl.h>
-
-// oostream in the Windows world works with wide strings (no need to w2a()).
-#define platform_login_str(x) (x)
 
 typedef HANDLE thread_t;
 
@@ -125,5 +124,7 @@ void make_minidump(EXCEPTION_POINTERS* e);
 std::string get_win_last_error_string();
 
 void platform_exit_failure();
+
+std::string ExtractExitStatus(const report_class &);
 
 #endif //_WIN_PLATFORM_H_

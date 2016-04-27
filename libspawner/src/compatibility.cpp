@@ -41,7 +41,7 @@ std::string GenerateSpawnerReport(const report_class &rep, const options_class &
     osstream << "Parameters:                " << options.format_arguments() << std::endl;
     osstream << "SecurityLevel:             " << (restrictions.get_restriction(restriction_security_limit) == restriction_limited) << std::endl;
     osstream << "CreateProcessMethod:       " << (options.login==""?"CreateProcess":"WithLogon") << std::endl;
-    osstream << "UserName:                  " << platform_login_str(rep.login.c_str()) << std::endl;
+    osstream << "UserName:                  " << w2a(rep.login.c_str()) << std::endl;
     osstream << "UserTimeLimit:             " << convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), restrictions.get_restriction(restriction_processor_time_limit), " (u)", restriction_no_limit) << std::endl;
     osstream << "DeadLine:                  " << convert(value_t(unit_time_second, degree_micro), value_t(unit_time_second), restrictions.get_restriction(restriction_user_time_limit), " (u)", restriction_no_limit) << std::endl;
     osstream << "MemoryLimit:               " << convert(value_t(unit_memory_byte), value_t(unit_memory_byte, degree_mega), restrictions.get_restriction(restriction_memory_limit), " (du)", restriction_no_limit) << std::endl;

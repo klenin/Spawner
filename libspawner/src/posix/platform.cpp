@@ -128,3 +128,6 @@ std::string ExtractExitStatus(const report_class &report) {
 void platform_exit_failure() {
 	exit(EXIT_FAILURE);
 }
+
+void platform_init() {
+}

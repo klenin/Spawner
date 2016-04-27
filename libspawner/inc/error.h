@@ -3,6 +3,7 @@
 
 #include <string>
 #include <functional>
+#include "platform.h"
 
 void set_on_panic_action(const std::function<void()> action);
 void set_error_text(const std::string& error_text);

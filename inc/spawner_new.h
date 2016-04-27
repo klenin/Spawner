@@ -11,7 +11,7 @@
 #include "arguments.h"
 #include "sp.h"
 #include "spawner_base.h"
-#include "inc/mutex.h"
+#include "mutex.h"
 
 class spawner_new_c: public spawner_base_c {
 protected:

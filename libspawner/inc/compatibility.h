@@ -4,7 +4,7 @@
 #include <inc/options.h>
 #include <inc/restrictions.h>
 #include "inc/multibyte.h"
-#include "platform.h"
+#include "platform_report.h"
 
 std::string GenerateSpawnerReport(const report_class &rep, const options_class &options, const restrictions_class &restrictions);
 

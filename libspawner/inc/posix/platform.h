@@ -5,8 +5,20 @@
 
 #include "platform_report.h"
 
-// oostream from stdlibc++/gcc4.9 can not work with wide strings
-#define platform_login_str(x) w2a(x)
+#define FOREGROUND_BLUE 0
+#define FOREGROUND_GREEN 0
+#define FOREGROUND_RED 0
+#define FOREGROUND_INTENSITY 0
+
+typedef int pipe_t;
+
+typedef int handle_t;
+#define INVALID_HANDLE_VALUE -1
+const handle_t handle_default_value = INVALID_HANDLE_VALUE;
+
+typedef void thread_return_t;
+typedef void* thread_param_t;
+typedef pthread_t thread_t;
 
 int get_spawner_pid();
 
@@ -17,5 +29,7 @@ size_t get_env_var(const char *, char *, size_t);
 std::string ExtractExitStatus(const report_class &);
 
 void platform_exit_failure();
+
+void platform_init();
 
 #endif // _POSIX_PLATFORM_H_

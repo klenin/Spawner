@@ -26,6 +26,8 @@ set(SOURCES
     src/compatibility.cpp
     src/error.cpp
     src/report.cpp
+    src/base_runner.cpp
+    src/hexdump.cpp
 )
 
 set(HEADERS
@@ -34,24 +36,26 @@ set(HEADERS
     inc/delegate.h
     inc/options.h
     inc/restrictions.h
-    inc/securerunner.h
     inc/uconvert.h
     inc/compatibility.h
     inc/error.h
     inc/report.h
-    inc/runner.h
+    inc/base_runner.h
     inc/session.h
     inc/status.h
+    inc/pipes.h
+    inc/base_runner.h
+    inc/hexdump.h
 )
 
 set(LIB_WIN32_HEADERS
-    inc/buffer.h
-    inc/pipes.h
-    inc/mutex.h
+    inc/win32/mutex.h
     inc/win32/platform.h
     inc/win32/exceptions.h
     inc/win32/stack_walker.h
     inc/win32/platform_report.h
+    inc/win32/runner.h
+    inc/win32/securerunner.h
 )
 
 set(LIB_POSIX_HEADERS
@@ -59,6 +63,9 @@ set(LIB_POSIX_HEADERS
     inc/posix/signals.h
     inc/posix/rlimit.h
     inc/posix/platform_report.h
+    inc/posix/mutex.h
+    inc/posix/runner.h
+    inc/posix/securerunner.h
 )
 
 set(LIB_LINUX_HEADERS
@@ -76,7 +83,9 @@ set(LIB_WIN32_SOURCES
     src/win32/securerunner.cpp
 )
 set(LIB_UNIX_SOURCES
+    src/posix/buffer.cpp
     src/posix/delegate.cpp
+    src/posix/pipes.cpp
     src/posix/platform.cpp
     src/posix/runner.cpp
     src/posix/securerunner.cpp
@@ -89,7 +98,7 @@ set(LIB_LINUX_SOURCES
     src/posix/linux_procfs.cpp
 )
 
-if(UNIX)
+if(UNIX OR CYGWIN)
     set(SOURCES ${SOURCES} ${LIB_UNIX_SOURCES})
     set(HEADERS ${HEADERS} ${LIB_UNIX_HEADERS})
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")

@@ -1,19 +1,19 @@
-#pragma once
+#ifndef _WIN_RUNNER_H_
+#define _WIN_RUNNER_H_
 
 #include <string>
 #include <map>
 #include <memory>
 
-#include "inc/platform.h"
 #include "inc/pipes.h"
 #include "inc/status.h"
 #include "inc/report.h"
 #include "inc/options.h"
+#include "inc/base_runner.h"
+#include "platform.h"
 
-class runner {
+class runner : public base_runner {
 private:
-    typedef std::list<std::pair<std::string, std::string>> env_vars_list_t;
-
     void copy_environment(TCHAR* dest, const WCHAR* source) const;
     void set_environment_var(TCHAR* dest, const std::string& varStr) const;
 
@@ -22,17 +22,9 @@ private:
     void restore_original_environment(const env_vars_list_t& original) const;
     mutex_c suspend_mutex_;
 protected:
-    unsigned long long creation_time;
     DWORD process_creation_flags;
     startupinfo_t si;
-    bool running_async;
-    options_class options;
-    std::string program;
-    std::map<pipes_t, std::shared_ptr<pipe_c>> pipes;
     process_info_t process_info;
-    process_status_t process_status;
-    bool running;
-    report_class report;
     thread_t running_thread;
     handle_t init_semaphore;//rename to mutex_init_signal
     static handle_t main_job_object;
@@ -66,17 +58,12 @@ public:
 
     virtual void run_process();
     virtual void run_process_async();
-    virtual restrictions_class get_restrictions() const { return restrictions_class(); }
     bool wait_for(const unsigned long &interval = INFINITE);
     bool wait_for_init(const unsigned long &interval);
     virtual void safe_release();
-    void set_pipe(const pipes_t &pipe_type, std::shared_ptr<pipe_c> pipe_object);
-    std::shared_ptr<pipe_c> get_pipe(const pipes_t &pipe_type);
-    std::shared_ptr<input_pipe_c> get_input_pipe();
-    std::shared_ptr<output_pipe_c> get_output_pipe();
     bool start_suspended = false;
     void suspend();
     void resume();
     bool is_running();
-    std::vector<std::shared_ptr<duplex_buffer_c>> duplex_buffers;
 };
+#endif // _WIN_RUNNER_H

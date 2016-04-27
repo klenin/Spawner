@@ -1,7 +1,7 @@
 #ifndef _SPAWNER_EXCEPTIONS_H_
 #define _SPAWNER_EXCEPTIONS_H_
 
-#include "platform.h"
+#include <Windows.h>
 #include "inc/report.h"
 
 enum exception_t
