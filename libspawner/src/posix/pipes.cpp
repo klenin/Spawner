@@ -88,6 +88,10 @@ pipe_t input_pipe_c::get_pipe()
     return input_pipe();
 }
 
+void output_pipe_c::drain_message(std::string &message)
+{
+}
+
 thread_return_t output_pipe_c::drain_pipe_thread(thread_param_t param)
 {
 }

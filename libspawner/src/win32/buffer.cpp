@@ -1,6 +1,5 @@
 #include "buffer.h"
 
-#include <memory>
 #include <cmath>
 #include <cstdio>
 
@@ -160,28 +159,6 @@ size_t input_stdin_buffer_c::read(void *data, size_t size) {
     size_t result = protected_read(data, size);
 
     return result;
-}
-
-void dprintf(const char* format, ...) {
-  int final_n;
-  int n = strlen(format) * 2;
-  std::string str;
-  std::unique_ptr<char[]> formatted;
-  va_list ap;
-  for (;;) {
-    formatted.reset(new char[n]);
-    strcpy(&formatted[0], format);
-    va_start(ap, format);
-    final_n = vsnprintf(&formatted[0], n, format, ap);
-    va_end(ap);
-    if (final_n < 0 || final_n >= n) {
-      n += std::abs(final_n - n + 1);
-    } else {
-      break;
-    }
-  }
-  static output_stdout_buffer_c stdout_buffer(FOREGROUND_INTENSITY | FOREGROUND_GREEN | FOREGROUND_RED);
-  stdout_buffer.write(formatted.get(), final_n);
 }
 
 size_t pipe_buffer_c::write_impl_(const void *data, size_t size) {

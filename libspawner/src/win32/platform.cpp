@@ -1,6 +1,6 @@
 #include "inc/uconvert.h"
 #include "inc/error.h"
-
+#include "compatibility.h"
 #include "platform.h"
 
 #include <sstream>
@@ -117,7 +117,9 @@ size_t get_env_var(const char *name, char *buff, size_t size)
     return GetEnvironmentVariableA(name, buff, size);
 }
 
-std::string ExtractExitStatus(const unsigned int &code) {
+std::string ExtractExitStatus(const report_class &rep) {
+    unsigned int code = rep.exit_code;
+
     switch (code) {
         case STATUS_ACCESS_VIOLATION:
             return "AccessViolation";

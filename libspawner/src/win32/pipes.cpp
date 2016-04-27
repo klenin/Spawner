@@ -209,38 +209,6 @@ pipe_t input_pipe_c::get_pipe()
     return input_pipe();
 }
 
-void hexDump(const void *addr, int len) {
-    static mutex_c mutex;
-    mutex.lock();
-    int i;
-    unsigned char buff[17];
-    unsigned char *pc = (unsigned char*)addr;
-
-    for (i = 0; i < len; i++) {
-        if ((i % 16) == 0) {
-            if (i != 0)
-                dprintf("  %s\n", buff);
-            dprintf("  %04x ", i);
-        }
-
-        dprintf(" %02x", pc[i]);
-
-        if ((pc[i] < 0x20) || (pc[i] > 0x7e))
-            buff[i % 16] = '.';
-        else
-            buff[i % 16] = pc[i];
-        buff[(i % 16) + 1] = '\0';
-    }
-
-    while ((i % 16) != 0) {
-        dprintf("   ");
-        i++;
-    }
-
-    dprintf("  %s\n", buff);
-    mutex.unlock();
-}
-
 void output_pipe_c::drain_message(std::string &message)
 {
     buffers_mutex_.lock();
