@@ -241,6 +241,20 @@ void hexDump(const void *addr, int len) {
     mutex.unlock();
 }
 
+void output_pipe_c::drain_message(std::string &message)
+{
+    buffers_mutex_.lock();
+    if (process_message) {
+        process_message(message, this);
+    }
+    else {
+        for (uint i = 0; i < output_buffers.size(); ++i) {
+            write_buffer(i, message.c_str(), message.size());
+        }
+    }
+    buffers_mutex_.unlock();
+}
+
 thread_return_t output_pipe_c::drain_pipe_thread(thread_param_t param)
 {
     // Can't use shared_ptr here: it causes a deadlock
@@ -270,10 +284,15 @@ thread_return_t output_pipe_c::drain_pipe_thread(thread_param_t param)
             Sleep(1);
             //self->done_io_ = true;
             if (self->stop_thread_) {
+                if (!self->message_buffer.empty()) {
+                    self->drain_message(self->message_buffer);
+                    self->message_buffer.clear();
+                }
                 break;
             }
             // continue; ???
-        } else {
+        }
+        else {
             size_t bytes_count = self->read(data, DEFAULT_BUFFER_SIZE);
             if (bytes_count == 0) {
                 self->done_io_ = true;
@@ -296,24 +315,14 @@ thread_return_t output_pipe_c::drain_pipe_thread(thread_param_t param)
             }
 
             if (p1 == 0
-             && !self->message_buffer.empty()
-             && (self->stop_thread_ || peek_result == false)) {
+                && !self->message_buffer.empty()
+                && (self->stop_thread_ || peek_result == false)) {
                 p1 = self->message_buffer.length() - 1;
             }
 
             if (p1 > 0) {
-                std::string message = self->message_buffer.substr(0, p1 + 1);
+                self->drain_message(self->message_buffer.substr(0, p1 + 1));
                 self->message_buffer = self->message_buffer.substr(p1 + 1);
-                self->buffers_mutex_.lock();
-                if (self->process_message) {
-                    self->process_message(message, self);
-                }
-                else {
-                    for (uint i = 0; i < self->output_buffers.size(); ++i) {
-                        self->write_buffer(i, message.c_str(), message.size());
-                    }
-                }
-                self->buffers_mutex_.unlock();
             }
         } while (p1 != 0);
 

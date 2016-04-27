@@ -79,6 +79,7 @@ protected:
     std::string message_buffer;
     void remove_buffer_safe_impl_(const std::shared_ptr<buffer_c>& buffer);
     std::vector<std::shared_ptr<output_buffer_c>> output_buffers;
+    void output_pipe_c::drain_message(std::string &message);
 public:
     output_pipe_c();
     virtual ~output_pipe_c();
