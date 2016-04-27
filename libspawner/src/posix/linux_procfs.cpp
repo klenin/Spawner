@@ -1,4 +1,4 @@
-#include "inc/linux_procfs.h"
+#include "linux_procfs.h"
 
 bool procfs_class::probe_pid(pid_t p)
 {

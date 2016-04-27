@@ -1,4 +1,4 @@
-#include <inc/linux_affinity.h>
+#include "linux_affinity.h"
 
 bool linux_affinity_class::set(pid_t p)
 {
