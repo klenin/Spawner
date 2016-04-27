@@ -219,11 +219,11 @@ void hexDump(const void *addr, int len) {
     for (i = 0; i < len; i++) {
         if ((i % 16) == 0) {
             if (i != 0)
-                dprintf ("  %s\n", buff);
-            dprintf ("  %04x ", i);
+                dprintf("  %s\n", buff);
+            dprintf("  %04x ", i);
         }
 
-        dprintf (" %02x", pc[i]);
+        dprintf(" %02x", pc[i]);
 
         if ((pc[i] < 0x20) || (pc[i] > 0x7e))
             buff[i % 16] = '.';
@@ -233,11 +233,11 @@ void hexDump(const void *addr, int len) {
     }
 
     while ((i % 16) != 0) {
-        dprintf ("   ");
+        dprintf("   ");
         i++;
     }
 
-    dprintf ("  %s\n", buff);
+    dprintf("  %s\n", buff);
     mutex.unlock();
 }
 
