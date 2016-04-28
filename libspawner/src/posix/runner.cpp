@@ -1,28 +1,8 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <sstream>
-#include <list>
-
-#include <stdio.h>
-#include <limits.h> // realpath
-#include <stdlib.h> // {set,unset}env, realpath
-
-#include <sys/types.h> // open, waitpid
 #include <sys/wait.h>
-
-#include <pthread.h>
-
-#include <time.h> // clock_getcpuclockid();
-#include <sys/time.h> // getrusage
-#include <sys/resource.h> // getrusage
-#include <sys/stat.h> // open
-#include <fcntl.h> // open
-#include <unistd.h> // getpagesize(), access(), char **environ, getcwd, usleep
-#include <signal.h> // signal
-#include <string.h> //strncpy
-#include <pwd.h> // getpw...
-#include <grp.h> // setgroups
+#include <sys/stat.h>
+#include <unistd.h>
+#include <pwd.h>
+#include <grp.h>
 
 #include "inc/error.h"
 
@@ -48,6 +28,7 @@ process_status_t runner::get_process_status(){
 runner::env_vars_list_t runner::read_environment() const
 {
 	env_vars_list_t vars;
+	extern char **environ;
 	char *const *envp = environ;
 
 	while (*envp) {
@@ -143,10 +124,6 @@ void runner::release_argv_for_process(char **argv) const
 	}
 }
 
-void runner::set_proc_pid(pid_t p) {
-	proc_pid = p;
-}
-
 pid_t runner::get_proc_pid() {
 	return proc_pid;
 }
@@ -182,7 +159,7 @@ void runner::init_process(const char *cmd_toexec, char **process_argv, char **pr
 	// TODO - return value over pipe
 	if (options.login != "")
 		if (change_credentials())
-			exit(1);
+			exit(EXIT_FAILURE);
 	if (read(child_sync[0], &child_syncbuf, sizeof(child_syncbuf)) == -1) {
 		// no panics since we are child, just kill itself 
 		//PANIC("failed get sync message from parent");
@@ -213,10 +190,10 @@ void *runner::waitpid_body(void *waitpid_param) {
 	self->signal = signal_signal_no;
 	self->exit_code = 0;
 	do {
-		pid_t w = waitpid(self->get_proc_pid(), &status,
+		pid_t w = waitpid(self->proc_pid, &status,
 		    WUNTRACED | WCONTINUED);
 		if (WIFSIGNALED(status)) {
-		// "signalled" means abnormal/terminate
+			// "signalled" means abnormal/terminate
 #ifdef WCOREDUMP
 			self->process_status = process_finished_abnormally;
 #else
@@ -365,7 +342,7 @@ void runner::create_process() {
 	if (!S_ISREG(statbuf.st_mode))
 		PANIC("please try not to exec a non regular file\n");
 
-	// XXX move to secure runner and or to forked child
+	// XXX move to secure runner and/or to forked child
 	if (wd != nullptr) {
 		cwd = getcwd(NULL, 0);
 		if (cwd == nullptr)
@@ -428,9 +405,6 @@ report_class runner::get_report() {
 		// "WallClock" (named "user_time") is filled in waitpid thread
 #if !defined(__linux__)
 		report.peak_memory_used = ru.ru_maxrss * 1024;
-
-		// Dont use this 
-		//report.write_transfer_count = ru.ru_outblock;
 #endif
 	}
 	return report;

@@ -1,12 +1,8 @@
-#ifndef SECURE_RUNNER_H
-#define SECURE_RUNNER_H
+#ifndef _SECURE_RUNNER_H_
+#define _SECURE_RUNNER_H_
 
-#include <string>
 #include <atomic>
 #include <functional>
-
-#include <unistd.h> // usleep
-#include <fcntl.h>
 
 #include "runner.h"
 
@@ -14,8 +10,6 @@
 #include "linux_procfs.h"
 #include "linux_seccomp.h"
 #endif
-#include "rlimit.h"
-
 
 class secure_runner: public runner
 {
@@ -34,30 +28,30 @@ private:
 	bool monitor_ready = false;
 
 protected:
-    restrictions_class start_restrictions;
-    restrictions_class restrictions;
-    terminate_reason_t terminate_reason;
-    std::atomic<bool> prolong_time_limits_{false};
-    virtual bool create_restrictions();
-    virtual void init_process(const char *cmd_toexec, char **process_argv, char **process_envp);
-    virtual void create_process();
+	restrictions_class start_restrictions;
+	restrictions_class restrictions;
+	terminate_reason_t terminate_reason;
+	std::atomic<bool> prolong_time_limits_{false};
+	virtual bool create_restrictions();
+	virtual void init_process(const char *cmd_toexec, char **process_argv, char **process_envp);
+	virtual void create_process();
 
-    static void *check_limits_proc(void *);
+	static void *check_limits_proc(void *);
 
-    virtual void runner_free();
-    virtual void requisites();
+	virtual void runner_free();
+	virtual void requisites();
 public:
-    secure_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions);
-    virtual ~secure_runner();
+	secure_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions);
+	virtual ~secure_runner();
 
-    terminate_reason_t get_terminate_reason();
+	terminate_reason_t get_terminate_reason();
 
-    restrictions_class get_restrictions() const;
-    process_status_t get_process_status();
-    virtual report_class get_report();
-    void prolong_time_limits();
-    bool force_stop = false;
-    std::function<void()> on_terminate;
-    virtual bool wait_for();
+	restrictions_class get_restrictions() const;
+	process_status_t get_process_status();
+	virtual report_class get_report();
+	void prolong_time_limits();
+	bool force_stop = false;
+	std::function<void()> on_terminate;
+	virtual bool wait_for();
 };
-#endif
+#endif // _SECURE_RUNNER_H_

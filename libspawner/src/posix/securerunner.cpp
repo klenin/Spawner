@@ -1,5 +1,7 @@
 #include "securerunner.h"
 
+#include "rlimit.h"
+
 secure_runner::secure_runner(const std::string &program, 
 	const options_class &options, const restrictions_class &restrictions)
 	: runner(program, options)
@@ -212,7 +214,7 @@ void secure_runner::runner_free()
 
 void *secure_runner::check_limits_proc(void *monitor_param) {
 	// add SIGSTOP and getitimer() support
-	pid_t process_pid;
+	pid_t proc_pid;
         int poparg;
 
 	struct timespec req;
@@ -221,7 +223,7 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
 	
 	secure_runner *self = (secure_runner *)monitor_param;
 	
-	process_pid = self->get_proc_pid();
+	proc_pid = self->get_proc_pid();
 
 	req.tv_sec=0;
 	req.tv_nsec=0;
@@ -234,7 +236,7 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
 		req.tv_nsec = (self->options.monitorInterval % 1000000) * 1000;
 
 #if defined(__linux__)
-	self->proc.probe_pid(process_pid);
+	self->proc.probe_pid(proc_pid);
 	// XXX exit if proc disappeared
 	self->proc.fill_all();
 #endif
@@ -258,10 +260,10 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
 				break;
 			if (self->restrictions.get_restriction(restriction_write_limit) != restriction_no_limit && (self->proc.write_bytes > self->restrictions.get_restriction(restriction_write_limit))) {
 				// stop process and take a death mask
-				kill(process_pid, SIGSTOP);
+				kill(proc_pid, SIGSTOP);
 				self->proc.fill_all();
 				// terminate
-				kill(process_pid, SIGKILL);
+				kill(proc_pid, SIGKILL);
 				self->terminate_reason =
 				    terminate_reason_write_limit;
 				self->process_status =
@@ -275,7 +277,7 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
 			if (sigxcpu_signalled) {
 				// kill process manually with KILL
 				// in case SIGXCPU has been ignored
-				kill(process_pid, SIGKILL);
+				kill(proc_pid, SIGKILL);
 				self->terminate_reason =
 				    terminate_reason_user_time_limit;
 				self->process_status =
@@ -284,7 +286,7 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
 			} else {
 				// SIGXCPU can be ignored.
 				sigxcpu_signalled = true;
-				kill(process_pid, SIGXCPU);
+				kill(proc_pid, SIGXCPU);
 				// XXX wait some time?
 			}
 		}

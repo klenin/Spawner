@@ -1,8 +1,7 @@
 #ifndef _RUNNER_H_
 #define _RUNNER_H_
 
-#include <sys/time.h> // getrusage
-#include <sys/resource.h> // getrusage
+#include <sys/resource.h>
 
 #include "inc/base_runner.h"
 
@@ -55,7 +54,6 @@ protected:
 	virtual void create_process();
 	virtual void requisites();
 public:
-	void set_proc_pid(pid_t pid);
 	pid_t get_proc_pid();
 	void run_waitpid();
 	void run_monitor();
@@ -70,10 +68,8 @@ public:
 	virtual bool wait_for();
 	void suspend() { };
 	void resume() { };
-	bool is_running();
 	bool start_suspended = true;
 	virtual process_status_t get_process_status();
-	process_status_t get_process_status_no_side_effects() { return get_process_status(); }
 	signal_t get_signal();
 	virtual unsigned long long get_time_since_create();
 	static unsigned long long get_current_time();
