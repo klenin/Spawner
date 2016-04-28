@@ -1,3 +1,6 @@
+#include <unistd.h>
+#include <fcntl.h>
+
 #include "securerunner.h"
 
 #include "rlimit.h"
