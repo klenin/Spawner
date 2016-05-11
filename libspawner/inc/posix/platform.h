@@ -3,6 +3,10 @@
 #include <string>
 #include <stdlib.h>
 
+#ifdef __MACH__
+#include <sys/time.h>
+#endif
+
 #include "platform_report.h"
 
 #define FOREGROUND_BLUE 0
@@ -31,5 +35,9 @@ std::string ExtractExitStatus(const report_class &);
 void platform_exit_failure();
 
 void platform_init();
+
+#ifdef __MACH__
+unsigned long long int clock_gettime(int, struct timespec *);
+#endif
 
 #endif // _POSIX_PLATFORM_H_

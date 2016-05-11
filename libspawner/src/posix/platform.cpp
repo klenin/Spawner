@@ -131,3 +131,20 @@ void platform_exit_failure() {
 
 void platform_init() {
 }
+
+#ifdef __MACH__
+unsigned long long int clock_gettime(int id, struct timespec *ts) {
+    struct timeval tv;
+    int rv;
+
+    rv = gettimeofday(&tv, NULL);
+
+    if (rv)
+        return rv;
+
+    ts->tv_sec  = tv.tv_sec;
+    ts->tv_nsec = tv.tv_usec * 1000;
+
+    return 0;
+}
+#endif
