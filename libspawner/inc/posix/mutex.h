@@ -10,8 +10,7 @@ class mutex_c {
 public:
     mutex_c() {
         if (instance_count_ == 0) {
-            
-	    pthread_mutex_init(&handle, NULL);
+            pthread_mutex_init(&handle, NULL);
         }
         std::atomic_fetch_add_explicit(&instance_count_, 1u, std::memory_order_relaxed);
     }
@@ -21,7 +20,7 @@ public:
             std::atomic_thread_fence(std::memory_order_acquire);
             //unlock prior to destroy
             unlock();
-	    pthread_mutex_destroy(&handle);
+            pthread_mutex_destroy(&handle);
         }
     }
 
@@ -39,7 +38,7 @@ public:
             // mutex is locked, unlock it back
             unlock();
             return false; 
-	}
+        }
     }
 
     void unlock() {

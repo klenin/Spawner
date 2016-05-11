@@ -24,20 +24,18 @@ delegate_runner::delegate_runner(const std::string &program,
 }
 
 void delegate_runner::create_process() {
-
     char *path = realpath(program_to_run.c_str(), NULL);
     if (path != nullptr) {
         program_to_run = path;
-	free(path);
+    free(path);
     } else
         PANIC("Failed to realpath();");
 
     options.push_argument_front(program_to_run);
 
-    if (options.use_cmd)
-    {
-	PANIC("--cmd not supported here");
-	options.push_argument_front("--cmd");
+    if (options.use_cmd) {
+        PANIC("--cmd not supported here");
+        options.push_argument_front("--cmd");
     }
 
     //options.use_cmd = true;
@@ -90,14 +88,13 @@ void delegate_runner::create_process() {
 
     std::string working_directory = options.working_directory;
     char *cwd;
-    if (working_directory.length() == 0)
-    {
-	cwd = getcwd(NULL, 0);
-	if (cwd != nullptr)
-            working_directory = cwd;
-	else
-            PANIC("Failed to getcwd() for working directory");
-	free(cwd);
+    if (working_directory.length() == 0) {
+    cwd = getcwd(NULL, 0);
+    if (cwd != nullptr)
+        working_directory = cwd;
+    else
+        PANIC("Failed to getcwd() for working directory");
+    free(cwd);
     }
 
     options.push_argument_front("-wd=" + working_directory);
@@ -131,8 +128,8 @@ void delegate_runner::create_process() {
     if (shm_fd == -1)
         PANIC("Failed to shm_open()");
     if (ftruncate(shm_fd, options_class::SHARED_MEMORY_BUF_SIZE) == -1) {
-	shm_unlink(shared_memory_name.c_str());
-    	PANIC("Failed to ftruncate() shmem to specified size");
+    shm_unlink(shared_memory_name.c_str());
+        PANIC("Failed to ftruncate() shmem to specified size");
     }
     umask(old);
     options.shared_memory = shared_memory_name;

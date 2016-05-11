@@ -107,7 +107,7 @@ void options_class::add_stdoutput(const std::string &name) {
     if (std::find(stdoutput.begin(), stdoutput.end(), name) != stdoutput.end()) {
         return;
     }
-	if (name == CLEAR_STRING || name.empty()) {
+    if (name == CLEAR_STRING || name.empty()) {
         stdoutput.clear();
         return;
     }
@@ -118,7 +118,7 @@ void options_class::add_stderror(const std::string &name) {
     if (std::find(stderror.begin(), stderror.end(), name) != stderror.end()) {
         return;
     }
-	if (name == CLEAR_STRING || name.empty()) {
+    if (name == CLEAR_STRING || name.empty()) {
         stdoutput.clear();
         return;
     }

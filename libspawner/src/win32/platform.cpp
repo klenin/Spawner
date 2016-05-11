@@ -327,5 +327,5 @@ std::string get_win_last_error_string() {
 }
 
 void platform_exit_failure() {
-	ExitProcess(1);
+    ExitProcess(1);
 }

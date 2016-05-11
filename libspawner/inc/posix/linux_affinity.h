@@ -2,7 +2,7 @@
 
 class linux_affinity_class {
 private:
-	cpu_set_t cpumask;
+    cpu_set_t cpumask;
 public:
-	bool set(pid_t p);
+    bool set(pid_t p);
 };

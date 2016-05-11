@@ -2,14 +2,6 @@
 #define _PROCFS_CLASS_H_
 #include <string>
 
-#include <unistd.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-#include <string.h>
-
 #define STAT_UTIME_POS 13
 #define STAT_STIME_POS 14
 #define STAT_VSIZE_POS 22
@@ -22,17 +14,17 @@
 
 
 struct procfs_class {
-	bool discovered, disappeared;
-	size_t read_bytes, write_bytes; // io file: i/o from block-backed storages 
-	size_t stat_utime, stat_stime;
-	size_t stat_vsize, stat_rss;
-	size_t vss_max;
+    bool discovered, disappeared;
+    size_t read_bytes, write_bytes; // io file: i/o from block-backed storages 
+    size_t stat_utime, stat_stime;
+    size_t stat_vsize, stat_rss;
+    size_t vss_max;
 
-	std::string io_path, stat_path;
+    std::string io_path, stat_path;
 
-	bool probe_pid(pid_t);
-	bool fill_stat();
-	bool fill_io();
-	bool fill_all();
+    bool probe_pid(pid_t);
+    bool fill_stat();
+    bool fill_io();
+    bool fill_all();
 };
-#endif
+#endif // _PROCFS_CLASS_H_
