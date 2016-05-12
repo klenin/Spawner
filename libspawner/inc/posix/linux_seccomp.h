@@ -108,7 +108,9 @@ static struct sock_filter filter[] = {
     ALLOW_SYSCALL(access),
     ALLOW_SYSCALL(fstat),
     ALLOW_SYSCALL(mmap),
+#if defined(__x86_64__)
     ALLOW_SYSCALL(arch_prctl),
+#endif
     ALLOW_SYSCALL(munmap),
     ALLOW_SYSCALL(mprotect),
     KILL_PROCESS,
