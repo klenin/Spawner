@@ -137,6 +137,7 @@ bool command_handler_c::parse(int argc, char *argv[]) {
 
 command_handler_c* handler = nullptr;
 
+#if defined(_WIN32) || defined(_WIN64)
 BOOL WINAPI CtrlHandlerRoutine(DWORD dwCtrlType) {
     if (handler != nullptr) {
         handler->spawner->print_report();
@@ -145,6 +146,7 @@ BOOL WINAPI CtrlHandlerRoutine(DWORD dwCtrlType) {
     }
     return FALSE;
 }
+#endif
 
 int main(int argc, char *argv[]) {
     platform_init();
@@ -154,7 +156,9 @@ int main(int argc, char *argv[]) {
 #if defined(_MSC_VER)
     _set_abort_behavior(0, _WRITE_ABORT_MSG);
 #endif
+#if defined(_WIN32) || defined(_WIN64)
     SetConsoleCtrlHandler(CtrlHandlerRoutine, TRUE);
+#endif
     set_on_panic_action([&]() {
         if (handler != nullptr) {
             handler->spawner->print_report();

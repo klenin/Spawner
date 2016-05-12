@@ -1,9 +1,10 @@
-#pragma once
+#ifndef _DELEGATE_RUNNER_H_
+#define _DELEGATE_RUNNER_H_
 
 #include <fstream>
 #include <string>
 
-#include "inc/securerunner.h"
+#include "securerunner.h"
 
 class delegate_runner: public runner
 {
@@ -16,3 +17,4 @@ public:
     delegate_runner(const std::string &program, const options_class &options,
         const restrictions_class &restrictions);
 };
+#endif // _DELEGATE_RUNNER_H

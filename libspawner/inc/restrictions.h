@@ -3,6 +3,7 @@
 
 #include <string>
 #include <inc/session.h>
+#include <climits>
 
 enum restriction_kind_t
 {
@@ -17,10 +18,11 @@ enum restriction_kind_t
     restriction_max                     = 0x8
 };
 
-typedef unsigned int restriction_t;
+typedef unsigned long restriction_t;
 
-const restriction_t restriction_no_limit = 0xffffffff;
-const restriction_t restriction_limited  = 0x00000001;
+const restriction_t restriction_no_limit = ULONG_MAX;
+const restriction_t restriction_limited = 1;
+
 //TODO move source to platform independent .cpp
 struct restrictions_class
 {

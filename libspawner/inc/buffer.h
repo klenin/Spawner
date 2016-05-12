@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _BUFFER_H_
+#define _BUFFER_H_
 
 #include <string>
 #include <sstream>
@@ -7,8 +8,8 @@
 #include <cstdarg>
 #include <memory>
 
-#include "inc/platform.h"
-#include "inc/mutex.h"
+#include "mutex.h"
+#include "platform.h"
 
 class buffer_c {
 public:
@@ -138,3 +139,4 @@ private:
     std::shared_ptr<input_pipe_c> pipe_;
     virtual size_t write_impl_(const void *data, size_t size);
 };
+#endif // _BUFFER_H_

@@ -1,6 +1,6 @@
-#include <inc/runner.h>
-#include <inc/error.h>
+#include "inc/error.h"
 
+#include "runner.h"
 #ifdef _MSC_VER
 #pragma comment(lib, "Userenv")
 #endif
@@ -370,12 +370,8 @@ thread_return_t runner::async_body(thread_param_t param) {
 }
 
 runner::runner(const std::string &program, const options_class &options)
-    : program(program)
-    , options(options)
-    , process_status(process_not_started)
-    , running_async(false)
+    : base_runner(program, options)
     , running_thread(handle_default_value)
-    , running(false)
     , init_semaphore(handle_default_value) {
 
     init_semaphore = CreateSemaphore(NULL, 0, 10, NULL);
@@ -546,25 +542,6 @@ bool runner::wait_for_init(const unsigned long &interval) {
 void runner::safe_release() {
     process_status = process_spawner_crash;
     free();// make it safe!!!
-}
-
-void runner::set_pipe(const pipes_t &pipe_type, std::shared_ptr<pipe_c> pipe_object) {
-    pipes[pipe_type] = pipe_object;
-}
-
-std::shared_ptr<pipe_c> runner::get_pipe(const pipes_t &pipe_type) {
-    if (pipes.find(pipe_type) == pipes.end()) {
-        return 0;
-    }
-    return pipes[pipe_type];
-}
-
-std::shared_ptr<input_pipe_c> runner::get_input_pipe() {
-    return std::static_pointer_cast<input_pipe_c>(get_pipe(STD_INPUT_PIPE));
-}
-
-std::shared_ptr<output_pipe_c> runner::get_output_pipe() {
-    return std::static_pointer_cast<output_pipe_c>(get_pipe(STD_INPUT_PIPE));
 }
 
 void runner::enumerate_threads_(std::function<void(handle_t)> on_thread) {

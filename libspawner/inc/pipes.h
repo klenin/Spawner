@@ -1,15 +1,14 @@
-#pragma once
-
+#ifndef _PIPES_H_
+#define _PIPES_H_
 #include <sstream>
 #include <string>
 #include <memory>
 #include <functional>
 #include <atomic>
 
-#include "inc/platform.h"
 #include "inc/buffer.h"
-#include "inc/session.h"
-#include "inc/mutex.h"
+#include "platform.h"
+#include "mutex.h"
 
 enum pipes_t/*rename*/ {
     STD_INPUT_PIPE,
@@ -30,7 +29,7 @@ private:
     mutex_c write_mutex;
 protected:
     void create_pipe();
-    handle_t buffer_thread;
+    thread_t buffer_thread;
     pipe_t readPipe;
     pipe_t writePipe;
     std_pipe_t pipe_type;
@@ -79,7 +78,7 @@ protected:
     std::string message_buffer;
     void remove_buffer_safe_impl_(const std::shared_ptr<buffer_c>& buffer);
     std::vector<std::shared_ptr<output_buffer_c>> output_buffers;
-    void output_pipe_c::drain_message(std::string &message);
+    void drain_message(std::string &message);
 public:
     output_pipe_c();
     virtual ~output_pipe_c();
@@ -98,3 +97,4 @@ public:
     }
     std::function<void(std::string&, output_pipe_c*)> process_message;
 };
+#endif // _PIPES_H_

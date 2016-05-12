@@ -141,7 +141,7 @@ void spawner_new_c::json_report(runner *runner_instance,
     rapidjson_write("ExitCode");
     writer.Uint(runner_report.exit_code);
     rapidjson_write("ExitStatus");
-    rapidjson_write(ExitCodeToString(runner_report.exit_code).c_str());
+    rapidjson_write(ExtractExitStatus(runner_report).c_str());
     rapidjson_write("SpawnerError");
     writer.StartArray();
     std::vector<std::string> errors;
@@ -494,25 +494,7 @@ void spawner_new_c::print_report() {
 
             if (options_item.login.length() > 0)
             {
-                HANDLE hIn = OpenFileMappingA(
-                    FILE_MAP_ALL_ACCESS,
-                    FALSE,
-                    options_item.shared_memory.c_str()
-                    );
-
-                LPTSTR pRep = (LPTSTR)MapViewOfFile(
-                    hIn,
-                    FILE_MAP_ALL_ACCESS,
-                    0,
-                    0,
-                    options_class::SHARED_MEMORY_BUF_SIZE
-                    );
-
-                report = pRep;
-
-                UnmapViewOfFile(pRep);
-
-                CloseHandle(hIn);
+                pull_shm_report(options_item.shared_memory.c_str(), report);
             }
 
             if (report.length() == 0)
@@ -537,14 +519,7 @@ void spawner_new_c::print_report() {
 
             if (options_item.delegated)
             {
-                HANDLE hOut = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, options_item.shared_memory.c_str());
-                LPCSTR pRep = (LPTSTR)MapViewOfFile(hOut, FILE_MAP_ALL_ACCESS, 0, 0, options_class::SHARED_MEMORY_BUF_SIZE);
-
-                memcpy((PVOID)pRep, report.c_str(), sizeof(char) * report.length());
-
-                UnmapViewOfFile(pRep);
-
-                CloseHandle(hOut);
+                push_shm_report(options_item.shared_memory.c_str(), report);
             }
             else
             {
@@ -657,6 +632,11 @@ void spawner_new_c::init_arguments() {
     console_default_parser->add_argument_parser(c_lst(long_arg("debug")),
         environment_default_parser->add_argument_parser(c_lst("SP_DEBUG"), new boolean_argument_parser_c(options.debug))
         );
+
+    console_default_parser->add_argument_parser(c_lst(short_arg("mi"),
+        long_arg("monitorInterval")),
+        environment_default_parser->add_argument_parser(c_lst("SP_MONITOR_INTERVAL"), new microsecond_argument_parser_c(options.monitorInterval)))->set_description("Sleep interval for a monitor thread (defaults to 0.001s)");
+
     console_default_parser->add_flag_parser(c_lst(long_arg("cmd"), short_arg("cmd"), long_arg("systempath")),
         environment_default_parser->add_argument_parser(c_lst("SP_SYSTEM_PATH"), new boolean_argument_parser_c(options.use_cmd))
         );

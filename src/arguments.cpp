@@ -1,6 +1,8 @@
 #include "arguments.h"
 #include <iostream>
 
+#include <stdarg.h> // va_{strt,arg}
+
 compact_list_c::compact_list_c(){}
 
 compact_list_c::compact_list_c(int dummy_value, ...) {
@@ -300,12 +302,13 @@ bool environment_variable_parser_c::invoke_initialization(abstract_settings_pars
     }
 
     for (auto i = parameters.begin(); i != parameters.end(); i++) {
-        auto result = GetEnvironmentVariableA(i->first.c_str(), buffer, sizeof(buffer));
-        if (result > sizeof(buffer)) {
+        auto result = get_env_var(i->first.c_str(), buffer, sizeof(buffer));
+
+	if (result > sizeof(buffer)) {
             std::cerr << "Invalid parameter value for \"" << i->first << "\" with error: Buffer overflow" << std::endl;
         } else if (result > 0) {
             try {
-                i->second->apply(std::string(buffer));
+                i->second->apply(std::string(buffer, result));
             } catch (std::string &error) {
                 std::cerr << "Invalid parameter value for \"" << i->first << "\" with error: " << error << std::endl;
             }

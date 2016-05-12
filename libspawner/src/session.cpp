@@ -1,14 +1,14 @@
 #include <session.h>
-#include <platform.h>
 #include <memory.h>
 #include <iomanip>
+#include "platform.h"
 
 //session_manager_class session_manager_class::session_manager_instance;
 session_class session_class::base_session;
 
 session_class::session_class() {
     md5_init(&md5_state);
-    (*this) << GetCurrentProcessId();
+    (*this) << get_spawner_pid();
 }
 
 session_class::session_class(const session_class &session) {

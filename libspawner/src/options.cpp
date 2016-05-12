@@ -20,6 +20,8 @@ options_class::options_class(const options_class &options)
     , working_directory(options.working_directory)
     , login(options.login)
     , password(options.password)
+    , shared_memory(options.shared_memory)
+    , monitorInterval(options.monitorInterval)
     , report_file(options.report_file) {
 
     for (auto i = options.stdinput.begin(); i != options.stdinput.end(); i++) {
@@ -105,7 +107,7 @@ void options_class::add_stdoutput(const std::string &name) {
     if (std::find(stdoutput.begin(), stdoutput.end(), name) != stdoutput.end()) {
         return;
     }
-	if (name == CLEAR_STRING || name.empty()) {
+    if (name == CLEAR_STRING || name.empty()) {
         stdoutput.clear();
         return;
     }
@@ -116,7 +118,7 @@ void options_class::add_stderror(const std::string &name) {
     if (std::find(stderror.begin(), stderror.end(), name) != stderror.end()) {
         return;
     }
-	if (name == CLEAR_STRING || name.empty()) {
+    if (name == CLEAR_STRING || name.empty()) {
         stdoutput.clear();
         return;
     }

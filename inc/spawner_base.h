@@ -7,6 +7,7 @@
 
 #include "sp.h"
 #include "arguments.h"
+#include "inc/compatibility.h"
 
 class spawner_base_c {
 protected:

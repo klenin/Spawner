@@ -19,6 +19,7 @@ struct options_class
         : hide_gui(true)
         , silent_errors(true)
         , debug(false)
+        , monitorInterval(1000) // 0.001s
         , secure_token(false)
         , use_cmd(false)
         , session(session_param)
@@ -64,6 +65,7 @@ struct options_class
     bool use_cmd;
     bool delegated;
     bool controller;
+    unsigned long monitorInterval;
     std::string environmentMode;
 };
 

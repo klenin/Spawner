@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _WIN_PLATFORM_H_
+#define _WIN_PLATFORM_H_
 
 /************************************************************************/
 /* GLOBAL TODO                                                          */
@@ -7,6 +8,11 @@
 /************************************************************************/
 
 #include <stdlib.h>
+#include <string.h>
+#include "inc/restrictions.h"
+#include "inc/options.h"
+#include "platform_report.h"
+
 #ifdef _WIN32
 
 //#ifndef _MSC_VER
@@ -91,18 +97,34 @@ const unsigned long infinite = INFINITE;
 
 const handle_t handle_default_value = INVALID_HANDLE_VALUE;
 
-#else
-
-#endif//_WIN32
-
 BOOL WINAPI CancelSynchronousIo_wrapper(HANDLE);
-
-void platform_init();
-
-wchar_t *a2w(const char *str);
-char *w2a(const wchar_t *str);
 
 #ifndef uint
 typedef unsigned int uint_32;
 typedef uint_32 uint;
 #endif//uint
+
+#endif//_WIN32
+
+void platform_init();
+int get_spawner_pid();
+
+void push_shm_report(const char *, const std::string &);
+void pull_shm_report(const char *, std::string &);
+
+size_t get_env_var(const char *, char *, size_t);
+
+void ReadEnvironmentVariables(options_class &, restrictions_class &);
+
+#if defined(WANT_STACKWALKER)
+std::string get_stacktrace_string();
+#endif
+
+void make_minidump(EXCEPTION_POINTERS* e);
+std::string get_win_last_error_string();
+
+void platform_exit_failure();
+
+std::string ExtractExitStatus(const report_class &);
+
+#endif //_WIN_PLATFORM_H_

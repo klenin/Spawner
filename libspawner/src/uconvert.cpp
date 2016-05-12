@@ -241,7 +241,8 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
         }
     }
 
-    double result = abs(convert(from, to, value));
+    double result = labs(convert(from, to, value));
+    
     return (unsigned long)result;
 }
 
