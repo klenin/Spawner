@@ -1,6 +1,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include "securerunner.h"
 
 #include "rlimit.h"
@@ -44,13 +47,9 @@ void secure_runner::prepare_stdio() {
         }
 
     if (options.stdoutput.size() == 1) {
-        out = open(options.stdoutput[0].c_str(), O_WRONLY | O_CREAT | O_NOFOLLOW
-// linux supports mode_t
-#if defined(__linux__)
-            , S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
-#else // others dont
-            , 0644);
-#endif
+        out = open(options.stdoutput[0].c_str(),
+            O_WRONLY | O_CREAT | O_NOFOLLOW,
+            S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
         if (out == -1)
             exit(EXIT_FAILURE);
         else {
@@ -66,12 +65,9 @@ void secure_runner::prepare_stdio() {
             dup2(STDOUT_FILENO, STDERR_FILENO);
         }
         else {
-            err = open(options.stderror[0].c_str(), O_WRONLY | O_CREAT | O_NOFOLLOW
-#if defined(__linux__)
-                , S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
-#else
-                , 0644);
-#endif
+            err = open(options.stderror[0].c_str(),
+                O_WRONLY | O_CREAT | O_NOFOLLOW,
+                S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
             if (err == -1)
                 exit(EXIT_FAILURE);
             else {
