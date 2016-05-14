@@ -90,3 +90,8 @@ set_property(TARGET sp PROPERTY CXX_STANDARD 11)
 set_property(TARGET sp PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET libspawner PROPERTY CXX_STANDARD 11)
 set_property(TARGET libspawner PROPERTY CXX_STANDARD_REQUIRED ON)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "--stdlib=libc++ ${CMAKE_CXX_FLAGS}")
+endif()
+

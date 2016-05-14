@@ -122,3 +122,7 @@ add_library(${PROJECT_LIBRARY} ${SOURCES} ${HEADERS})
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.7")
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "--stdlib=libc++ ${CMAKE_CXX_FLAGS}")
+endif()
+
