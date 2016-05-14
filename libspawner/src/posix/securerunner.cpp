@@ -60,11 +60,12 @@ void secure_runner::prepare_stdio() {
     }
 
     // try to merge stderr and stdout
-    if (options.stderror.size() == 1)
+    if (options.stderror.size() == 1) {
         if(options.stderror[0] == options.stdoutput[0]) {
             close(STDERR_FILENO);
             dup2(STDOUT_FILENO, STDERR_FILENO);
-        } else {
+        }
+        else {
             err = open(options.stderror[0].c_str(), O_WRONLY | O_CREAT | O_NOFOLLOW
 #if defined(__linux__)
                 ,S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
@@ -78,6 +79,7 @@ void secure_runner::prepare_stdio() {
                 dup2(err, STDERR_FILENO);
             }
         }
+    }
 }
 
 

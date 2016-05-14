@@ -71,6 +71,7 @@ protected:
     std::string description_string;
 public:
     abstract_argument_parser_c() : reference_count(0) {}
+    virtual ~abstract_argument_parser_c() {}
     virtual void after() {}
     virtual bool set(const std::string &s) = 0;
     virtual bool apply(const std::string &s) = 0;

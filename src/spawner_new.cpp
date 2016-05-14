@@ -42,7 +42,7 @@ void spawner_new_c::json_report(runner *runner_instance,
 
     restrictions_class runner_restrictions = ((secure_runner*)runner_instance)->get_restrictions();
     struct {
-        char *field;
+        const char *field;
         unit_t unit;
         degrees_enum degree;
         restriction_kind_t restriction;
@@ -83,7 +83,7 @@ void spawner_new_c::json_report(runner *runner_instance,
     rapidjson_write("Result");
     writer.StartObject();
     struct {
-        char *field;
+        const char *field;
         uint64_t value;
         unit_t unit;
         degrees_enum degree;

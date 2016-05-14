@@ -36,9 +36,11 @@ pipe_c::~pipe_c() {
 }
 
 size_t pipe_c::write(const void *data, size_t size) {
+    return 0;
 }
 
 size_t pipe_c::read(void *data, size_t size) {
+    return 0;
 }
 
 void pipe_c::bufferize() {

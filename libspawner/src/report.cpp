@@ -29,7 +29,7 @@ unsigned int get_event_index(event_t event)
     while (mcs->name) {
         if (mcs->key == event)
             return result;
-        *mcs++;
+        mcs++;
         ++result;
     }
 
