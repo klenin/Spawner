@@ -47,9 +47,9 @@ void secure_runner::prepare_stdio() {
         out = open(options.stdoutput[0].c_str(), O_WRONLY | O_CREAT | O_NOFOLLOW
 // linux supports mode_t
 #if defined(__linux__)
-            ,S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+            , S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 #else // others dont
-            );
+            , 0644);
 #endif
         if (out == -1)
             exit(EXIT_FAILURE);
@@ -68,9 +68,9 @@ void secure_runner::prepare_stdio() {
         else {
             err = open(options.stderror[0].c_str(), O_WRONLY | O_CREAT | O_NOFOLLOW
 #if defined(__linux__)
-                ,S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+                , S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 #else
-                );
+                , 0644);
 #endif
             if (err == -1)
                 exit(EXIT_FAILURE);
