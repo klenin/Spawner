@@ -51,7 +51,11 @@ char **runner::create_envp_for_process() const
 
     // environ variable is a shared resource
     pthread_mutex_lock(&envp_lock);
+#ifdef __MACH__
+    // TODO: Find a real solution for OS X
+#else
     environ = nullptr; //dont call clearenv() since it releases memory
+#endif
     if (options.environmentMode == "user-default") {
         PANIC("user-default mode is not supported");
         //setenv("SPAWNER_VERSION", "POSIX", 1);
