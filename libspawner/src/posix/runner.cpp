@@ -405,6 +405,7 @@ report_class runner::get_report() {
     if (ru_success) {
         report.kernel_time = (10000000 * ru.ru_stime.tv_sec) / 10 + ru.ru_stime.tv_usec;
         report.processor_time = (10000000 * ru.ru_utime.tv_sec) / 10 + ru.ru_utime.tv_usec;
+        report.load_ratio = report.user_time ? (double)report.processor_time / report.user_time : 1.0;
         // "WallClock" (named "user_time") is filled in waitpid thread
 #if !defined(__linux__)
         report.peak_memory_used = ru.ru_maxrss * 1024;
