@@ -260,7 +260,7 @@ void runner::report_login() {
 
     std::string login;
     
-    pwdp == nullptr;
+    pwdp = nullptr;
     if (options.login != "") {
         getpwnam_r(options.login.c_str(), &pwd, pwdbuf, sizeof(pwdbuf), &pwdp);
         if (pwdp == nullptr)
