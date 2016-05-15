@@ -232,6 +232,7 @@ bool runner::wait_for()
 {
     pthread_join(waitpid_thread, NULL);
     running = false;
+    return true;
 }
 
 void runner::requisites() {

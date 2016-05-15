@@ -143,6 +143,7 @@ bool secure_runner::wait_for()
     runner::wait_for();
     pthread_cancel(monitor_thread);
     pthread_join(monitor_thread, NULL);
+    return true;
 }
 
 terminate_reason_t secure_runner::get_terminate_reason() {
@@ -231,12 +232,11 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
     ticks_elapsed = 0;
     tick_to_micros = 1000000 / tick_res;
 
-    self->proc.probe_pid(proc_pid);
-    self->proc.fill_all();
-    if (!self->proc.discovered) {
+    if(!self->proc.probe_pid(proc_pid)) {
         kill(proc_pid, SIGKILL);
         PANIC("procfs entry not created");
     }
+    self->proc.fill_all();
 #endif
 
     req.tv_sec=0;
