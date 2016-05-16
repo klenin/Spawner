@@ -143,6 +143,7 @@ bool secure_runner::wait_for()
     runner::wait_for();
     pthread_cancel(monitor_thread);
     pthread_join(monitor_thread, NULL);
+    return true;
 }
 
 terminate_reason_t secure_runner::get_terminate_reason() {
@@ -163,11 +164,12 @@ terminate_reason_t secure_runner::get_terminate_reason() {
         break;
     }
     case SIGKILL: // if process was killed by the monitor thread, take into
-              // account terminate reason. 
+                  // account terminate reason. 
         if (terminate_reason == terminate_reason_user_time_limit 
-            || terminate_reason == terminate_reason_write_limit)
+            || terminate_reason == terminate_reason_write_limit
+            || terminate_reason == terminate_reason_load_ratio_limit)
             break;
-        else { // manually killed by human or hard rlimit 
+        else { // manually killed by a human or hard rlimit 
             terminate_reason
                 = terminate_reason_abnormal_exit_process;
             break;
@@ -219,8 +221,23 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
     bool sigxcpu_signalled = false;
     
     secure_runner *self = (secure_runner *)monitor_param;
-    
+
     proc_pid = self->get_proc_pid();
+
+#if defined(__linux__)
+    long int tick_res, ticks_elapsed, tick_to_micros;
+    // CLK_TCK is deprecated and it seems that it is just "emulated",
+    // for backward compatibility w/ setrlimit/getrusage/procfs(stat).
+    tick_res = sysconf(_SC_CLK_TCK);
+    ticks_elapsed = 0;
+    tick_to_micros = 1000000 / tick_res;
+
+    if(!self->proc.probe_pid(proc_pid)) {
+        kill(proc_pid, SIGKILL);
+        PANIC("procfs entry not created");
+    }
+    self->proc.fill_all();
+#endif
 
     req.tv_sec=0;
     req.tv_nsec=0;
@@ -231,12 +248,6 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
     // convert ms to ns
     if (self->options.monitorInterval % 1000000)
         req.tv_nsec = (self->options.monitorInterval % 1000000) * 1000;
-
-#if defined(__linux__)
-    self->proc.probe_pid(proc_pid);
-    // XXX exit if proc disappeared
-    self->proc.fill_all();
-#endif
 
     // report that monitor thread has been started
     pthread_mutex_lock(&self->monitor_lock);
@@ -251,21 +262,47 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
     while (1) {
         pthread_testcancel();
 #if defined(__linux__)
-        if (self->proc.discovered) {
-            // procfs related things are here
-            if(!self->proc.fill_all())
-                break;
-            if (self->restrictions.get_restriction(restriction_write_limit) != restriction_no_limit && (self->proc.write_bytes > self->restrictions.get_restriction(restriction_write_limit))) {
-                // stop process and take a death mask
-                kill(proc_pid, SIGSTOP);
-                self->proc.fill_all();
-                // terminate
-                kill(proc_pid, SIGKILL);
-                self->terminate_reason =
-                    terminate_reason_write_limit;
-                self->process_status =
-                    process_finished_terminated;
-                break;
+        if(!self->proc.fill_all())
+            break;
+        if (self->restrictions.get_restriction(restriction_write_limit) != restriction_no_limit && (self->proc.write_bytes > self->restrictions.get_restriction(restriction_write_limit))) {
+            // stop process and take a death mask
+            kill(proc_pid, SIGSTOP);
+            self->proc.fill_all();
+            // terminate
+            kill(proc_pid, SIGKILL);
+            self->terminate_reason = terminate_reason_write_limit;
+            self->process_status = process_finished_terminated;
+            break;
+        }
+
+        // load ratio judge.
+        // Take into account:
+        // -- procfs utime entry is updated (only) every "tick"
+        // -- Do not perform calculations too often (only after "tick" ticks)
+        // -- Calculate ratio only when clock "ticks" at least first 5 times.
+#define TICK_THRESHOLD 5
+        if (self->restrictions.get_restriction(restriction_load_ratio) != restriction_no_limit) {
+            unsigned long long current_time = self->get_time_since_create()/10;
+            if ((current_time / tick_to_micros) > ticks_elapsed) {
+                ticks_elapsed = current_time / tick_to_micros;
+                //printf("ticks: %lu\n", ticks_elapsed);
+                if (ticks_elapsed >= TICK_THRESHOLD) {
+                    double load_ratio;
+                    double wclk_elapsed = (double)current_time / 1000000;
+                    double proc_consumed = (double)self->proc.stat_utime / tick_res;
+                    load_ratio = proc_consumed / wclk_elapsed;
+                    //printf("consumed: %g (procfs value %lu) ", proc_consumed, self->proc.stat_utime);
+                    double restriction = (double)self->restrictions.get_restriction(restriction_load_ratio) / 10000;
+                    //printf("load_ratio: %g, restriction: %g\n", load_ratio, restriction);
+                    if (load_ratio < restriction) {
+                        kill(proc_pid, SIGSTOP);
+                        self->proc.fill_all();
+                        kill(proc_pid, SIGKILL);
+                        self->terminate_reason = terminate_reason_load_ratio_limit;
+                        self->process_status = process_finished_terminated;
+                        break;
+                    }
+                }
             }
         }
 #endif
