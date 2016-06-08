@@ -98,8 +98,10 @@ bool secure_runner::create_restrictions() {
         impose_rlimit(RLIMIT_RSS, restrictions.get_restriction(restriction_memory_limit));
 #endif
 
+#if !defined(__linux__) // linux version has a procfs judge
     if (restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit)
         impose_rlimit(RLIMIT_CPU, restrictions.get_restriction(restriction_processor_time_limit) / 1000000);
+#endif
 
     if (restrictions.get_restriction(restriction_security_limit) != restriction_no_limit) {
         impose_rlimit(RLIMIT_CORE, 0);
@@ -147,6 +149,8 @@ bool secure_runner::wait_for()
 }
 
 terminate_reason_t secure_runner::get_terminate_reason() {
+    // TODO: rework all thats rye
+
     switch (get_signal()) {
     case signal_signal_no: break;
     case SIGABRT:
@@ -167,7 +171,8 @@ terminate_reason_t secure_runner::get_terminate_reason() {
                   // account terminate reason. 
         if (terminate_reason == terminate_reason_user_time_limit 
             || terminate_reason == terminate_reason_write_limit
-            || terminate_reason == terminate_reason_load_ratio_limit)
+            || terminate_reason == terminate_reason_load_ratio_limit
+            || terminate_reason == terminate_reason_time_limit)
             break;
         else { // manually killed by a human or hard rlimit 
             terminate_reason
@@ -218,18 +223,20 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
 
     struct timespec req;
     
-    bool sigxcpu_signalled = false;
-    
     secure_runner *self = (secure_runner *)monitor_param;
 
     proc_pid = self->get_proc_pid();
 
 #if defined(__linux__)
-    long int tick_res, ticks_elapsed, tick_to_micros;
-    // CLK_TCK is deprecated and it seems that it is just "emulated",
-    // for backward compatibility w/ setrlimit/getrusage/procfs(stat).
+    int tick_res;
+    long int ticks_elapsed, tick_to_micros;
+    unsigned long long int current_time;
+    bool tick_detected;
+    double proc_consumed, restriction; // TODO -- get rid of FPU calculations.
+
     tick_res = sysconf(_SC_CLK_TCK);
     ticks_elapsed = 0;
+    tick_detected = false;
     tick_to_micros = 1000000 / tick_res;
 
     if(!self->proc.probe_pid(proc_pid)) {
@@ -275,52 +282,81 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
             break;
         }
 
-        // load ratio judge.
-        // Take into account:
-        // -- procfs utime entry is updated (only) every "tick"
-        // -- Do not perform calculations too often (only after "tick" ticks)
-        // -- Calculate ratio only when clock "ticks" at least first 5 times.
-#define TICK_THRESHOLD 5
-        if (self->restrictions.get_restriction(restriction_load_ratio) != restriction_no_limit) {
-            unsigned long long current_time = self->get_time_since_create()/10;
+        // The common virtual tick detection code (only for appropriate judges).
+        // -- Procfs utime entry is updated (only) when virtual "user space"
+        //    (The Linux kernel can be idle-tickless or even fully tickless,
+        //    so it provides virtual ticks for user space) "tick" ticks.
+        // -- Do not perform calculations too often (only after "tick" ticks).
+        if ((self->restrictions.get_restriction(restriction_load_ratio)
+            != restriction_no_limit) ||
+            (self->restrictions.get_restriction(restriction_processor_time_limit)           != restriction_no_limit)) {
+            current_time = self->get_time_since_create() / 10;
             if ((current_time / tick_to_micros) > ticks_elapsed) {
+                proc_consumed = (double) self->proc.stat_utime / tick_res;
                 ticks_elapsed = current_time / tick_to_micros;
-                //printf("ticks: %lu\n", ticks_elapsed);
-                if (ticks_elapsed >= TICK_THRESHOLD) {
-                    double load_ratio;
-                    double wclk_elapsed = (double)current_time / 1000000;
-                    double proc_consumed = (double)self->proc.stat_utime / tick_res;
-                    load_ratio = proc_consumed / wclk_elapsed;
-                    //printf("consumed: %g (procfs value %lu) ", proc_consumed, self->proc.stat_utime);
-                    double restriction = (double)self->restrictions.get_restriction(restriction_load_ratio) / 10000;
-                    //printf("load_ratio: %g, restriction: %g\n", load_ratio, restriction);
-                    if (load_ratio < restriction) {
-                        kill(proc_pid, SIGSTOP);
-                        self->proc.fill_all();
-                        kill(proc_pid, SIGKILL);
-                        self->terminate_reason = terminate_reason_load_ratio_limit;
-                        self->process_status = process_finished_terminated;
-                        break;
-                    }
+                tick_detected = true;
+            } else
+                tick_detected = false;
+        }
+
+        // The load ratio judge
+        // -- Calculate the ratio only when clock "ticks" at least first 5 times
+        //    (controlled process starts to consume CPU ticks after some time,
+        //    at least on my 1.4GHz Core2Solo), uncomment printfs and check with
+        //    "./sp --out /dev/null /bin/yes"
+#define TICK_THRESHOLD 5
+        if (self->restrictions.get_restriction(restriction_load_ratio)
+            != restriction_no_limit) {
+            // printf("ticks: %lu\n", ticks_elapsed);
+            if (tick_detected && (ticks_elapsed >= TICK_THRESHOLD)) {
+                double wclk_elapsed = (double) current_time / 1000000;
+                double load_ratio = proc_consumed / wclk_elapsed;
+                // printf("consumed: %g (procfs value %lu) ", proc_consumed, self->proc.stat_utime);
+                restriction = (double)self->restrictions.get_restriction(restriction_load_ratio) / 10000;
+                // printf("load_ratio: %g, restriction: %g\n", load_ratio, restriction);
+                if (load_ratio < restriction) {
+                    kill(proc_pid, SIGSTOP);
+                    self->proc.fill_all();
+                    kill(proc_pid, SIGKILL);
+                    self->terminate_reason = terminate_reason_load_ratio_limit;
+                    self->process_status = process_finished_terminated;
+                    break;
                 }
             }
         }
+
+        // precise cpu usage judge
+        if (self->restrictions.get_restriction(restriction_processor_time_limit)            != restriction_no_limit) {
+            if (tick_detected) {
+                double restriction = (double)self->restrictions.get_restriction(restriction_processor_time_limit) / 1000000;
+                // printf("time limit: %g, utime: %lu, consumed: %g\n",
+                //    (double)restriction, self->proc.stat_utime, proc_consumed);
+                if (proc_consumed >= restriction) {
+                    // stopped process has no chance to handle SIGXCPU
+                    //kill(proc_pid, SIGSTOP);
+                    self->proc.fill_all();
+                    // SIGXCPU can be ignored
+                    kill(proc_pid, SIGXCPU);
+                    // wait some time for signal delivery
+                    usleep((useconds_t)tick_to_micros);
+                    kill(proc_pid, SIGKILL);
+                    self->terminate_reason = terminate_reason_time_limit;
+                    self->process_status = process_finished_terminated;
+                }
+            }
+        }
+
+        // TODO: vmemory judge with correct termination reason
+
 #endif
         if (( self->get_time_since_create() / 10 ) >
             self->restrictions.get_restriction(restriction_user_time_limit)) {
-            if (sigxcpu_signalled) {
-                // kill process manually with KILL
-                // in case SIGXCPU has been ignored
+                self->proc.fill_all();
+                kill(proc_pid, SIGXCPU);
+                usleep((useconds_t)tick_to_micros);
                 kill(proc_pid, SIGKILL);
                 self->terminate_reason = terminate_reason_user_time_limit;
                 self->process_status = process_finished_terminated;
-                break;
-            } else {
-                // SIGXCPU can be ignored.
-                sigxcpu_signalled = true;
-                kill(proc_pid, SIGXCPU);
-                // XXX wait some time?
-            }
         }
 
         nanosleep(&req, nullptr);
