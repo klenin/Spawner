@@ -164,7 +164,7 @@ int spawner_new_c::get_normal_index_(const std::string& message) {
 
     if (normal_index == 0) {
         return 0;
-    } else if (normal_index < 1 || normal_index > runners.size() - 1) {
+    } else if (normal_index < 1 || normal_index > int(runners.size() - 1)) {
         normal_index = -1;
     }
 
@@ -186,7 +186,7 @@ int spawner_new_c::normal_to_runner_index_(int normal_index) {
     if (normal_runner_index >= controller_index_) {
         normal_runner_index++;
     }
-    PANIC_IF(normal_runner_index <= 0 || normal_runner_index >= runners.size());
+    PANIC_IF(normal_runner_index <= 0 || normal_runner_index >= (int)runners.size());
     return normal_runner_index;
 }
 
@@ -310,7 +310,7 @@ void spawner_new_c::setup_stream_(const std::string& stream_str, pipes_t this_pi
 
     int out_runner_index = -1;
     int in_runner_index = -1;
-    for (int i = 0; i < runners.size(); i++) {
+    for (size_t i = 0; i < runners.size(); i++) {
         if (runners[i] == out_pipe_runner) {
             out_runner_index = i;
         }
@@ -351,7 +351,7 @@ bool spawner_new_c::init() {
     if (!init_runner() || !runners.size()) {
         return false;
     }
-    for (int i = 0; i < runners.size(); i++) {
+    for (size_t i = 0; i < runners.size(); i++) {
         if (runners[i]->get_options().controller) {
             // there must be only one controller process
             PANIC_IF(controller_index_ != -1);
@@ -362,7 +362,7 @@ bool spawner_new_c::init() {
     }
     if (controller_index_ != -1) {
         awaited_normals_.resize(runners.size() - 1);
-        for (int i = 0; i < runners.size(); i++) {
+        for (size_t i = 0; i < runners.size(); i++) {
             secure_runner* sr = static_cast<secure_runner*>(runners[i]);
             if (i != controller_index_) {
                 sr->start_suspended = true;

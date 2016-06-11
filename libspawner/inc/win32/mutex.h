@@ -53,6 +53,7 @@ public:
             return true;
         default:
             PANIC(get_win_last_error_string());
+            return false; // Silence warning
         }
     }
 

@@ -182,10 +182,10 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
         return default_value;
     }
 
-    size_t current_index = iss.tellg();
+    std::streamoff current_index = iss.tellg();
 
-    if (current_index != -1) {
-        v = v.substr(current_index, v.length() - current_index);
+    if (current_index >= 0) {
+        v = v.substr((size_t)(current_index), v.length() - (size_t)current_index);
     } else {
         v = "";
     }
@@ -241,8 +241,8 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
         }
     }
 
-    double result = labs(convert(from, to, value));
-    
-    return (unsigned long)result;
+    unsigned long result = labs((long)convert(from, to, value));
+
+    return result;
 }
 

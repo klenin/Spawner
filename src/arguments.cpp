@@ -134,7 +134,7 @@ bool settings_parser_c::parse(int argc, char *argv[]) {
     arg_c = argc;
     arg_v = argv;
     position = 1;
-    for (int i = 0; i < parsers.size(); ++i) {
+    for (size_t i = 0; i < parsers.size(); ++i) {
         parsers[i]->invoke_initialization(*this);
     }
 
