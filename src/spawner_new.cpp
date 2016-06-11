@@ -652,14 +652,14 @@ void spawner_new_c::init_arguments() {
             new microsecond_argument_parser_c(options.monitorInterval))
     )->set_description("Sleep interval for a monitor thread (defaults to 0.001s)");
 
-    console_default_parser->add_flag_parser(c_lst(long_arg("cmd"), short_arg("cmd"), long_arg("systempath")),
+    console_default_parser->add_flag_parser(c_lst(short_arg("c"), long_arg("systempath")),
         environment_default_parser->add_argument_parser(c_lst("SP_SYSTEM_PATH"), new boolean_argument_parser_c(options.use_cmd))
     );
     console_default_parser->add_argument_parser(c_lst(short_arg("wd")),
         environment_default_parser->add_argument_parser(c_lst("SP_DIRECTORY"), new string_argument_parser_c(options.working_directory))
     );
 
-    console_default_parser->add_flag_parser(c_lst(long_arg("json")),
+    console_default_parser->add_flag_parser(c_lst(short_arg("j"), long_arg("json")),
         environment_default_parser->add_argument_parser(c_lst("SP_JSON"), new boolean_argument_parser_c(options.json))
     );
 
