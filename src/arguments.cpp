@@ -279,7 +279,7 @@ std::string console_argument_parser_c::help(abstract_settings_parser_c *parser) 
                 res << ", ";
             }
             if (*j == SEPARATOR_ARGUMENT) {
-                res << "--[separator]";
+                res << "--<separator>";
             } else {
                 res << *j;
             }

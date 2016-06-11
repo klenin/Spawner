@@ -77,7 +77,7 @@ public:
     virtual bool apply(const std::string &s) = 0;
     void dereference() { reference_count--; if (!reference_count) delete this; }
     abstract_argument_parser_c *reference() { reference_count++; return this; }
-    std::string value_description() { return "[value]"; }
+    virtual std::string value_description() { return "<value>"; }
     std::string description() { return description_string; }
     abstract_argument_parser_c *set_description(const std::string &_description) { description_string = _description; return this; }
 };
@@ -240,6 +240,7 @@ public:
 class environment_mode_argument_parser_c : public string_argument_parser_c {
 public:
     environment_mode_argument_parser_c(std::string &mode) : string_argument_parser_c(mode) {}
+    virtual std::string value_description() { return "inherit|user-default|clear"; }
     virtual bool set(const std::string &m) {
         std::vector<std::string> acceptables = {
             "inherit",
@@ -297,6 +298,7 @@ template<typename T, unit_t u, degrees_enum d>
 class unit_argument_parser_c : public base_argument_parser_c < T > {
 public:
     unit_argument_parser_c(T &value) : base_argument_parser_c<T>(value) {}
+    virtual std::string value_description() { return "<value>[unit]"; }
     virtual bool set(const std::string &s) {
         try {
             this->value = convert(value_t(u, d), s, restriction_no_limit);
@@ -381,6 +383,7 @@ protected:
     }
 public:
     base_boolean_argument_parser_c(T &value) : base_argument_parser_c<T>(value) {}
+    virtual std::string value_description() { return "0|1"; }
     virtual bool set(const std::string &s) {
         if (s == "1") {
             this->value = true_value();
@@ -389,7 +392,7 @@ public:
             this->value = false_value();
         }
         else {
-            this->error = "Value type is not compatible";
+            this->error = "Value must be either 0 or 1";
             return false;
         }
         return true;
