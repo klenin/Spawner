@@ -567,11 +567,11 @@ void spawner_new_c::init_arguments() {
     console_default_parser->add_argument_parser(c_lst(short_arg("tl")),
         environment_default_parser->add_argument_parser(c_lst("SP_TIME_LIMIT"),
             new microsecond_argument_parser_c(restrictions[restriction_processor_time_limit]))
-    )->set_description("Time limit");
+    )->set_description("Time limit (user process time)");
     console_default_parser->add_argument_parser(c_lst(short_arg("d")),
         environment_default_parser->add_argument_parser(c_lst("SP_DEADLINE"),
             new microsecond_argument_parser_c(restrictions[restriction_user_time_limit]))
-    );
+            )->set_description("Time limit (wallclock time)");;
     console_default_parser->add_argument_parser(c_lst(short_arg("s")),
         environment_default_parser->add_argument_parser(c_lst("SP_SECURITY_LEVEL"),
             new bool_restriction_argument_parser_c(restrictions[restriction_security_limit]))
@@ -579,19 +579,19 @@ void spawner_new_c::init_arguments() {
     console_default_parser->add_argument_parser(c_lst(short_arg("ml")),
         environment_default_parser->add_argument_parser(c_lst("SP_MEMORY_LIMIT"),
             new byte_argument_parser_c(restrictions[restriction_memory_limit]))
-    );
+    )->set_description("Memory limit");
     console_default_parser->add_argument_parser(c_lst(short_arg("wl")),
         environment_default_parser->add_argument_parser(c_lst("SP_WRITE_LIMIT"),
             new byte_argument_parser_c(restrictions[restriction_write_limit]))
-    );
+    )->set_description("Output size limit");
     console_default_parser->add_argument_parser(c_lst(short_arg("lr")),
         environment_default_parser->add_argument_parser(c_lst("SP_LOAD_RATIO"),
             new percent_argument_parser_c(restrictions[restriction_load_ratio]))
-    );
+    )->set_description("Declared idle processor load is below this (default: 5%)");
     console_default_parser->add_argument_parser(c_lst(short_arg("y")),
         environment_default_parser->add_argument_parser(c_lst("SP_IDLE_TIME_LIMIT"),
             new microsecond_argument_parser_c(restrictions[restriction_idle_time_limit]))
-    );
+    )->set_description("Idleness time limit");
 
     console_default_parser->add_argument_parser(c_lst(short_arg("u")),
         environment_default_parser->add_argument_parser(c_lst("SP_USER"),
@@ -605,39 +605,39 @@ void spawner_new_c::init_arguments() {
     console_default_parser->add_argument_parser(c_lst(short_arg("sr")),
         environment_default_parser->add_argument_parser(c_lst("SP_REPORT_FILE"),
             new string_argument_parser_c(options.report_file))
-    );
+    )->set_description("Save report to file");
 
     console_default_parser->add_argument_parser(c_lst(short_arg("env")),
-        environment_default_parser->add_argument_parser(c_lst("SP_CLEAR_ENV"),
+        environment_default_parser->add_argument_parser(c_lst("SP_ENVIRONMENT"),
             new environment_mode_argument_parser_c(options.environmentMode))
-    );
+    )->set_description("Control environment variables for <executable> (default: inherit)");
 
     console_default_parser->add_argument_parser(c_lst(short_arg("D")),
         new options_callback_argument_parser_c(&options, &options_class::add_environment_variable)
-    );
+    )->set_description("Define additinal enviromnent variable for <executable>");
 
     console_default_parser->add_argument_parser(c_lst(short_arg("so"), long_arg("out")),
         environment_default_parser->add_argument_parser(c_lst("SP_OUTPUT_FILE"),
             new options_callback_argument_parser_c(&options, &options_class::add_stdoutput))
-    );
+    )->set_description("Redirect standard output stream to file");
     console_default_parser->add_argument_parser(c_lst(short_arg("i"), long_arg("in")),
         environment_default_parser->add_argument_parser(c_lst("SP_INPUT_FILE"),
             new options_callback_argument_parser_c(&options, &options_class::add_stdinput))
-    );
+    )->set_description("Redirect standard input stream from file");
     console_default_parser->add_argument_parser(c_lst(short_arg("e"), short_arg("se"), long_arg("err")),
         environment_default_parser->add_argument_parser(c_lst("SP_ERROR_FILE"),
             new options_callback_argument_parser_c(&options, &options_class::add_stderror))
-    );
+    )->set_description("Redirect standard error stream to file");
 
     console_default_parser->add_argument_parser(c_lst(short_arg("runas"), long_arg("delegated")),
         environment_default_parser->add_argument_parser(c_lst("SP_RUNAS"), new boolean_argument_parser_c(options.delegated))
     );
     console_default_parser->add_argument_parser(c_lst(short_arg("ho")),
         environment_default_parser->add_argument_parser(c_lst("SP_HIDE_OUTPUT"), new boolean_argument_parser_c(options.hide_output))
-    );
+    )->set_description("Do not display report on console");
     console_default_parser->add_argument_parser(c_lst(short_arg("hr")),
         environment_default_parser->add_argument_parser(c_lst("SP_HIDE_REPORT"), new boolean_argument_parser_c(options.hide_report))
-    );
+    )->set_description("Do not display report on console");
 
     console_default_parser->add_argument_parser(c_lst(short_arg("sw")),
         environment_default_parser->add_argument_parser(c_lst("SP_SHOW_WINDOW"), new inverted_boolean_argument_parser_c(options.hide_gui))
@@ -650,18 +650,18 @@ void spawner_new_c::init_arguments() {
     console_default_parser->add_argument_parser(c_lst(short_arg("mi"), long_arg("monitorInterval")),
         environment_default_parser->add_argument_parser(c_lst("SP_MONITOR_INTERVAL"),
             new microsecond_argument_parser_c(options.monitorInterval))
-    )->set_description("Sleep interval for a monitor thread (defaults to 0.001s)");
+    )->set_description("Sleep interval for a monitoring thread (default: 0.001s)");
 
     console_default_parser->add_flag_parser(c_lst(short_arg("c"), long_arg("systempath")),
         environment_default_parser->add_argument_parser(c_lst("SP_SYSTEM_PATH"), new boolean_argument_parser_c(options.use_cmd))
-    );
+    )->set_description("Search <executable> in system path");
     console_default_parser->add_argument_parser(c_lst(short_arg("wd")),
         environment_default_parser->add_argument_parser(c_lst("SP_DIRECTORY"), new string_argument_parser_c(options.working_directory))
     );
 
     console_default_parser->add_flag_parser(c_lst(short_arg("j"), long_arg("json")),
         environment_default_parser->add_argument_parser(c_lst("SP_JSON"), new boolean_argument_parser_c(options.json))
-    );
+    )->set_description("Use JSON for reporting");
 
     console_default_parser->add_argument_parser(c_lst(long_arg("separator")),
         environment_default_parser->add_argument_parser(c_lst("SP_SEPARATOR"),
@@ -688,5 +688,8 @@ void spawner_new_c::init_arguments() {
 }
 
 std::string spawner_new_c::help() {
-    return parser.help();
+    return
+        "Spawner: cross-platform sandboxing utility\n"
+        "Usage: sp <options> <executable> <executable arguments>\n\n"
+        "Options:\n" + parser.help();
 }

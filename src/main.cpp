@@ -44,7 +44,7 @@ void command_handler_c::add_default_parser() {
                 this,
                 &command_handler_c::create_spawner
             )
-    )->set_description("Spawner interface")->default_error =
+    )->set_description("Command-line interface: sp99, sp00 or pcms2 (default: sp00)")->default_error =
         environment_default_parser->add_argument_parser(
             c_lst("SP_LEGACY"),
             new function_argument_parser_c<command_handler_c*,
