@@ -241,64 +241,42 @@ thread_return_t output_pipe_c::drain_pipe_thread(thread_param_t param)
         }
     }
 
-    for (;;)
-    {
-        int p0 = 0;
+    for (;;) {
         char data[DEFAULT_BUFFER_SIZE + 1];
+
         DWORD bytes_available = 0;
-        const BOOL peek_result = PeekNamedPipe(self->readPipe, NULL, 0, NULL, &bytes_available, NULL);
-
-        if (bytes_available == 0) {
-            Sleep(1);
-            //self->done_io_ = true;
-            if (self->stop_thread_) {
-                if (!self->message_buffer.empty()) {
-                    self->drain_message(self->message_buffer);
-                    self->message_buffer.clear();
-                }
-                break;
-            }
-            // continue; ???
-        }
-        else {
-            size_t bytes_count = self->read(data, DEFAULT_BUFFER_SIZE);
-            if (bytes_count == 0) {
-                self->done_io_ = true;
-                break;
-            }
-            data[bytes_count] = 0;
-            int p0 = self->message_buffer.size();
-            self->message_buffer += data;
-        }
-
-        // TODO: store p1 value between cycle iterations
-        int p1 = 0;
-        do {
-            p1 = 0;
-            for (int i = 0; i < self->message_buffer.size(); i++) {
-                if (self->message_buffer[i] == '\n') {
-                    p1 = i;
-                    break;
-                }
-            }
-
-            if (p1 == 0
-                && !self->message_buffer.empty()
-                && (self->stop_thread_ || peek_result == false)) {
-                p1 = self->message_buffer.length() - 1;
-            }
-
-            if (p1 > 0) {
-                self->drain_message(self->message_buffer.substr(0, p1 + 1));
-                self->message_buffer = self->message_buffer.substr(p1 + 1);
-            }
-        } while (p1 != 0);
-
-        if (peek_result == FALSE) {
-            self->done_io_ = true;
+        if (!PeekNamedPipe(self->readPipe, NULL, 0, NULL, &bytes_available, NULL)) {
             break;
         }
 
+        if (bytes_available == 0) {
+            Sleep(1);
+            if (self->stop_thread_) {
+                break;
+            }
+        }
+        else {
+            size_t bytes_count = self->read(data, min(bytes_available, DEFAULT_BUFFER_SIZE));
+            if (bytes_count == 0) {
+                break;
+            }
+            data[bytes_count] = 0;
+            self->message_buffer += data;
+        }
+
+        // TODO: Use ring buffer.
+        while (true) {
+            size_t p = self->message_buffer.find('\n');
+            if (p == std::string::npos) {
+                break;
+            }
+            self->drain_message(self->message_buffer.substr(0, p + 1));
+            self->message_buffer = self->message_buffer.substr(p + 1);
+        }
+    }
+    if (!self->message_buffer.empty()) {
+        self->drain_message(self->message_buffer);
+        self->message_buffer.clear();
     }
     self->done_io_ = true;
     return 0;
