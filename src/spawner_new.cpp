@@ -565,103 +565,121 @@ void spawner_new_c::init_arguments() {
     environment_variable_parser_c *environment_default_parser = new environment_variable_parser_c();
 
     console_default_parser->add_argument_parser(c_lst(short_arg("tl")),
-        environment_default_parser->add_argument_parser(c_lst("SP_TIME_LIMIT"), new microsecond_argument_parser_c(restrictions[restriction_processor_time_limit]))
-        )->set_description("Time limit");
+        environment_default_parser->add_argument_parser(c_lst("SP_TIME_LIMIT"),
+            new microsecond_argument_parser_c(restrictions[restriction_processor_time_limit]))
+    )->set_description("Time limit");
     console_default_parser->add_argument_parser(c_lst(short_arg("d")),
-        environment_default_parser->add_argument_parser(c_lst("SP_DEADLINE"), new microsecond_argument_parser_c(restrictions[restriction_user_time_limit]))
-        );
+        environment_default_parser->add_argument_parser(c_lst("SP_DEADLINE"),
+            new microsecond_argument_parser_c(restrictions[restriction_user_time_limit]))
+    );
     console_default_parser->add_argument_parser(c_lst(short_arg("s")),
-        environment_default_parser->add_argument_parser(c_lst("SP_SECURITY_LEVEL"), new bool_restriction_argument_parser_c(restrictions[restriction_security_limit]))
-        );
+        environment_default_parser->add_argument_parser(c_lst("SP_SECURITY_LEVEL"),
+            new bool_restriction_argument_parser_c(restrictions[restriction_security_limit]))
+    );
     console_default_parser->add_argument_parser(c_lst(short_arg("ml")),
-        environment_default_parser->add_argument_parser(c_lst("SP_MEMORY_LIMIT"), new byte_argument_parser_c(restrictions[restriction_memory_limit]))
-        );
+        environment_default_parser->add_argument_parser(c_lst("SP_MEMORY_LIMIT"),
+            new byte_argument_parser_c(restrictions[restriction_memory_limit]))
+    );
     console_default_parser->add_argument_parser(c_lst(short_arg("wl")),
-        environment_default_parser->add_argument_parser(c_lst("SP_WRITE_LIMIT"), new byte_argument_parser_c(restrictions[restriction_write_limit]))
-        );
+        environment_default_parser->add_argument_parser(c_lst("SP_WRITE_LIMIT"),
+            new byte_argument_parser_c(restrictions[restriction_write_limit]))
+    );
     console_default_parser->add_argument_parser(c_lst(short_arg("lr")),
-        environment_default_parser->add_argument_parser(c_lst("SP_LOAD_RATIO"), new percent_argument_parser_c(restrictions[restriction_load_ratio]))
-        );
+        environment_default_parser->add_argument_parser(c_lst("SP_LOAD_RATIO"),
+            new percent_argument_parser_c(restrictions[restriction_load_ratio]))
+    );
     console_default_parser->add_argument_parser(c_lst(short_arg("y")),
-        environment_default_parser->add_argument_parser(c_lst("SP_IDLE_TIME_LIMIT"), new microsecond_argument_parser_c(restrictions[restriction_idle_time_limit]))
-        );
+        environment_default_parser->add_argument_parser(c_lst("SP_IDLE_TIME_LIMIT"),
+            new microsecond_argument_parser_c(restrictions[restriction_idle_time_limit]))
+    );
 
     console_default_parser->add_argument_parser(c_lst(short_arg("u")),
-        environment_default_parser->add_argument_parser(c_lst("SP_USER"), new string_argument_parser_c(options.login))
-        );
+        environment_default_parser->add_argument_parser(c_lst("SP_USER"),
+            new string_argument_parser_c(options.login))
+    );
     console_default_parser->add_argument_parser(c_lst(short_arg("p")),
-        environment_default_parser->add_argument_parser(c_lst("SP_PASSWORD"), new string_argument_parser_c(options.password))
-        );
+        environment_default_parser->add_argument_parser(c_lst("SP_PASSWORD"),
+            new string_argument_parser_c(options.password))
+    );
 
     console_default_parser->add_argument_parser(c_lst(short_arg("sr")),
-        environment_default_parser->add_argument_parser(c_lst("SP_REPORT_FILE"), new string_argument_parser_c(options.report_file))
-        );
+        environment_default_parser->add_argument_parser(c_lst("SP_REPORT_FILE"),
+            new string_argument_parser_c(options.report_file))
+    );
 
     console_default_parser->add_argument_parser(c_lst(short_arg("env")),
-        environment_default_parser->add_argument_parser(c_lst("SP_CLEAR_ENV"), new environment_mode_argument_parser_c(options.environmentMode))
-        );
+        environment_default_parser->add_argument_parser(c_lst("SP_CLEAR_ENV"),
+            new environment_mode_argument_parser_c(options.environmentMode))
+    );
 
     console_default_parser->add_argument_parser(c_lst(short_arg("D")),
         new options_callback_argument_parser_c(&options, &options_class::add_environment_variable)
-        );
+    );
 
     console_default_parser->add_argument_parser(c_lst(short_arg("so"), long_arg("out")),
-        environment_default_parser->add_argument_parser(c_lst("SP_OUTPUT_FILE"), new options_callback_argument_parser_c(&options, &options_class::add_stdoutput))
-        );
+        environment_default_parser->add_argument_parser(c_lst("SP_OUTPUT_FILE"),
+            new options_callback_argument_parser_c(&options, &options_class::add_stdoutput))
+    );
     console_default_parser->add_argument_parser(c_lst(short_arg("i"), long_arg("in")),
-        environment_default_parser->add_argument_parser(c_lst("SP_INPUT_FILE"), new options_callback_argument_parser_c(&options, &options_class::add_stdinput))
-        );
+        environment_default_parser->add_argument_parser(c_lst("SP_INPUT_FILE"),
+            new options_callback_argument_parser_c(&options, &options_class::add_stdinput))
+    );
     console_default_parser->add_argument_parser(c_lst(short_arg("e"), short_arg("se"), long_arg("err")),
-        environment_default_parser->add_argument_parser(c_lst("SP_ERROR_FILE"), new options_callback_argument_parser_c(&options, &options_class::add_stderror))
-        );
+        environment_default_parser->add_argument_parser(c_lst("SP_ERROR_FILE"),
+            new options_callback_argument_parser_c(&options, &options_class::add_stderror))
+    );
 
     console_default_parser->add_argument_parser(c_lst(short_arg("runas"), long_arg("delegated")),
         environment_default_parser->add_argument_parser(c_lst("SP_RUNAS"), new boolean_argument_parser_c(options.delegated))
-        );
+    );
     console_default_parser->add_argument_parser(c_lst(short_arg("ho")),
         environment_default_parser->add_argument_parser(c_lst("SP_HIDE_OUTPUT"), new boolean_argument_parser_c(options.hide_output))
-        );
+    );
     console_default_parser->add_argument_parser(c_lst(short_arg("hr")),
         environment_default_parser->add_argument_parser(c_lst("SP_HIDE_REPORT"), new boolean_argument_parser_c(options.hide_report))
-        );
+    );
 
     console_default_parser->add_argument_parser(c_lst(short_arg("sw")),
         environment_default_parser->add_argument_parser(c_lst("SP_SHOW_WINDOW"), new inverted_boolean_argument_parser_c(options.hide_gui))
-        );
+    );
 
     console_default_parser->add_argument_parser(c_lst(long_arg("debug")),
         environment_default_parser->add_argument_parser(c_lst("SP_DEBUG"), new boolean_argument_parser_c(options.debug))
-        );
+    );
 
-    console_default_parser->add_argument_parser(c_lst(short_arg("mi"),
-        long_arg("monitorInterval")),
-        environment_default_parser->add_argument_parser(c_lst("SP_MONITOR_INTERVAL"), new microsecond_argument_parser_c(options.monitorInterval)))->set_description("Sleep interval for a monitor thread (defaults to 0.001s)");
+    console_default_parser->add_argument_parser(c_lst(short_arg("mi"), long_arg("monitorInterval")),
+        environment_default_parser->add_argument_parser(c_lst("SP_MONITOR_INTERVAL"),
+            new microsecond_argument_parser_c(options.monitorInterval))
+    )->set_description("Sleep interval for a monitor thread (defaults to 0.001s)");
 
     console_default_parser->add_flag_parser(c_lst(long_arg("cmd"), short_arg("cmd"), long_arg("systempath")),
         environment_default_parser->add_argument_parser(c_lst("SP_SYSTEM_PATH"), new boolean_argument_parser_c(options.use_cmd))
-        );
+    );
     console_default_parser->add_argument_parser(c_lst(short_arg("wd")),
         environment_default_parser->add_argument_parser(c_lst("SP_DIRECTORY"), new string_argument_parser_c(options.working_directory))
-        );
+    );
 
     console_default_parser->add_flag_parser(c_lst(long_arg("json")),
         environment_default_parser->add_argument_parser(c_lst("SP_JSON"), new boolean_argument_parser_c(options.json))
-        );
+    );
 
     console_default_parser->add_argument_parser(c_lst(long_arg("separator")),
-        environment_default_parser->add_argument_parser(c_lst("SP_SEPARATOR"), new callback_argument_parser_c<settings_parser_c*, void(settings_parser_c::*)(const std::string&)>(&parser, &settings_parser_c::set_separator))
-        );
+        environment_default_parser->add_argument_parser(c_lst("SP_SEPARATOR"),
+            new callback_argument_parser_c<settings_parser_c*, void(settings_parser_c::*)(const std::string&)>(&parser, &settings_parser_c::set_separator))
+    );
 
-    console_default_parser->add_argument_parser(c_lst(short_arg("process-count")), new time_argument_parser_c<degree_default>(restrictions[restriction_processes_count_limit]));
+    console_default_parser->add_argument_parser(c_lst(short_arg("process-count")),
+        new time_argument_parser_c<degree_default>(restrictions[restriction_processes_count_limit]));
 
     console_default_parser->add_argument_parser(c_lst(long_arg("shared-memory")),
         environment_default_parser->add_argument_parser(c_lst("SP_SHARED_MEMORY"), new string_argument_parser_c(options.shared_memory))
-        );
+    );
 
     console_default_parser->add_flag_parser(c_lst(long_arg("controller")),
         new boolean_argument_parser_c(options.controller));
 
-    console_default_parser->add_flag_parser(c_lst(SEPARATOR_ARGUMENT), new callback_argument_parser_c<spawner_new_c*, void(spawner_new_c::*)(const std::string&)>(&(*this), &spawner_new_c::on_separator));
+    console_default_parser->add_flag_parser(c_lst(SEPARATOR_ARGUMENT),
+        new callback_argument_parser_c<spawner_new_c*, void(spawner_new_c::*)(const std::string&)>(&(*this), &spawner_new_c::on_separator));
 
     //ADD_CONSOLE_ENVIRONMENT_ARGUMENT(old_spawner, c_lst(long_arg("program")), c_lst("SP_PROGRAM"),   options.session_id, STRING_CONVERT);
 
