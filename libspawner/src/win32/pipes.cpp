@@ -241,6 +241,7 @@ thread_return_t output_pipe_c::drain_pipe_thread(thread_param_t param)
         }
     }
 
+    int stop_cycles = 0;
     for (;;) {
         char data[DEFAULT_BUFFER_SIZE + 1];
 
@@ -250,12 +251,13 @@ thread_return_t output_pipe_c::drain_pipe_thread(thread_param_t param)
         }
 
         if (bytes_available == 0) {
-            Sleep(1);
-            if (self->stop_thread_) {
+            Sleep(5);
+            if (++stop_cycles >= 3 && self->stop_thread_) {
                 break;
             }
         }
         else {
+            stop_cycles = 0;
             size_t bytes_count = self->read(data, min(bytes_available, DEFAULT_BUFFER_SIZE));
             if (bytes_count == 0) {
                 break;
