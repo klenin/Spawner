@@ -1,6 +1,11 @@
 # Compatibility
 cmake_minimum_required(VERSION 2.6)
 
+if(WIN32)
+    # Windows XP compatibility. Must be set before everything else.
+    set(CMAKE_GENERATOR_TOOLSET "v120_xp")
+endif()
+
 # Project name
 project(sp)
 
