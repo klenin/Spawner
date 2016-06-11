@@ -332,7 +332,7 @@ void spawner_new_c::setup_stream_(const std::string& stream_str, pipes_t this_pi
      && !output_pipe->process_message) {
 
         if (out_pipe_runner->get_options().controller) {
-            output_pipe->process_message = [=](std::string& message, output_pipe_c* pipe) {
+            output_pipe->process_message = [=](const std::string& message, output_pipe_c* pipe) {
                 process_controller_message_(message, pipe);
             };
         } else {
@@ -340,7 +340,7 @@ void spawner_new_c::setup_stream_(const std::string& stream_str, pipes_t this_pi
             if (index > controller_index_) {
                 index--;
             }
-            output_pipe->process_message = [=](std::string& message, output_pipe_c* pipe) {
+            output_pipe->process_message = [=](const std::string& message, output_pipe_c* pipe) {
                 process_normal_message_(message, pipe, index + 1);
             };
         }

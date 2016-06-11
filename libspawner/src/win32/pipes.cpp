@@ -209,7 +209,7 @@ pipe_t input_pipe_c::get_pipe()
     return input_pipe();
 }
 
-void output_pipe_c::drain_message(std::string &message)
+void output_pipe_c::drain_message(const std::string &message)
 {
     buffers_mutex_.lock();
     if (process_message) {
