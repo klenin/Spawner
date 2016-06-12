@@ -303,9 +303,9 @@ std::string get_win_last_error_string() {
 
     auto format_message = [&](const DWORD lang_id) -> DWORD {
         return FormatMessageA(
-            FORMAT_MESSAGE_FROM_SYSTEM
-            | FORMAT_MESSAGE_ALLOCATE_BUFFER
-            | FORMAT_MESSAGE_IGNORE_INSERTS,
+            FORMAT_MESSAGE_FROM_SYSTEM |
+            FORMAT_MESSAGE_ALLOCATE_BUFFER |
+            FORMAT_MESSAGE_IGNORE_INSERTS,
             NULL,
             error_code,
             lang_id,
@@ -318,8 +318,8 @@ std::string get_win_last_error_string() {
     }
 
     std::stringstream r;
-    r << "error code: " << error_code;
-    if (error_text != nullptr) {
+    r << "error " << error_code;
+    if (error_text) {
         r << ": " << error_text;
     }
     LocalFree(error_text);
