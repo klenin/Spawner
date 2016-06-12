@@ -228,6 +228,10 @@ bool runner::init_process_with_logon(const std::string &cmd, const char *wd) {
     return true;
 }
 
+static std::string quote(const std::string &cmd) {
+    return cmd.find(' ') == std::string::npos ? cmd : "\"" + cmd + "\"";
+}
+
 void runner::create_process() {
     //WaitForSingleObject(init_semaphore, INFINITE);
 
@@ -271,25 +275,16 @@ void runner::create_process() {
         if (GetCurrentDirectoryA(MAX_PATH, working_directory))//error here is not critical
             report.working_directory = working_directory;
     }
-    std::string run_program = program;
 
-    std::string command_line;
-    size_t  index_win = run_program.find_last_of('\\'),
-        index_nix = run_program.find_last_of('/');
+    size_t index_path_sep = program.find_last_of("\\/");
+    std::string command_line =
+        index_path_sep != std::string::npos ? program.substr(index_path_sep + 1) : program;
 
-    if (index_win != std::string::npos) {
-        command_line = run_program.substr(index_win + 1);
-    } else if (index_nix != std::string::npos) {
-        command_line = run_program.substr(index_nix + 1);
-    } else {
-        command_line = run_program;
+    if (options.string_arguments != "") {
+        command_line += " " + options.string_arguments;
     }
-
-    command_line = command_line + " ";
-    if (options.string_arguments == "") {
-        command_line += options.get_arguments();
-    } else {
-        command_line += options.string_arguments;
+    for (auto arg = options.arguments.begin(); arg != options.arguments.end(); ++arg) {
+        command_line += " " + quote(*arg);
     }
 
     if (options.login != "") {
