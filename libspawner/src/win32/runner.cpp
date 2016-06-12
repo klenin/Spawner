@@ -140,33 +140,24 @@ bool runner::init_process(char *cmd, const char *wd) {
     WaitForSingleObject(main_job_object_access_mutex, infinite);
     set_allow_breakaway(true);
 
-   // LPVOID penv = createEnvironmentForProcess();
+    // LPVOID penv = createEnvironmentForProcess();
     env_vars_list_t original = set_environment_for_process();
 
-    std::string run_program = program;
+    auto create_process_helper = [&](const char *app_name) -> BOOL {
+        return CreateProcess(
+            app_name, cmd, NULL, NULL, /* inheritHandles */TRUE,
+            process_creation_flags, NULL, wd, &si, &process_info);
+    };
 
-    if ( !CreateProcess(run_program.c_str(),
-            cmd, NULL, NULL,
-            TRUE,
-            process_creation_flags,
-            NULL, wd,
-            &si, &process_info) ) {
-        if (!options.use_cmd || !CreateProcess(NULL,
-                cmd,
-                NULL, NULL,
-                TRUE,
-                process_creation_flags,
-                NULL, wd,
-                &si, &process_info) ) {
-            ReleaseMutex(main_job_object_access_mutex);
-            PANIC("CreateProcess: \"" + run_program + "\", " + get_win_last_error_string());
-            restore_original_environment(original);
-            return false;
-        }
-    }
+    BOOL error =
+        !create_process_helper(program.c_str()) &&
+        (!options.use_cmd || !create_process_helper(NULL));
     ReleaseMutex(main_job_object_access_mutex);
+    if (error) {
+        PANIC("CreateProcess \"" + program + "\": " + get_win_last_error_string());
+        return false;
+    }
     restore_original_environment(original);
-
     get_times(&creation_time, NULL, NULL, NULL);
     return true;
 }
