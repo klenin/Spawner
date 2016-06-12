@@ -31,8 +31,8 @@ protected:
     static handle_t main_job_object_access_mutex;
     static bool allow_breakaway;
     void set_allow_breakaway(bool allow);
-    bool init_process(char *cmd, const char *wd);
-    bool init_process_with_logon(char *cmd, const char *wd);
+    bool init_process(const std::string &cmd, const char *wd);
+    bool init_process_with_logon(const std::string &cmd, const char *wd);
     virtual void create_process();
     virtual void free();
     virtual void wait();

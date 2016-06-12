@@ -136,16 +136,17 @@ void runner::restore_original_environment(const runner::env_vars_list_t& origina
     }
 }
 
-bool runner::init_process(char *cmd, const char *wd) {
+bool runner::init_process(const std::string &cmd, const char *wd) {
     WaitForSingleObject(main_job_object_access_mutex, infinite);
     set_allow_breakaway(true);
 
     // LPVOID penv = createEnvironmentForProcess();
     env_vars_list_t original = set_environment_for_process();
+    char *cmd_copy = _strdup(cmd.c_str()); // CreateProcess requires write access to command line.
 
     auto create_process_helper = [&](const char *app_name) -> BOOL {
         return CreateProcess(
-            app_name, cmd, NULL, NULL, /* inheritHandles */TRUE,
+            app_name, cmd_copy, NULL, NULL, /* inheritHandles */TRUE,
             process_creation_flags, NULL, wd, &si, &process_info);
     };
 
@@ -153,6 +154,7 @@ bool runner::init_process(char *cmd, const char *wd) {
         !create_process_helper(program.c_str()) &&
         (!options.use_cmd || !create_process_helper(NULL));
     ReleaseMutex(main_job_object_access_mutex);
+    std::free(cmd_copy);
     if (error) {
         PANIC("CreateProcess \"" + program + "\": " + get_win_last_error_string());
         return false;
@@ -162,7 +164,7 @@ bool runner::init_process(char *cmd, const char *wd) {
     return true;
 }
 
-bool runner::init_process_with_logon(char *cmd, const char *wd) {
+bool runner::init_process_with_logon(const std::string &cmd, const char *wd) {
     WaitForSingleObject(main_job_object_access_mutex, infinite);
     set_allow_breakaway(false);
 
@@ -181,7 +183,7 @@ bool runner::init_process_with_logon(char *cmd, const char *wd) {
     wchar_t *login = a2w(options.login.c_str());
     wchar_t *password = a2w(options.password.c_str());
     wchar_t *wprogram = a2w(run_program.c_str());
-    wchar_t *wcmd = a2w(cmd);
+    wchar_t *wcmd = a2w(cmd.c_str());
     wchar_t *wwd = a2w(wd);
 
     DWORD creation_flags = CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW;
@@ -261,7 +263,6 @@ void runner::create_process() {
     }
 
     // Extracting program name and generating cmd line
-    char *cmd;
     report.working_directory = options.working_directory;
     const char *wd = (options.working_directory != "")?options.working_directory.c_str():NULL;
     if (!wd)
@@ -290,27 +291,22 @@ void runner::create_process() {
     } else {
         command_line += options.string_arguments;
     }
-    cmd = new char [command_line.size()+1];
-    strcpy(cmd, command_line.c_str());
 
-    bool withLogon = options.login != "";
-
-    if (withLogon) {
+    if (options.login != "") {
         report.login = a2w(options.login.c_str());
-    } else {
+        running = init_process_with_logon(command_line, wd);
+    }
+    else {
         //IMPORTANT: if logon option selected & failed signalize it
         DWORD len = MAX_USER_NAME;
         wchar_t user_name[MAX_USER_NAME];
-        if (GetUserNameW(user_name, &len)) {//error here is not critical
+        if (GetUserNameW(user_name, &len)) { // Error here is not critical.
             report.login = user_name;
         }
+        running = init_process(command_line, wd);
     }
 
-    running = withLogon ? init_process_with_logon(cmd, wd) : init_process(cmd, wd);
-
     ReleaseSemaphore(init_semaphore, 10, NULL);
-
-    delete[] cmd;
 }
 
 void runner::free() {
