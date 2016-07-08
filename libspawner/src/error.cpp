@@ -1,6 +1,7 @@
 #include "error.h"
 #include "platform.h"
 
+#include <cstring>
 #include <sstream>
 
 void abort_at_panic_();
