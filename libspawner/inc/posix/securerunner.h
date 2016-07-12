@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <functional>
+#include <queue>
 
 #include "runner.h"
 
@@ -30,6 +31,9 @@ private:
 protected:
     restrictions_class start_restrictions;
     restrictions_class restrictions;
+    double prev_consumed, prev_elapsed;
+    int last_tick, max_load_ratio_index;
+    std::deque<double> load_ratios;
     terminate_reason_t terminate_reason;
     std::atomic<bool> prolong_time_limits_{false};
     virtual bool create_restrictions();

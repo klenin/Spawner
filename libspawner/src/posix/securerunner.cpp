@@ -8,12 +8,17 @@
 
 #include "rlimit.h"
 
+#define load_ratios_max_size 20
+
 secure_runner::secure_runner(const std::string &program,
-    const options_class &options, const restrictions_class &restrictions)
-    : runner(program, options)
-    , start_restrictions(restrictions)
-    , restrictions(restrictions)
-    , terminate_reason(terminate_reason_not_terminated)
+    const options_class &options, const restrictions_class &restrictions):
+    runner(program, options),
+    start_restrictions(restrictions),
+    restrictions(restrictions),
+    terminate_reason(terminate_reason_not_terminated),
+    max_load_ratio_index(-1),
+    prev_consumed(0),
+    prev_elapsed(0)
 {
     pthread_mutex_init(&monitor_lock, NULL);
     pthread_cond_init(&monitor_cond, NULL);
@@ -281,8 +286,10 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
         //    (The Linux kernel can be idle-tickless or even fully tickless,
         //    so it provides virtual ticks for user space) "tick" ticks.
         // -- Do not perform calculations too often (only after "tick" ticks).
-        if (self->check_restriction(restriction_load_ratio) ||
-            self->check_restriction(restriction_processor_time_limit)) {
+        if (self->check_restriction(restriction_idle_time_limit) ||
+            self->check_restriction(restriction_load_ratio) ||
+            self->check_restriction(restriction_processor_time_limit)
+        ) {
             current_time = self->get_time_since_create() / 10;
             if (tick_detected = (current_time / tick_to_micros > ticks_elapsed)) {
                 proc_consumed = (double)self->proc.stat_utime / tick_res;
@@ -296,16 +303,44 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
         //    at least on my 1.4GHz Core2Solo), uncomment printfs and check with
         //    "./sp --out /dev/null /bin/yes"
 #define TICK_THRESHOLD 5
-        if (self->restrictions.get_restriction(restriction_load_ratio)
-            != restriction_no_limit) {
-            // printf("ticks: %lu\n", ticks_elapsed);
-            if (tick_detected && (ticks_elapsed >= TICK_THRESHOLD)) {
-                double wclk_elapsed = (double) current_time / 1000000;
-                double load_ratio = proc_consumed / wclk_elapsed;
+
+        double wclk_elapsed = (double)current_time / 1000000;
+        double load_ratio = (proc_consumed - self->prev_consumed) / (wclk_elapsed - self->prev_elapsed);
+        if (wclk_elapsed - self->prev_elapsed > 0.2) {
+            self->prev_consumed = proc_consumed;
+            self->prev_elapsed = wclk_elapsed;
+        }
+
+        if (self->check_restriction(restriction_load_ratio) && tick_detected &&
+            self->check_restriction(restriction_idle_time_limit) &&
+            ticks_elapsed >= TICK_THRESHOLD
+        ) {
+            int idle_limit = self->get_restriction(restriction_idle_time_limit) / 1000000;
+            int step = idle_limit * self->options.monitorInterval / 10 / load_ratios_max_size;
+            if (ticks_elapsed % step == 0 && self->last_tick != ticks_elapsed) {
                 // printf("consumed: %g (procfs value %lu) ", proc_consumed, self->proc.stat_utime);
-                restriction = (double)self->restrictions.get_restriction(restriction_load_ratio) / 10000;
+                restriction = (double)self->get_restriction(restriction_load_ratio) / 10000;
                 // printf("load_ratio: %g, restriction: %g\n", load_ratio, restriction);
-                if (load_ratio < restriction) {
+                bool can_use_load_ratios = self->load_ratios.size() == load_ratios_max_size;
+                if (can_use_load_ratios) {
+                    self->load_ratios.pop_back();
+                    if (self->max_load_ratio_index == load_ratios_max_size - 1) {
+                        self->max_load_ratio_index = 0;
+                        for (int i = 1; i < load_ratios_max_size - 1; ++i) {
+                            if (self->load_ratios[self->max_load_ratio_index] < self->load_ratios[i]) {
+                                self->max_load_ratio_index = i;
+                            }
+                        }
+                    }
+                }
+                self->load_ratios.push_front(load_ratio);
+                ++self->max_load_ratio_index;
+                if (self->load_ratios[self->max_load_ratio_index] <= load_ratio) {
+                    self->max_load_ratio_index = 0;
+                }
+                if (can_use_load_ratios &&
+                    self->load_ratios[self->max_load_ratio_index] < restriction
+                ) {
                     kill(proc_pid, SIGSTOP);
                     self->proc.fill_all();
                     kill(proc_pid, SIGKILL);
@@ -314,11 +349,12 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
                     break;
                 }
             }
+            self->last_tick = ticks_elapsed;
         }
 
         // precise cpu usage judge
         if (self->check_restriction(restriction_processor_time_limit) && tick_detected) {
-            double restriction = (double)self->restrictions.get_restriction(restriction_processor_time_limit) / 1000000;
+            double restriction = (double)self->get_restriction(restriction_processor_time_limit) / 1000000;
             // printf("time limit: %g, utime: %lu, consumed: %g\n",
             //    (double)restriction, self->proc.stat_utime, proc_consumed);
             if (proc_consumed >= restriction) {
