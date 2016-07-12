@@ -92,8 +92,10 @@ bool secure_runner::create_restrictions() {
     // XXX check return values and report to the parent
     if (check_restriction(restriction_memory_limit))
         // linux&cygwin both supports Address Space rlimit
-#if defined(__linux__) || defined(__CYGWIN__)
-        impose_rlimit(RLIMIT_AS, restrictions.get_restriction(restriction_memory_limit));
+#if defined(__linux__)
+        impose_rlimit(RLIMIT_AS, 2*get_restriction(restriction_memory_limit));
+#elif defined(__CYGWIN__)
+        impose_rlimit(RLIMIT_AS, get_restriction(restriction_memory_limit));
 #else
         // openbsd and os x does not, switch to Resident Size
         // note that they both will just shrink process rss if memory is tight
@@ -172,7 +174,8 @@ terminate_reason_t secure_runner::get_terminate_reason() {
         if (terminate_reason == terminate_reason_user_time_limit
             || terminate_reason == terminate_reason_write_limit
             || terminate_reason == terminate_reason_load_ratio_limit
-            || terminate_reason == terminate_reason_time_limit)
+            || terminate_reason == terminate_reason_time_limit
+            || terminate_reason == terminate_reason_memory_limit)
             break;
         else { // manually killed by a human or hard rlimit
             terminate_reason = terminate_reason_abnormal_exit_process;
@@ -297,6 +300,14 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
             }
         }
 
+        if (self->check_restriction(restriction_memory_limit) &&
+            self->proc.vss_max > self->get_restriction(restriction_memory_limit)
+        ) {
+            self->terminate_reason = terminate_reason_memory_limit;
+            self->process_status = process_finished_terminated;
+            break;
+        }
+
         // The load ratio judge
         // -- Calculate the ratio only when clock "ticks" at least first 5 times
         //    (controlled process starts to consume CPU ticks after some time,
@@ -370,8 +381,6 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
                 self->process_status = process_finished_terminated;
             }
         }
-
-        // TODO: vmemory judge with correct termination reason
 
 #endif
         if (self->check_restriction(restriction_user_time_limit) &&
