@@ -8,7 +8,7 @@
 
 #include "rlimit.h"
 
-secure_runner::secure_runner(const std::string &program, 
+secure_runner::secure_runner(const std::string &program,
     const options_class &options, const restrictions_class &restrictions)
     : runner(program, options)
     , start_restrictions(restrictions)
@@ -19,12 +19,10 @@ secure_runner::secure_runner(const std::string &program,
     pthread_cond_init(&monitor_cond, NULL);
 }
 
-secure_runner::~secure_runner()
-{
+secure_runner::~secure_runner() {
     pthread_mutex_destroy(&monitor_lock);
     pthread_cond_destroy(&monitor_cond);
 }
-
 
 void secure_runner::create_process() {
     runner::create_process();
@@ -87,23 +85,21 @@ void secure_runner::init_process(const char *cmd_toexec, char **process_argv, ch
 
 bool secure_runner::create_restrictions() {
     // XXX check return values and report to the parent
-    if (restrictions.get_restriction(restriction_memory_limit) !=
-        restriction_no_limit)
+    if (check_restriction(restriction_memory_limit))
         // linux&cygwin both supports Address Space rlimit
 #if defined(__linux__) || defined(__CYGWIN__)
         impose_rlimit(RLIMIT_AS, restrictions.get_restriction(restriction_memory_limit));
 #else
         // openbsd and os x does not, switch to Resident Size
         // note that they both will just shrink process rss if memory is tight
-        impose_rlimit(RLIMIT_RSS, restrictions.get_restriction(restriction_memory_limit));
+        impose_rlimit(RLIMIT_RSS, get_restriction(restriction_memory_limit));
 #endif
 
 #if !defined(__linux__) // linux version has a procfs judge
-    if (restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit)
-        impose_rlimit(RLIMIT_CPU, restrictions.get_restriction(restriction_processor_time_limit) / 1000000);
+    if (check_restriction(restriction_processor_time_limit))
+        impose_rlimit(RLIMIT_CPU, get_restriction(restriction_processor_time_limit) / 1000000);
 #endif
-
-    if (restrictions.get_restriction(restriction_security_limit) != restriction_no_limit) {
+    if (check_restriction(restriction_security_limit)) {
         impose_rlimit(RLIMIT_CORE, 0);
 #if defined(__linux__)
         if (seccomp_probe_filter())
@@ -140,8 +136,7 @@ report_class secure_runner::get_report() {
     return runner::get_report();
 }
 
-bool secure_runner::wait_for()
-{
+bool secure_runner::wait_for() {
     runner::wait_for();
     pthread_cancel(monitor_thread);
     pthread_join(monitor_thread, NULL);
@@ -168,15 +163,14 @@ terminate_reason_t secure_runner::get_terminate_reason() {
         break;
     }
     case SIGKILL: // if process was killed by the monitor thread, take into
-                  // account terminate reason. 
-        if (terminate_reason == terminate_reason_user_time_limit 
+                  // account terminate reason.
+        if (terminate_reason == terminate_reason_user_time_limit
             || terminate_reason == terminate_reason_write_limit
             || terminate_reason == terminate_reason_load_ratio_limit
             || terminate_reason == terminate_reason_time_limit)
             break;
-        else { // manually killed by a human or hard rlimit 
-            terminate_reason
-                = terminate_reason_abnormal_exit_process;
+        else { // manually killed by a human or hard rlimit
+            terminate_reason = terminate_reason_abnormal_exit_process;
             break;
         }
     case SIGXCPU: {
@@ -190,29 +184,29 @@ terminate_reason_t secure_runner::get_terminate_reason() {
     return terminate_reason;
 }
 
-
-
-restrictions_class secure_runner::get_restrictions() const
-{
+restrictions_class secure_runner::get_restrictions() const {
     return restrictions;
 }
 
-process_status_t secure_runner::get_process_status()
-{
-    if (process_status == process_finished_terminated
-        || process_status == process_suspended)
-        return process_status;
-
-    return runner::get_process_status();
+restriction_t secure_runner::get_restriction(const restriction_kind_t &restriction) const {
+    return restrictions.get_restriction(restriction);
 }
 
+bool secure_runner::check_restriction(const restriction_kind_t &restriction) const {
+    return get_restriction(restriction) != restriction_no_limit;
+}
+
+process_status_t secure_runner::get_process_status() {
+    if (process_status == process_finished_terminated || process_status == process_suspended)
+        return process_status;
+    return runner::get_process_status();
+}
 
 void secure_runner::prolong_time_limits() {
     prolong_time_limits_ = true;
 }
 
-void secure_runner::runner_free()
-{
+void secure_runner::runner_free() {
     runner::runner_free();
 }
 
@@ -222,22 +216,19 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
     int poparg;
 
     struct timespec req;
-    
+
     secure_runner *self = (secure_runner *)monitor_param;
 
     proc_pid = self->get_proc_pid();
 
 #if defined(__linux__)
-    int tick_res;
-    long int ticks_elapsed, tick_to_micros;
-    unsigned long long int current_time;
-    bool tick_detected;
+    unsigned long long current_time;
     double proc_consumed, restriction; // TODO -- get rid of FPU calculations.
 
-    tick_res = sysconf(_SC_CLK_TCK);
-    ticks_elapsed = 0;
-    tick_detected = false;
-    tick_to_micros = 1000000 / tick_res;
+    int tick_res = sysconf(_SC_CLK_TCK);
+    long ticks_elapsed = 0;
+    bool tick_detected = false;
+    long tick_to_micros = 1000000 / tick_res;
 
     if(!self->proc.probe_pid(proc_pid)) {
         kill(proc_pid, SIGKILL);
@@ -265,13 +256,16 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
     // Main loop..
     // Linux version will break upon procfs entry removal.
     // All others will be cancelled upon pthread_cancel().
-    pthread_cleanup_push(monitor_cleanup, NULL); 
+    pthread_cleanup_push(monitor_cleanup, NULL);
+
     while (1) {
         pthread_testcancel();
 #if defined(__linux__)
         if(!self->proc.fill_all())
             break;
-        if (self->restrictions.get_restriction(restriction_write_limit) != restriction_no_limit && (self->proc.write_bytes > self->restrictions.get_restriction(restriction_write_limit))) {
+
+        if (self->check_restriction(restriction_write_limit) &&
+            (self->proc.write_bytes > self->get_restriction(restriction_write_limit))) {
             // stop process and take a death mask
             kill(proc_pid, SIGSTOP);
             self->proc.fill_all();
@@ -287,16 +281,13 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
         //    (The Linux kernel can be idle-tickless or even fully tickless,
         //    so it provides virtual ticks for user space) "tick" ticks.
         // -- Do not perform calculations too often (only after "tick" ticks).
-        if ((self->restrictions.get_restriction(restriction_load_ratio)
-            != restriction_no_limit) ||
-            (self->restrictions.get_restriction(restriction_processor_time_limit)           != restriction_no_limit)) {
+        if (self->check_restriction(restriction_load_ratio) ||
+            self->check_restriction(restriction_processor_time_limit)) {
             current_time = self->get_time_since_create() / 10;
-            if ((current_time / tick_to_micros) > ticks_elapsed) {
-                proc_consumed = (double) self->proc.stat_utime / tick_res;
+            if (tick_detected = (current_time / tick_to_micros > ticks_elapsed)) {
+                proc_consumed = (double)self->proc.stat_utime / tick_res;
                 ticks_elapsed = current_time / tick_to_micros;
-                tick_detected = true;
-            } else
-                tick_detected = false;
+            }
         }
 
         // The load ratio judge
@@ -326,37 +317,35 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
         }
 
         // precise cpu usage judge
-        if (self->restrictions.get_restriction(restriction_processor_time_limit)            != restriction_no_limit) {
-            if (tick_detected) {
-                double restriction = (double)self->restrictions.get_restriction(restriction_processor_time_limit) / 1000000;
-                // printf("time limit: %g, utime: %lu, consumed: %g\n",
-                //    (double)restriction, self->proc.stat_utime, proc_consumed);
-                if (proc_consumed >= restriction) {
-                    // stopped process has no chance to handle SIGXCPU
-                    //kill(proc_pid, SIGSTOP);
-                    self->proc.fill_all();
-                    // SIGXCPU can be ignored
-                    kill(proc_pid, SIGXCPU);
-                    // wait some time for signal delivery
-                    usleep((useconds_t)tick_to_micros);
-                    kill(proc_pid, SIGKILL);
-                    self->terminate_reason = terminate_reason_time_limit;
-                    self->process_status = process_finished_terminated;
-                }
+        if (self->check_restriction(restriction_processor_time_limit) && tick_detected) {
+            double restriction = (double)self->restrictions.get_restriction(restriction_processor_time_limit) / 1000000;
+            // printf("time limit: %g, utime: %lu, consumed: %g\n",
+            //    (double)restriction, self->proc.stat_utime, proc_consumed);
+            if (proc_consumed >= restriction) {
+                // stopped process has no chance to handle SIGXCPU
+                //kill(proc_pid, SIGSTOP);
+                self->proc.fill_all();
+                // SIGXCPU can be ignored
+                kill(proc_pid, SIGXCPU);
+                // wait some time for signal delivery
+                usleep((useconds_t)tick_to_micros);
+                kill(proc_pid, SIGKILL);
+                self->terminate_reason = terminate_reason_time_limit;
+                self->process_status = process_finished_terminated;
             }
         }
 
         // TODO: vmemory judge with correct termination reason
 
 #endif
-        if (( self->get_time_since_create() / 10 ) >
-            self->restrictions.get_restriction(restriction_user_time_limit)) {
-                self->proc.fill_all();
-                kill(proc_pid, SIGXCPU);
-                usleep((useconds_t)tick_to_micros);
-                kill(proc_pid, SIGKILL);
-                self->terminate_reason = terminate_reason_user_time_limit;
-                self->process_status = process_finished_terminated;
+        if (self->check_restriction(restriction_user_time_limit) &&
+            (self->get_time_since_create() / 10) > self->get_restriction(restriction_user_time_limit)) {
+            self->proc.fill_all();
+            kill(proc_pid, SIGXCPU);
+            usleep((useconds_t)tick_to_micros);
+            kill(proc_pid, SIGKILL);
+            self->terminate_reason = terminate_reason_user_time_limit;
+            self->process_status = process_finished_terminated;
         }
 
         nanosleep(&req, nullptr);

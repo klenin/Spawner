@@ -47,6 +47,8 @@ public:
     terminate_reason_t get_terminate_reason();
 
     restrictions_class get_restrictions() const;
+    restriction_t get_restriction(const restriction_kind_t &restriction) const;
+    bool check_restriction(const restriction_kind_t &restriction) const;
     process_status_t get_process_status();
     virtual report_class get_report();
     void prolong_time_limits();
