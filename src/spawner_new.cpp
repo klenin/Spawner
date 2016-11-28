@@ -262,7 +262,7 @@ void spawner_new_c::setup_stream_(const std::string& stream_str, pipes_t this_pi
     size_t index = stoi(stream_str.substr(1, pos - 1), nullptr, 10);
     std::string stream = stream_str.substr(pos + 1);
     // invalid index
-    PANIC_IF(index > runners.size() || index < 0);
+    PANIC_IF(index >= runners.size() || index < 0);
     pipes_t other_pipe_type;
     if (stream == "stderr") {
         other_pipe_type = STD_ERROR_PIPE;
