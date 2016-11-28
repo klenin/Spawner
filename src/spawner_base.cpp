@@ -1,5 +1,7 @@
 #include "spawner_base.h"
 
+static std::map<std::string, std::shared_ptr<output_buffer_c>> output_cache;
+
 std::shared_ptr<output_buffer_c> spawner_base_c::create_output_buffer(const std::string &name,
     const pipes_t &pipe_type) {
     std::shared_ptr<output_buffer_c> output_buffer = nullptr;
@@ -13,7 +15,14 @@ std::shared_ptr<output_buffer_c> spawner_base_c::create_output_buffer(const std:
     else if (name[0] == '*') {
     }
     else if (name.length()) {
-        output_buffer = std::make_shared<output_file_buffer_c>(name);
+        std::map<std::string, std::shared_ptr<output_buffer_c>>::iterator it = output_cache.find(name);
+        if (it != output_cache.end()) {
+            output_buffer = it->second;
+        }
+        else {
+            output_buffer = std::make_shared<output_file_buffer_c>(name);
+            output_cache[name] = output_buffer;
+        }
     }
     return output_buffer;
 }
