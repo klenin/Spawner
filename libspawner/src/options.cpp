@@ -119,7 +119,7 @@ void options_class::add_stderror(const std::string &name) {
         return;
     }
     if (name == CLEAR_STRING || name.empty()) {
-        stdoutput.clear();
+        stderror.clear();
         return;
     }
     stderror.push_back(name);
