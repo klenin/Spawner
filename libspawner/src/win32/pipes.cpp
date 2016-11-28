@@ -252,7 +252,7 @@ thread_return_t output_pipe_c::drain_pipe_thread(thread_param_t param)
 
         if (bytes_available == 0) {
             Sleep(5);
-            if (++stop_cycles >= 3 && self->stop_thread_) {
+            if (++stop_cycles >= 10 && self->stop_thread_) {
                 break;
             }
         }
