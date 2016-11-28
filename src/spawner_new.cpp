@@ -619,15 +619,15 @@ void spawner_new_c::init_arguments() {
     console_default_parser->add_argument_parser(c_lst(short_arg("so"), long_arg("out")),
         environment_default_parser->add_argument_parser(c_lst("SP_OUTPUT_FILE"),
             new options_callback_argument_parser_c(&options, &options_class::add_stdoutput))
-    )->set_description("Redirect standard output stream to file");
+    )->set_description("Redirect standard output stream to (<filename>|std|*index.stdin)");
     console_default_parser->add_argument_parser(c_lst(short_arg("i"), long_arg("in")),
         environment_default_parser->add_argument_parser(c_lst("SP_INPUT_FILE"),
             new options_callback_argument_parser_c(&options, &options_class::add_stdinput))
-    )->set_description("Redirect standard input stream from file");
+    )->set_description("Redirect standard input stream from (<filename>|std|*index.stdout|*index.stderr)");
     console_default_parser->add_argument_parser(c_lst(short_arg("e"), short_arg("se"), long_arg("err")),
         environment_default_parser->add_argument_parser(c_lst("SP_ERROR_FILE"),
             new options_callback_argument_parser_c(&options, &options_class::add_stderror))
-    )->set_description("Redirect standard error stream to file");
+    )->set_description("Redirect standard error stream to (<filename>|std|*index.stdin)");
 
     console_default_parser->add_argument_parser(c_lst(short_arg("runas"), long_arg("delegated")),
         environment_default_parser->add_argument_parser(c_lst("SP_RUNAS"), new boolean_argument_parser_c(options.delegated))
@@ -657,7 +657,7 @@ void spawner_new_c::init_arguments() {
     )->set_description("Search <executable> in system path");
     console_default_parser->add_argument_parser(c_lst(short_arg("wd")),
         environment_default_parser->add_argument_parser(c_lst("SP_DIRECTORY"), new string_argument_parser_c(options.working_directory))
-    );
+    )->set_description("Set working directory");
 
     console_default_parser->add_flag_parser(c_lst(short_arg("j"), long_arg("json")),
         environment_default_parser->add_argument_parser(c_lst("SP_JSON"), new boolean_argument_parser_c(options.json))
