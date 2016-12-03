@@ -385,9 +385,15 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
 #endif
         if (self->check_restriction(restriction_user_time_limit) &&
             (self->get_time_since_create() / 10) > self->get_restriction(restriction_user_time_limit)) {
+#if defined(__linux__)
             self->proc.fill_all();
+#endif
             kill(proc_pid, SIGXCPU);
+#if defined(__linux__)
             usleep((useconds_t)tick_to_micros);
+#else
+            usleep(100 * 1000);
+#endif
             kill(proc_pid, SIGKILL);
             self->terminate_reason = terminate_reason_user_time_limit;
             self->process_status = process_finished_terminated;
