@@ -487,6 +487,13 @@ static void maybe_write_to_file(const std::string &file_name, const std::string 
 }
 
 void spawner_new_c::print_report() {
+    if (runners.empty()) {
+        std::string report = "Error: " + get_error_text();
+        maybe_write_to_file(base_options.report_file, report);
+        if (!base_options.hide_report)
+            std::cout << report;
+        return;
+    }
     rapidjson::StringBuffer s;
     rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_writer(s);
     report_writer.StartArray();
@@ -510,7 +517,7 @@ void spawner_new_c::print_report() {
                     report = GenerateSpawnerReport(
                         rep, options_item,
                         (*i)->get_restrictions()
-                        );
+                    );
                 }
                 else
                 {
