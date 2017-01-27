@@ -121,6 +121,8 @@ std::string ExtractExitStatus(const report_class &rep) {
     unsigned int code = rep.exit_code;
 
     switch (code) {
+        case STATUS_PENDING:
+            return "Still running";
         case STATUS_ACCESS_VIOLATION:
             return "AccessViolation";
         case STATUS_ARRAY_BOUNDS_EXCEEDED:

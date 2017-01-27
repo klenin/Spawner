@@ -140,6 +140,7 @@ command_handler_c* handler = nullptr;
 #if defined(_WIN32) || defined(_WIN64)
 BOOL WINAPI CtrlHandlerRoutine(DWORD dwCtrlType) {
     if (handler != nullptr) {
+        set_error_text("Ctrl+C pressed");
         handler->spawner->print_report();
         // don't delete handler here since we can step into infinite loop
         // in case this handler was called while executing destructor
