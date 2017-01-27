@@ -297,7 +297,7 @@ void make_minidump(EXCEPTION_POINTERS* e) {
 #endif
 }
 
-std::string get_win_last_error_string() {
+std::string get_win_last_error_string(PDWORD_PTR args) {
     DWORD error_code = GetLastError();
     char* error_text = nullptr;
 
@@ -305,12 +305,12 @@ std::string get_win_last_error_string() {
         return FormatMessageA(
             FORMAT_MESSAGE_FROM_SYSTEM |
             FORMAT_MESSAGE_ALLOCATE_BUFFER |
-            FORMAT_MESSAGE_IGNORE_INSERTS,
+            (args ? FORMAT_MESSAGE_ARGUMENT_ARRAY : FORMAT_MESSAGE_IGNORE_INSERTS),
             NULL,
             error_code,
             lang_id,
             (LPSTR)&error_text,
-            0, NULL);
+            0, (va_list*)args);
     };
 
     if (format_message(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)) == 0) {

@@ -121,7 +121,7 @@ std::string get_stacktrace_string();
 #endif
 
 void make_minidump(EXCEPTION_POINTERS* e);
-std::string get_win_last_error_string();
+std::string get_win_last_error_string(PDWORD_PTR args = nullptr);
 
 void platform_exit_failure();
 

@@ -156,7 +156,8 @@ bool runner::init_process(const std::string &cmd, const char *wd) {
     ReleaseMutex(main_job_object_access_mutex);
     std::free(cmd_copy);
     if (error) {
-        PANIC("CreateProcess \"" + program + "\": " + get_win_last_error_string());
+        DWORD_PTR args[] = { (DWORD_PTR)program.c_str(), (DWORD_PTR)"", (DWORD_PTR)"", };
+        PANIC("CreateProcess \"" + program + "\": " + get_win_last_error_string(args));
         return false;
     }
     restore_original_environment(original);
@@ -201,7 +202,8 @@ bool runner::init_process_with_logon(const std::string &cmd, const char *wd) {
             NULL, wwd, &siw, &process_info) )
         {
             ReleaseMutex(main_job_object_access_mutex);
-            PANIC("CreateProcess: \"" + run_program + "\", " + get_win_last_error_string());
+            DWORD_PTR args[] = { (DWORD_PTR)program.c_str(), (DWORD_PTR)"", (DWORD_PTR)"", };
+            PANIC("CreateProcess \"" + run_program + "\": " + get_win_last_error_string(args));
             // TODO: cleanup below is useless now since we're in panic
             delete[] login;
             delete[] password;
