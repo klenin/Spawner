@@ -480,6 +480,12 @@ void spawner_new_c::run() {
     print_report();
 }
 
+static void maybe_write_to_file(const std::string &file_name, const std::string &report) {
+    if (!file_name.length()) return;
+    std::ofstream fo(file_name.c_str());
+    fo << report;
+}
+
 void spawner_new_c::print_report() {
     rapidjson::StringBuffer s;
     rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_writer(s);
@@ -527,24 +533,14 @@ void spawner_new_c::print_report() {
                 {
                     std::cout << report;
                 }
-
-                if (options_item.report_file.length())
-                {
-                    std::ofstream fo(options_item.report_file.c_str());
-                    fo << report;
-                    fo.close();
-                }
+                maybe_write_to_file(options_item.report_file, report);
             }
         }
     }
     report_writer.EndArray();
     if (base_options.json && runners.size() > 1) {
         std::string report = s.GetString();
-        if (base_options.report_file.length()) {
-            std::ofstream fo(base_options.report_file.c_str());
-            fo << report;
-            fo.close();
-        }
+        maybe_write_to_file(base_options.report_file, report);
         if (!base_options.hide_report) {
             std::cout << report;
         }
