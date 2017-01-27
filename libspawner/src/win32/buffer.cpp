@@ -128,17 +128,13 @@ size_t output_stdout_buffer_c::write_impl_(const void *data, size_t size) {
     if (color) {
         WORD attributes = color;
         if (!SetConsoleTextAttribute(stream, attributes))
-        {
-            //    throw GetWin32Error("SetConsoleTextAttribute");
-        }
+            PANIC(get_win_last_error_string());
     }
     result = protected_write(data, size);
     if (color) {
         WORD attributes = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
         if (!SetConsoleTextAttribute(stream, attributes))
-        {
-            //    throw GetWin32Error("SetConsoleTextAttribute");
-        }
+            PANIC(get_win_last_error_string());
     }
     fflush(stdout);
     stdout_write_mutex_.unlock();
