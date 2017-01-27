@@ -72,7 +72,7 @@ input_file_buffer_c::input_file_buffer_c(const std::string &file_name) {
     handle_t handle = CreateFile(file_name.c_str(), GENERIC_READ, 0, NULL,
         OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (handle == INVALID_HANDLE_VALUE) {
-        PANIC(get_win_last_error_string());
+        PANIC(file_name + ": " + get_win_last_error_string());
     }
     init_handle(handle);
 }
@@ -92,7 +92,7 @@ output_file_buffer_c::output_file_buffer_c(const std::string &file_name) {
     handle_t handle = CreateFile(file_name.c_str(), GENERIC_WRITE, 0, NULL,
         CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (handle == INVALID_HANDLE_VALUE) {
-        PANIC(get_win_last_error_string());
+        PANIC(file_name + ": " + get_win_last_error_string());
     }
     init_handle(handle);
 }
