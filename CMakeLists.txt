@@ -1,20 +1,22 @@
 # Compatibility
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 2.6)
 
-# Windows XP compatible platform toolset. Must be set before project(),
-# otherwise change of CMAKE_*_TOOLSET will take no effect.
-# We get VS version from the generator name because neither MSVC* nor other
-# variables that describe the compiler aren't available before project().
-if ("${CMAKE_GENERATOR}" MATCHES "Visual Studio ([0-9]+)")
-    # Note: "v110_xp" is for Visual Studio 11 2012, which is unsupported.
-    if (${CMAKE_MATCH_1} EQUAL 12)
-        # Visual Studio 12 2013
-        set(CMAKE_GENERATOR_TOOLSET "v120_xp" CACHE STRING "CMAKE_GENERATOR_TOOLSET" FORCE)
-        set(CMAKE_VS_PLATFORM_TOOLSET "v120_xp" CACHE STRING "CMAKE_VS_PLATFORM_TOOLSET" FORCE)
-    elseif (${CMAKE_MATCH_1} GREATER_EQUAL 14)
-        # Visual Studio 14 2015 / Visual Studio 15 2017
-        set(CMAKE_GENERATOR_TOOLSET "v140_xp" CACHE STRING "CMAKE_GENERATOR_TOOLSET" FORCE)
-        set(CMAKE_VS_PLATFORM_TOOLSET "v140_xp" CACHE STRING "CMAKE_VS_PLATFORM_TOOLSET" FORCE)
+if(WIN32)
+    # Windows XP compatible platform toolset. Must be set before project(),
+    # otherwise change of CMAKE_*_TOOLSET will take no effect.
+    # We get VS version from the generator name because neither MSVC* nor other
+    # variables that describe the compiler aren't available before project().
+    if ("${CMAKE_GENERATOR}" MATCHES "Visual Studio ([0-9]+)")
+        # Note: "v110_xp" is for Visual Studio 11 2012, which is unsupported.
+        if (${CMAKE_MATCH_1} EQUAL 12)
+            # Visual Studio 12 2013
+            set(CMAKE_GENERATOR_TOOLSET "v120_xp" CACHE STRING "CMAKE_GENERATOR_TOOLSET" FORCE)
+            set(CMAKE_VS_PLATFORM_TOOLSET "v120_xp" CACHE STRING "CMAKE_VS_PLATFORM_TOOLSET" FORCE)
+        elseif (NOT ${CMAKE_MATCH_1} LESS 14)
+            # Visual Studio 14 2015 / Visual Studio 15 2017
+            set(CMAKE_GENERATOR_TOOLSET "v140_xp" CACHE STRING "CMAKE_GENERATOR_TOOLSET" FORCE)
+            set(CMAKE_VS_PLATFORM_TOOLSET "v140_xp" CACHE STRING "CMAKE_VS_PLATFORM_TOOLSET" FORCE)
+        endif()
     endif()
 endif()
 
