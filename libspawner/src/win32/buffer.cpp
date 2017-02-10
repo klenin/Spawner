@@ -8,7 +8,7 @@
 
 duplex_buffer_c::duplex_buffer_c() {
     if (!CreatePipe(&in, &out, NULL, 0)) {
-        //raise_error(*this, "CreatePipe");
+        PANIC(get_win_last_error_string());
     }
 }
 
@@ -51,7 +51,8 @@ size_t handle_buffer_c::protected_read(void *data, size_t size) {
 
 size_t handle_buffer_c::protected_write(const void *data, size_t size) {
     DWORD bytes_written = 0;
-    WriteFile(stream, data, size, &bytes_written, NULL);
+    if (!WriteFile(stream, data, size, &bytes_written, NULL))
+        PANIC(get_win_last_error_string());
     return bytes_written;
 }
 
