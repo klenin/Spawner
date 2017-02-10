@@ -15,11 +15,6 @@
 
 #ifdef _WIN32
 
-//#ifndef _MSC_VER
-#if _WIN32_WINNT < 0x0501
-#define _WIN32_WINNT 0x0501
-#endif
-//#endif//_MSC_VER
 #include <windows.h>
 #include <tlhelp32.h>
 //#include <winioctl.h>

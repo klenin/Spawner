@@ -81,6 +81,7 @@ if(WIN32)
     if(USERENV)
         set(LIBRARIES ${LIBRARIES} ${USERENV})
     endif()
+    add_definitions(-DWINVER=0x0501 -D_WIN32_WINNT=WINVER)
 endif()
 
 if(UNIX)
