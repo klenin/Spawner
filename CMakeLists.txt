@@ -85,7 +85,7 @@ endif()
 
 if(UNIX)
     # Linux requires -lrt for shm_{open,...}
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
         set(LIBRARIES ${LIBRARIES} "rt")
     endif()
     set(LIBRARIES ${LIBRARIES} "pthread")
