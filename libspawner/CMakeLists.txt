@@ -122,6 +122,10 @@ add_library(${PROJECT_LIBRARY} ${SOURCES} ${HEADERS})
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.7")
 
+if(CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "-static-libgcc -static-libstdc++ ${CMAKE_CXX_FLAGS}")
+endif()
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "--stdlib=libc++ ${CMAKE_CXX_FLAGS}")
 endif()
