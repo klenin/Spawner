@@ -8,10 +8,10 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/prettywriter.h"
 
-#include "arguments.h"
-#include "sp.h"
-#include "spawner_base.h"
-#include "mutex.h"
+#include "arguments.hpp"
+#include "sp.hpp"
+#include "spawner_base.hpp"
+#include "mutex.hpp"
 
 class spawner_new_c: public spawner_base_c {
 protected:

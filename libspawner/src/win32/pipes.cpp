@@ -1,11 +1,11 @@
-#include "pipes.h"
+#include "pipes.hpp"
 
 #include <iostream>
 #include <AccCtrl.h>
 #include <Aclapi.h>//advapi32.lib
 #include <algorithm>
 
-#include "error.h"
+#include "error.hpp"
 
 // TODO: 4096 is assumed to be "enough" however if message sent via pipes will
 // exceed buffer size then it's fragment could be mixed up with fragments of

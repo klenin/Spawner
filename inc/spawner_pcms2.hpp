@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "spawner_old.h"
+#include "spawner_old.hpp"
 
 class spawner_pcms2_c: public spawner_old_c {
 public:

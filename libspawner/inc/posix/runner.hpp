@@ -1,13 +1,13 @@
-#ifndef _RUNNER_H_
-#define _RUNNER_H_
+#ifndef _SP_RUNNER_HPP_
+#define _SP_RUNNER_HPP_
 
 #include <sys/resource.h>
 
-#include "inc/base_runner.h"
+#include "inc/base_runner.hpp"
 
 #if defined(__linux__)
-#include "linux_affinity.h"
-#include "linux_seccomp.h"
+#include "linux_affinity.hpp"
+#include "linux_seccomp.hpp"
 #endif
 
 class runner: public base_runner {
@@ -74,4 +74,5 @@ public:
     static unsigned long long get_current_time();
     int get_exit_code();
 };
-#endif
+
+#endif // _SP_RUNNER_HPP_

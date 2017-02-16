@@ -1,10 +1,10 @@
-#include "buffer.h"
+#include "buffer.hpp"
 
 #include <cmath>
 #include <cstdio>
 
-#include "error.h"
-#include "pipes.h"
+#include "error.hpp"
+#include "pipes.hpp"
 
 duplex_buffer_c::duplex_buffer_c() {
     if (!CreatePipe(&in, &out, NULL, 0)) {

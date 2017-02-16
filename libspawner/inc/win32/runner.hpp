@@ -1,16 +1,16 @@
-#ifndef _WIN_RUNNER_H_
-#define _WIN_RUNNER_H_
+#ifndef _SP_RUNNER_HPP_
+#define _SP_RUNNER_HPP_
 
 #include <string>
 #include <map>
 #include <memory>
 
-#include "inc/pipes.h"
-#include "inc/status.h"
-#include "inc/report.h"
-#include "inc/options.h"
-#include "inc/base_runner.h"
-#include "platform.h"
+#include "inc/pipes.hpp"
+#include "inc/status.hpp"
+#include "inc/report.hpp"
+#include "inc/options.hpp"
+#include "inc/base_runner.hpp"
+#include "platform.hpp"
 
 class runner : public base_runner {
 private:
@@ -66,4 +66,5 @@ public:
     void resume();
     bool is_running();
 };
-#endif // _WIN_RUNNER_H
+
+#endif // _SP_RUNNER_HPP_

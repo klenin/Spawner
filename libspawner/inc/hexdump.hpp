@@ -1,6 +1,7 @@
-#ifndef _HEXDUMP_H_
-#define _HEXDUMP_H_
+#ifndef _SP_HEXDUMP_HPP_
+#define _SP_HEXDUMP_HPP_
+
 void hexDump(const void*, int);
 void dprintf(const char*, ...);
 
-#endif
+#endif // _SP_HEXDUMP_HPP_

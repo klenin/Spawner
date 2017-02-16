@@ -1,6 +1,7 @@
-#include <inc/compatibility.h>
-#include <inc/uconvert.h>
-#include <inc/error.h>
+#include "inc/compatibility.hpp"
+
+#include "inc/uconvert.hpp"
+#include "inc/error.hpp"
 #include <sstream>
 
 void SetRestriction(restrictions_class &restrictions, const restriction_kind_t &restriction_kind, const std::string &value) {

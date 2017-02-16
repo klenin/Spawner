@@ -1,5 +1,5 @@
-#ifndef _SPAWNER_UNIT_CONVERT_H_
-#define _SPAWNER_UNIT_CONVERT_H_
+#ifndef _SP_UNIT_CONVERT_HPP_
+#define _SP_UNIT_CONVERT_HPP_
 
 #include <string>
 
@@ -61,4 +61,4 @@ std::string convert(const value_t &from, const value_t &to, const long double &v
 
 unsigned long convert(const value_t &to, const std::string &val, const unsigned long &default_value = 0);
 
-#endif//_SPAWNER_UNIT_CONVERT_H_
+#endif // _SP_UNIT_CONVERT_HPP_

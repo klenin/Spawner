@@ -1,7 +1,7 @@
-#ifndef _SPAWNER_OPTIONS_H_
-#define _SPAWNER_OPTIONS_H_
+#ifndef _SP_OPTIONS_HPP_
+#define _SP_OPTIONS_HPP_
 
-#include <inc/session.h>
+#include "inc/session.hpp"
 
 #include <list>
 #include <vector>
@@ -69,5 +69,4 @@ struct options_class
     std::string environmentMode;
 };
 
-#endif//_SPAWNER_OPTIONS_H_
-
+#endif // _SP_OPTIONS_HPP_

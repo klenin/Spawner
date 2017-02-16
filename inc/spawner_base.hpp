@@ -5,9 +5,9 @@
 #include <map>
 #include <memory>
 
-#include "sp.h"
-#include "arguments.h"
-#include "inc/compatibility.h"
+#include "sp.hpp"
+#include "arguments.hpp"
+#include "inc/compatibility.hpp"
 
 class spawner_base_c {
 protected:

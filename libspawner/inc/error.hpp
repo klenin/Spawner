@@ -1,9 +1,9 @@
-#ifndef _ERROR_H_
-#define _ERROR_H_
+#ifndef _SP_ERROR_HPP_
+#define _SP_ERROR_HPP_
 
 #include <string>
 #include <functional>
-#include "platform.h"
+#include "platform.hpp"
 
 void set_on_panic_action(const std::function<void()> action);
 void set_error_text(const std::string& error_text);
@@ -34,4 +34,4 @@ private:
     handler_t_ handler_;
 };
 
-#endif // _ERROR_H_
+#endif // _SP_ERROR_HPP_

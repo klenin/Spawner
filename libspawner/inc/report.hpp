@@ -1,11 +1,11 @@
-#ifndef _SPAWNER_REPORT_H_
-#define _SPAWNER_REPORT_H_
+#ifndef _SP_REPORT_HPP_
+#define _SP_REPORT_HPP_
 
 #include <string>
 
-#include "status.h"
-#include "options.h"
-#include "restrictions.h"
+#include "status.hpp"
+#include "options.hpp"
+#include "restrictions.hpp"
 
 class base_report_class
 {
@@ -22,7 +22,7 @@ public:
         user_time(0),
         kernel_time(0) {}
     process_status_t process_status;
-    
+
     terminate_reason_t terminate_reason;
     //may be move this to different structure
     unsigned long peak_memory_used;
@@ -90,4 +90,4 @@ const terminate_reason_description terminate_reason_descriptions[] = {
     {terminate_reason_not_terminated,           nullptr}
 };
 
-#endif//_SPAWNER_REPORT_H_
+#endif // _SP_REPORT_HPP_

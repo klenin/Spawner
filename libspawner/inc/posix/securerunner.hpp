@@ -1,15 +1,15 @@
-#ifndef _SECURE_RUNNER_H_
-#define _SECURE_RUNNER_H_
+#ifndef _SP_SECURERUNNER_HPP_
+#define _SP_SECURERUNNER_HPP_
 
 #include <atomic>
 #include <functional>
 #include <queue>
 
-#include "runner.h"
+#include "runner.hpp"
 
 #if defined(__linux__)
-#include "linux_procfs.h"
-#include "linux_seccomp.h"
+#include "linux_procfs.hpp"
+#include "linux_seccomp.hpp"
 #endif
 
 class secure_runner: public runner
@@ -60,4 +60,5 @@ public:
     std::function<void()> on_terminate;
     virtual bool wait_for();
 };
-#endif // _SECURE_RUNNER_H_
+
+#endif // _SP_SECURERUNNER_HPP_

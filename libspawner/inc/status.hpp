@@ -1,5 +1,5 @@
-#ifndef _SPAWNER_STATUS_H_
-#define _SPAWNER_STATUS_H_
+#ifndef _SP_STATUS_HPP_
+#define _SP_STATUS_HPP_
 
 enum process_status_t
 {
@@ -27,4 +27,4 @@ enum terminate_reason_t
     terminate_reason_by_controller,
 };
 
-#endif//_SPAWNER_STATUS_H_
+#endif // _SP_STATUS_HPP_

@@ -1,5 +1,6 @@
-#ifndef _POSIX_PLATFORM_H_
-#define _POSIX_PLATFORM_H_
+#ifndef _SP_PLATFORM_HPP_
+#define _SP_PLATFORM_HPP_
+
 #include <string>
 #include <stdlib.h>
 
@@ -7,7 +8,7 @@
 #include <sys/time.h>
 #endif
 
-#include "platform_report.h"
+#include "platform_report.hpp"
 
 #define FOREGROUND_BLUE 0
 #define FOREGROUND_GREEN 0
@@ -41,4 +42,4 @@ void platform_init();
 unsigned long long int clock_gettime(int, struct timespec *);
 #endif
 
-#endif // _POSIX_PLATFORM_H_
+#endif // _SP_PLATFORM_HPP_

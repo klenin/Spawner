@@ -1,8 +1,10 @@
-#ifndef _MULTIBYTE_H_
-#define _MULTIBYTE_H_
+#ifndef _SP_MULTIBYTE_HPP_
+#define _SP_MULTIBYTE_HPP_
+
 #include <fstream>
 #include <string.h>
 
 wchar_t *a2w(const char *str);
 char *w2a(const wchar_t *str);
-#endif //_MULTIBYTE_H_
+
+#endif // _SP_MULTIBYTE_HPP_

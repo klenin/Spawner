@@ -1,4 +1,5 @@
-#include "restrictions.h"
+#include "restrictions.hpp"
+
 #include <algorithm>
 
 struct restriction_cell {

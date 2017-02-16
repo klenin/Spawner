@@ -1,14 +1,15 @@
-#ifndef _PIPES_H_
-#define _PIPES_H_
+#ifndef _SP_PIPES_HPP_
+#define _SP_PIPES_HPP_
+
 #include <sstream>
 #include <string>
 #include <memory>
 #include <functional>
 #include <atomic>
 
-#include "inc/buffer.h"
-#include "platform.h"
-#include "mutex.h"
+#include "inc/buffer.hpp"
+#include "platform.hpp"
+#include "mutex.hpp"
 
 enum pipes_t/*rename*/ {
     STD_INPUT_PIPE,
@@ -97,4 +98,5 @@ public:
     }
     std::function<void(const std::string&, output_pipe_c*)> process_message;
 };
-#endif // _PIPES_H_
+
+#endif // _SP_PIPES_HPP_

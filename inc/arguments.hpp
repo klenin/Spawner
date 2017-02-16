@@ -7,8 +7,8 @@
 #include <utility>
 #include <algorithm>
 
-#include "inc/uconvert.h"
-#include "platform.h"
+#include "inc/uconvert.hpp"
+#include "platform.hpp"
 
 #define min_def(x, y)((x)<(y)?(x):(y))
 #define max_def(x, y)((x)>(y)?(x):(y))

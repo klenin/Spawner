@@ -1,5 +1,5 @@
-#ifndef _LINUX_SECCOMP_H_
-#define _LINUX_SECCOMP_H_
+#ifndef _SP_LINUX_SECCOMP_HPP_
+#define _SP_LINUX_SECCOMP_HPP_
 
 /*
  Some macros of this code were taken from this page
@@ -123,4 +123,4 @@ static struct sock_fprog prog = {
 int seccomp_probe_filter();
 int seccomp_setup_filter();
 
-#endif
+#endif // _SP_LINUX_SECCOMP_HPP_

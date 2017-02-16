@@ -1,6 +1,7 @@
-#include "inc/error.h"
+#include "runner.hpp"
 
-#include "runner.h"
+#include "inc/error.hpp"
+
 #ifdef _MSC_VER
 #pragma comment(lib, "Userenv")
 #endif

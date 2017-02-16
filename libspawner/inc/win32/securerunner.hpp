@@ -1,10 +1,11 @@
-#pragma once
+#ifndef _SP_SECURERUNNER_HPP_
+#define _SP_SECURERUNNER_HPP_
 
 #include <string>
 #include <atomic>
 #include <functional>
 
-#include "runner.h"
+#include "runner.hpp"
 
 class secure_runner: public runner
 {
@@ -42,3 +43,5 @@ public:
     bool force_stop = false;
     std::function<void()> on_terminate;
 };
+
+#endif // _SP_SECURERUNNER_HPP_

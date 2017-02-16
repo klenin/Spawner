@@ -1,5 +1,6 @@
-#ifndef _PROCFS_CLASS_H_
-#define _PROCFS_CLASS_H_
+#ifndef _SP_LINUX_PROCFS_HPP_
+#define _SP_LINUX_PROCFS_HPP_
+
 #include <string>
 
 #define STAT_UTIME_POS 13
@@ -27,4 +28,5 @@ struct procfs_class {
     bool fill_io();
     bool fill_all();
 };
-#endif // _PROCFS_CLASS_H_
+
+#endif // _SP_LINUX_PROCFS_HPP_

@@ -1,10 +1,10 @@
-#ifndef _POSIX_MUTEX_H_
-#define _POSIX_MUTEX_H_
+#ifndef _SP_MUTEX_HPP_
+#define _SP_MUTEX_HPP_
 
 #include <atomic>
 #include <pthread.h>
 
-#include "inc/error.h"
+#include "inc/error.hpp"
 
 class mutex_c {
 public:
@@ -51,4 +51,5 @@ private:
     mutable std::atomic<unsigned> instance_count_{0};
     pthread_mutex_t handle;
 };
-#endif // _POSIX_MUTEX_H_
+
+#endif // _SP_MUTEX_HPP_

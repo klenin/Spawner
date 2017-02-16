@@ -1,5 +1,5 @@
-#ifndef _SPAWNER_SESSION_H_
-#define _SPAWNER_SESSION_H_
+#ifndef _SP_SESSION_HPP_
+#define _SP_SESSION_HPP_
 
 #include <string>
 #include <inc/md5/md5.h>
@@ -27,4 +27,4 @@ public:
 
 };
 
-#endif//_SPAWNER_SESSION_H_
+#endif // _SP_SESSION_HPP_

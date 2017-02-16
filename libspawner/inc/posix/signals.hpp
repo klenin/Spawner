@@ -1,9 +1,9 @@
-#ifndef _SPAWNER_SIGNALS_H_
-#define _SPAWNER_SIGNALS_H_
+#ifndef _SP_SIGNALS_HPP_
+#define _SP_SIGNALS_HPP_
 
 #include <signal.h>
 
-#include "inc/report.h"
+#include "inc/report.hpp"
 
 enum signal_t
 {
@@ -45,4 +45,4 @@ const map_cell event_identifiers[] = {
     {signal_unknown, nullptr, "unknown signal number, run kill -l to list"},
 };
 
-#endif//_SPAWNER_SIGNALS_H_
+#endif // _SP_SIGNALS_HPP_

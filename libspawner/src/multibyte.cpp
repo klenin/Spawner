@@ -1,4 +1,4 @@
-#include "multibyte.h"
+#include "multibyte.hpp"
 
 wchar_t *a2w(const char *str)
 {

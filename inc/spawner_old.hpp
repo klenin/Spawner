@@ -2,8 +2,8 @@
 
 #include <string>
 
-#include "sp.h"
-#include "spawner_base.h"
+#include "sp.hpp"
+#include "spawner_base.hpp"
 
 class spawner_old_c: public spawner_base_c {
 protected:

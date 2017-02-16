@@ -1,8 +1,8 @@
-#ifndef _SPAWNER_EXCEPTIONS_H_
-#define _SPAWNER_EXCEPTIONS_H_
+#ifndef _SP_EXCEPTIONS_HPP_
+#define _SP_EXCEPTIONS_HPP_
 
 #include <Windows.h>
-#include "inc/report.h"
+#include "inc/report.hpp"
 
 enum exception_t
 {
@@ -83,4 +83,4 @@ const map_cell event_identifiers[] = {
     {exception_unknown                  , nullptr, "EXCEPTION_UNKNOWN"},
 };
 
-#endif//_SPAWNER_EXCEPTIONS_H_
+#endif // _SP_EXCEPTIONS_HPP_

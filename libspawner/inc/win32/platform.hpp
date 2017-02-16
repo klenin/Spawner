@@ -1,5 +1,5 @@
-#ifndef _WIN_PLATFORM_H_
-#define _WIN_PLATFORM_H_
+#ifndef _SP_PLATFORM_HPP_
+#define _SP_PLATFORM_HPP_
 
 /************************************************************************/
 /* GLOBAL TODO                                                          */
@@ -9,9 +9,9 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "inc/restrictions.h"
-#include "inc/options.h"
-#include "platform_report.h"
+#include "inc/restrictions.hpp"
+#include "inc/options.hpp"
+#include "platform_report.hpp"
 
 #ifdef _WIN32
 
@@ -127,4 +127,4 @@ void platform_exit_failure();
 
 std::string ExtractExitStatus(const report_class &);
 
-#endif //_WIN_PLATFORM_H_
+#endif // _SP_PLATFORM_HPP_

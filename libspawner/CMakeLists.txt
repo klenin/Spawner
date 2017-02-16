@@ -31,47 +31,47 @@ set(SOURCES
 )
 
 set(HEADERS
-    sp.h
+    sp.hpp
     inc/md5/md5.h
-    inc/delegate.h
-    inc/options.h
-    inc/restrictions.h
-    inc/uconvert.h
-    inc/compatibility.h
-    inc/error.h
-    inc/report.h
-    inc/base_runner.h
-    inc/session.h
-    inc/status.h
-    inc/pipes.h
-    inc/base_runner.h
-    inc/hexdump.h
+    inc/delegate.hpp
+    inc/options.hpp
+    inc/restrictions.hpp
+    inc/uconvert.hpp
+    inc/compatibility.hpp
+    inc/error.hpp
+    inc/report.hpp
+    inc/base_runner.hpp
+    inc/session.hpp
+    inc/status.hpp
+    inc/pipes.hpp
+    inc/base_runner.hpp
+    inc/hexdump.hpp
 )
 
 set(LIB_WIN32_HEADERS
-    inc/win32/mutex.h
-    inc/win32/platform.h
-    inc/win32/exceptions.h
-    inc/win32/stack_walker.h
-    inc/win32/platform_report.h
-    inc/win32/runner.h
-    inc/win32/securerunner.h
+    inc/win32/mutex.hpp
+    inc/win32/platform.hpp
+    inc/win32/exceptions.hpp
+    inc/win32/stack_walker.hpp
+    inc/win32/platform_report.hpp
+    inc/win32/runner.hpp
+    inc/win32/securerunner.hpp
 )
 
 set(LIB_POSIX_HEADERS
-    inc/posix/platform.h
-    inc/posix/signals.h
-    inc/posix/rlimit.h
-    inc/posix/platform_report.h
-    inc/posix/mutex.h
-    inc/posix/runner.h
-    inc/posix/securerunner.h
+    inc/posix/platform.hpp
+    inc/posix/signals.hpp
+    inc/posix/rlimit.hpp
+    inc/posix/platform_report.hpp
+    inc/posix/mutex.hpp
+    inc/posix/runner.hpp
+    inc/posix/securerunner.hpp
 )
 
 set(LIB_LINUX_HEADERS
-    inc/posix/linux_affinity.h
-    inc/posix/linux_procfs.h
-    inc/posix/linux_seccomp.h
+    inc/posix/linux_affinity.hpp
+    inc/posix/linux_procfs.hpp
+    inc/posix/linux_seccomp.hpp
 )
 
 set(LIB_WIN32_SOURCES
@@ -82,6 +82,7 @@ set(LIB_WIN32_SOURCES
     src/win32/runner.cpp
     src/win32/securerunner.cpp
 )
+
 set(LIB_UNIX_SOURCES
     src/posix/buffer.cpp
     src/posix/delegate.cpp

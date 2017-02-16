@@ -1,15 +1,15 @@
-#ifndef _BASE_RUNNER_H_
-#define _BASE_RUNNER_H_
+#ifndef _SP_BASE_RUNNER_HPP_
+#define _SP_BASE_RUNNER_HPP_
 
 #include <map>
 #include <string>
 
-#include "inc/options.h"
-#include "inc/status.h"
-#include "inc/multibyte.h"
-#include "inc/pipes.h"
+#include "inc/options.hpp"
+#include "inc/status.hpp"
+#include "inc/multibyte.hpp"
+#include "inc/pipes.hpp"
 
-#include "platform_report.h"
+#include "platform_report.hpp"
 
 class base_runner {
 protected:
@@ -32,4 +32,4 @@ public:
     base_runner(const std::string &program, const options_class &options);
 };
 
-#endif // _BASE_RUNNER_H_
+#endif // _SP_BASE_RUNNER_HPP_

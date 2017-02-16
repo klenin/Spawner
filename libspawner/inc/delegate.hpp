@@ -1,10 +1,10 @@
-#ifndef _DELEGATE_RUNNER_H_
-#define _DELEGATE_RUNNER_H_
+#ifndef _SP_DELEGATE_HPP_
+#define _SP_DELEGATE_HPP_
 
 #include <fstream>
 #include <string>
 
-#include "securerunner.h"
+#include "securerunner.hpp"
 
 class delegate_runner: public runner
 {
@@ -17,4 +17,5 @@ public:
     delegate_runner(const std::string &program, const options_class &options,
         const restrictions_class &restrictions);
 };
-#endif // _DELEGATE_RUNNER_H
+
+#endif // _SP_DELEGATE_HPP_
