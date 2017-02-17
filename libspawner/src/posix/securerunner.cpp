@@ -63,7 +63,7 @@ void secure_runner::prepare_stdio() {
 
     // try to merge stderr and stdout
     if (options.stderror.size() == 1) {
-        if(options.stderror[0] == options.stdoutput[0]) {
+        if (options.stdoutput.size() == 1 && options.stderror[0] == options.stdoutput[0]) {
             close(STDERR_FILENO);
             dup2(STDOUT_FILENO, STDERR_FILENO);
         }
