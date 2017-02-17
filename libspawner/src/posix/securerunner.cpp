@@ -63,7 +63,7 @@ void secure_runner::prepare_stdio() {
 
     // try to merge stderr and stdout
     if (options.stderror.size() == 1) {
-        if(options.stderror[0] == options.stdoutput[0]) {
+        if (options.stdoutput.size() == 1 && options.stderror[0] == options.stdoutput[0]) {
             close(STDERR_FILENO);
             dup2(STDOUT_FILENO, STDERR_FILENO);
         }
@@ -145,7 +145,7 @@ report_class secure_runner::get_report() {
 
 bool secure_runner::wait_for() {
     runner::wait_for();
-    pthread_cancel(monitor_thread);
+    //pthread_cancel(monitor_thread);
     pthread_join(monitor_thread, NULL);
     return true;
 }
@@ -221,7 +221,6 @@ void secure_runner::runner_free() {
 void *secure_runner::check_limits_proc(void *monitor_param) {
     // add SIGSTOP and getitimer() support
     pid_t proc_pid;
-    int poparg;
 
     struct timespec req;
 
@@ -266,7 +265,7 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
     // All others will be cancelled upon pthread_cancel().
     pthread_cleanup_push(monitor_cleanup, NULL);
 
-    while (1) {
+    while (self->running) {
         pthread_testcancel();
 #if defined(__linux__)
         if(!self->proc.fill_all())
@@ -402,7 +401,7 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
         nanosleep(&req, nullptr);
     }
 
-    pthread_cleanup_pop(poparg);
+    pthread_cleanup_pop(1);
     pthread_exit(NULL);
 }
 
