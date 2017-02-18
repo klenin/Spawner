@@ -46,7 +46,7 @@ elseif(WIN32)
 endif()
 
 # Always include symbols
-if(UNIX)
+if(DEBUG)
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
@@ -112,6 +112,9 @@ set_property(TARGET libspawner PROPERTY CXX_STANDARD_REQUIRED ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "-static-libgcc -static-libstdc++ ${CMAKE_CXX_FLAGS}")
+    if(NOT DEBUG)
+        set(CMAKE_EXE_LINKER_FLAGS "-s")
+    endif()
 endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
