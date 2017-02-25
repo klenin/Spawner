@@ -9,15 +9,12 @@ set(${PROJECT_NAME}_MAJOR_VERSION 0)
 set(${PROJECT_NAME}_MINOR_VERSION 2)
 set(${PROJECT_NAME}_PATCH_LEVEL 0)
 
-
 include_directories("${PROJECT_SOURCE_DIR}/inc")
-include_directories("${PROJECT_SOURCE_DIR}/inc/md5")
 include_directories("${PROJECT_SOURCE_DIR}")
 
 set(CMAKE_BUILD_TYPE ${SP_BUILD_TYPE})
 
 set(SOURCES
-    src/md5/md5.c
     src/options.cpp
     src/restrictions.cpp
     src/multibyte.cpp
@@ -32,7 +29,6 @@ set(SOURCES
 
 set(HEADERS
     sp.h
-    inc/md5/md5.h
     inc/delegate.h
     inc/options.h
     inc/restrictions.h
