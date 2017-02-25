@@ -52,7 +52,7 @@ endif()
 
 if(CMAKE_BUILD_TYPE)
 else()
-    set(CMAKE_BUILD_TYPE Release)
+    set(CMAKE_BUILD_TYPE "Release")
 endif()
 
 set(SP_BUILD_TYPE ${CMAKE_BUILD_TYPE})
@@ -113,7 +113,7 @@ set_property(TARGET libspawner PROPERTY CXX_STANDARD_REQUIRED ON)
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "-static-libgcc -static-libstdc++ ${CMAKE_CXX_FLAGS}")
     if(NOT DEBUG)
-        set(CMAKE_EXE_LINKER_FLAGS "-s")
+        set(CMAKE_EXE_LINKER_FLAGS "-s ${CMAKE_EXE_LINKER_FLAGS}")
     endif()
 endif()
 
