@@ -1,9 +1,9 @@
-#include "securerunner.h"
+#include "securerunner.hpp"
 
 #include <ctime>
 #include <vector>
 
-#include "inc/error.h"
+#include "inc/error.hpp"
 
 #ifndef JOB_OBJECT_UILIMIT_ALL
 #define JOB_OBJECT_UILIMIT_ALL                      0x000000FF

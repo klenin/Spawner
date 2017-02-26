@@ -1,4 +1,4 @@
-#include "hexdump.h"
+#include "hexdump.hpp"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -6,8 +6,8 @@
 
 #include <memory>
 
-#include "mutex.h"
-#include "buffer.h"
+#include "mutex.hpp"
+#include "buffer.hpp"
 
 void hexDump(const void *addr, int len) {
     static mutex_c mutex;

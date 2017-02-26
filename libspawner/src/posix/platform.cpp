@@ -1,16 +1,15 @@
-#include "platform.h"
+#include "platform.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <string.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "error.h"
-#include "options.h"
+#include "error.hpp"
+#include "options.hpp"
 
 int get_spawner_pid() {
     return (int)getpid();

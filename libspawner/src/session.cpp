@@ -1,7 +1,8 @@
-#include <session.h>
+#include "session.hpp"
+
 #include <memory.h>
 #include <iomanip>
-#include "platform.h"
+#include "platform.hpp"
 
 //session_manager_class session_manager_class::session_manager_instance;
 session_class session_class::base_session;

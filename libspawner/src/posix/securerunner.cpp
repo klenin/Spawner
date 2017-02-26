@@ -1,12 +1,12 @@
+#include "securerunner.hpp"
+
 #include <unistd.h>
 #include <fcntl.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "securerunner.h"
-
-#include "rlimit.h"
+#include "rlimit.hpp"
 
 #define load_ratios_max_size 20
 

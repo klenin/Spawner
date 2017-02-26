@@ -1,9 +1,9 @@
-#include "pipes.h"
+#include "pipes.hpp"
 
 #include <iostream>
 #include <algorithm>
 
-#include "error.h"
+#include "error.hpp"
 
 unsigned const DEFAULT_BUFFER_SIZE = 42;
 

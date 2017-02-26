@@ -1,7 +1,8 @@
-#include "inc/uconvert.h"
-#include "inc/error.h"
-#include "compatibility.h"
-#include "platform.h"
+#include "platform.hpp"
+
+#include "inc/uconvert.hpp"
+#include "inc/error.hpp"
+#include "compatibility.hpp"
 
 #include <sstream>
 #include <fstream>
@@ -15,7 +16,7 @@
 #include <dbghelp.h>
 #endif
 
-#include "stack_walker.h"
+#include "stack_walker.hpp"
 
 
 #ifdef OPEN_JOB_OBJECT_DYNAMIC_LOAD
@@ -96,7 +97,7 @@ void pull_shm_report(const char *shm_name, std::string &report)
     HANDLE hIn = OpenFileMappingA(
         FILE_MAP_ALL_ACCESS,
         FALSE,
-        shm_name 
+        shm_name
     );
 
     LPTSTR pRep = (LPTSTR)MapViewOfFile(

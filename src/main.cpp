@@ -3,12 +3,12 @@
 #include <string>
 #include <algorithm>
 
-#include "sp.h"
-#include "inc/compatibility.h"
-#include "spawner_base.h"
-#include "spawner_old.h"
-#include "spawner_new.h"
-#include "spawner_pcms2.h"
+#include "sp.hpp"
+#include "inc/compatibility.hpp"
+#include "spawner_base.hpp"
+#include "spawner_old.hpp"
+#include "spawner_new.hpp"
+#include "spawner_pcms2.hpp"
 
 class command_handler_c {
 protected:

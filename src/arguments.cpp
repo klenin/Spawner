@@ -1,4 +1,5 @@
-#include "arguments.h"
+#include "arguments.hpp"
+
 #include <iostream>
 
 #include <stdarg.h> // va_{strt,arg}

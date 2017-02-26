@@ -1,4 +1,4 @@
-#include "linux_procfs.h"
+#include "linux_procfs.hpp"
 
 #include <unistd.h>
 

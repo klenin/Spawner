@@ -1,3 +1,5 @@
+#include "inc/delegate.hpp"
+
 #include <map>
 #include <string>
 #include <sstream>
@@ -9,8 +11,7 @@
 #include <unistd.h> // ftruncate
 #include <sys/types.h>
 
-#include "inc/delegate.h"
-#include "inc/error.h"
+#include "inc/error.hpp"
 
 const char *SPAWNER_PROGRAM = "/usr/local/bin/sp";
 

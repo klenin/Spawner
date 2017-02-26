@@ -1,4 +1,4 @@
-#include "rlimit.h"
+#include "rlimit.hpp"
 
 int impose_rlimit(int resource, long limit) {
     struct rlimit rl;

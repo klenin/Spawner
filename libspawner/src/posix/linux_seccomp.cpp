@@ -1,4 +1,4 @@
-#include "linux_seccomp.h"
+#include "linux_seccomp.hpp"
 
 int seccomp_probe_filter() {
     int rval;

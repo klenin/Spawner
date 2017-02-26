@@ -1,4 +1,4 @@
-#include "platform_report.h"
+#include "platform_report.hpp"
 
 std::string get_status_text(process_status_t process_status)
 {

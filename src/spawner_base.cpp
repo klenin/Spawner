@@ -1,4 +1,4 @@
-#include "spawner_base.h"
+#include "spawner_base.hpp"
 
 static std::map<std::string, std::shared_ptr<output_buffer_c>> output_cache;
 

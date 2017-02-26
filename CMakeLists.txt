@@ -67,11 +67,11 @@ set(SOURCES
 )
 
 set(HEADERS
-    inc/arguments.h
-    inc/spawner_base.h
-    inc/spawner_new.h
-    inc/spawner_old.h
-    inc/spawner_pcms2.h
+    inc/arguments.hpp
+    inc/spawner_base.hpp
+    inc/spawner_new.hpp
+    inc/spawner_old.hpp
+    inc/spawner_pcms2.hpp
 )
 
 set(LIBRARIES libspawner)

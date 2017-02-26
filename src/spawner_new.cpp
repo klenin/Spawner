@@ -1,4 +1,4 @@
-#include "spawner_new.h"
+#include "spawner_new.hpp"
 
 #include <iostream>
 

@@ -1,5 +1,4 @@
-#include "base_runner.h"
-
+#include "base_runner.hpp"
 
 base_runner::base_runner (const std::string &program, const options_class &options)
         : program(program)

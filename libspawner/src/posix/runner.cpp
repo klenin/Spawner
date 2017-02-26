@@ -1,12 +1,12 @@
+#include "runner.hpp"
+
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
 
-#include "inc/error.h"
-
-#include "runner.h"
+#include "inc/error.hpp"
 
 runner::runner (const std::string &program, const options_class &options)
     : base_runner(program, options)

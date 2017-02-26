@@ -1,5 +1,6 @@
-#include "error.h"
-#include "platform.h"
+#include "error.hpp"
+
+#include "platform.hpp"
 
 #include <cstring>
 #include <sstream>
