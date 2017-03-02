@@ -81,6 +81,7 @@ if(WIN32)
     if(USERENV)
         set(LIBRARIES ${LIBRARIES} ${USERENV})
     endif()
+    add_definitions(-DWINVER=0x0501 -D_WIN32_WINNT=WINVER)
 endif()
 
 if(UNIX)
@@ -122,6 +123,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 if(MSVC)
-    # MultiThreaded static.
+    # MultiThreaded static
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+    # Don't use min/max macros from Windef.h (MinGW default behavior)
+    add_definitions(-DNOMINMAX)
 endif()

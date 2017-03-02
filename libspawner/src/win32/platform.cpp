@@ -52,7 +52,7 @@ void CloseHandleSafe_real(HANDLE &handle)
     handle = handle_default_value;
 }
 
-typedef BOOL(WINAPI *CancelSynchronousIo_func_type)(_In_ HANDLE);
+typedef BOOL(WINAPI *CancelSynchronousIo_func_type)(HANDLE);
 CancelSynchronousIo_func_type CancelSynchronousIo_dyn = nullptr;
 
 void platform_init()
@@ -66,7 +66,7 @@ void platform_init()
     CancelSynchronousIo_dyn = (CancelSynchronousIo_func_type)GetProcAddress(hKernel32, "CancelSynchronousIo");
 }
 
-BOOL WINAPI CancelSynchronousIo_wrapper(_In_ HANDLE handle)
+BOOL WINAPI CancelSynchronousIo_wrapper(HANDLE handle)
 {
     if (CancelSynchronousIo_dyn != nullptr) {
         return CancelSynchronousIo_dyn(handle);
@@ -96,7 +96,7 @@ void pull_shm_report(const char *shm_name, std::string &report)
     HANDLE hIn = OpenFileMappingA(
         FILE_MAP_ALL_ACCESS,
         FALSE,
-        shm_name 
+        shm_name
     );
 
     LPTSTR pRep = (LPTSTR)MapViewOfFile(
@@ -183,7 +183,7 @@ std::string ExtractExitStatus(const report_class &rep) {
 void ReadEnvironmentVariables(options_class &options, restrictions_class &restrictions) {
     CHAR buffer[1024];
     const struct {
-        char *name;
+        const char *name;
         restriction_kind_t restriction;
     } restriction_bindings[] = {
         {"SP_SECURITY_LEVEL", restriction_security_limit},

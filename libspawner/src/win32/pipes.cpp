@@ -1,17 +1,24 @@
 #include "pipes.h"
 
 #include <iostream>
-#include <AccCtrl.h>
-#include <Aclapi.h>//advapi32.lib
 #include <algorithm>
+
+#include <io.h>
+#include <fcntl.h>
+
+#include <AccCtrl.h>
+#include <AclAPI.h> // advapi32.lib
 
 #include "error.h"
 
-// TODO: 4096 is assumed to be "enough" however if message sent via pipes will
-// exceed buffer size then it's fragment could be mixed up with fragments of
-// another messages. This is valid for fill_pipe_thread, and fixed for drain_pipe_thread.
-// I tested it with a value of 8 and messages' parts are really being mixed up.
-unsigned const DEFAULT_BUFFER_SIZE = 4096;
+/*
+  TODO: 4096 is assumed to be "enough". However, if a message sent via pipes
+  will exceed buffer size, its fragment may be mixed up with fragments of
+  another messages. This is valid for fill_pipe_thread, and fixed for
+  drain_pipe_thread.
+  I tested it with a value of 8 and messages' parts are really being mixed up.
+*/
+const DWORD DEFAULT_BUFFER_SIZE = 4096;
 
 pipe_c::pipe_c()
     : pipe_type(PIPE_UNDEFINED)
@@ -39,8 +46,6 @@ pipe_t pipe_c::output_pipe() {
     return writePipe;
 }
 
-#include <io.h>
-#include <fcntl.h>
 void pipe_c::create_pipe()
 {
     SECURITY_ATTRIBUTES saAttr;
@@ -258,7 +263,7 @@ thread_return_t output_pipe_c::drain_pipe_thread(thread_param_t param)
         }
         else {
             stop_cycles = 0;
-            size_t bytes_count = self->read(data, min(bytes_available, DEFAULT_BUFFER_SIZE));
+            size_t bytes_count = self->read(data, std::min(bytes_available, DEFAULT_BUFFER_SIZE));
             if (bytes_count == 0) {
                 break;
             }

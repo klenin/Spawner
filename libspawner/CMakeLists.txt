@@ -44,7 +44,6 @@ set(HEADERS
     inc/session.h
     inc/status.h
     inc/pipes.h
-    inc/base_runner.h
     inc/hexdump.h
 )
 
@@ -110,6 +109,7 @@ elseif(WIN32)
     set(SOURCES ${SOURCES} ${LIB_WIN32_SOURCES})
     set(HEADERS ${HEADERS} ${LIB_WIN32_HEADERS})
     include_directories("${PROJECT_SOURCE_DIR}/inc/win32")
+    add_definitions(-DWINVER=0x0501 -D_WIN32_WINNT=WINVER)
     if(MSVC)
         set(SOURCES ${SOURCES} src/win32/stack_walker.cpp)
         add_definitions(-DWANT_STACKWALKER)
@@ -131,6 +131,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 if(MSVC)
-    # MultiThreaded static.
+    # MultiThreaded static
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+    # Don't use min/max macros from Windef.h (MinGW default behavior)
+    add_definitions(-DNOMINMAX)
 endif()
