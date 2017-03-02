@@ -123,6 +123,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 if(MSVC)
-    # MultiThreaded static.
+    # MultiThreaded static
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+    # Don't use min/max macros from Windef.h (MinGW default behavior)
+    add_definitions(-DNOMINMAX)
 endif()
