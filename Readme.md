@@ -41,7 +41,7 @@ Visual Studio 2013+ solution `sp.sln` will be generated in `./Spawner/build`.
 ### GCC
 
 There are numerous gcc distributions for Windows.
-- [MinGW](http://www.mingw.org/) has not been updated for long and has this [bug](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=52015) which prevents project from being compiled.
+- [MinGW](http://www.mingw.org/) is supported
 - [MinGW-w64](http://sourceforge.net/projects/mingw-w64/) has not been tested
 - [Nuwen MinGW](http://nuwen.net/mingw.html) is supported
 - [MSYS2](https://msys2.github.io/) is supported
