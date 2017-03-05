@@ -1,7 +1,8 @@
 #include "arguments.h"
+
 #include <iostream>
 
-#include <stdarg.h> // va_{strt,arg}
+#include <stdarg.h>
 
 compact_list_c::compact_list_c(){}
 
@@ -15,6 +16,7 @@ compact_list_c::compact_list_c(int dummy_value, ...) {
             items.push_back(value);
         }
     } while (value);
+    va_end(vl);
 }
 size_t compact_list_c::size() const {
     return items.size();
