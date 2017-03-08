@@ -11,17 +11,13 @@
 runner::runner (const std::string &program, const options_class &options)
     : base_runner(program, options)
 {
-    pthread_mutex_init(&envp_lock, NULL);
-    pthread_mutex_init(&waitpid_lock, NULL);
-    pthread_cond_init(&waitpid_cond, NULL);
-}
-runner::~runner() {
-    pthread_mutex_destroy(&envp_lock);
-    pthread_mutex_destroy(&waitpid_lock);
-    pthread_cond_destroy(&waitpid_cond);
 }
 
-process_status_t runner::get_process_status(){
+runner::~runner()
+{
+}
+
+process_status_t runner::get_process_status() {
     return process_status;
 }
 
@@ -50,7 +46,7 @@ char **runner::create_envp_for_process() const
     original = environ;
 
     // environ variable is a shared resource
-    pthread_mutex_lock(&envp_lock);
+    envp_mtx.lock();
 #ifdef __MACH__
     // TODO: Find a real solution for OS X
 #else
@@ -74,7 +70,7 @@ char **runner::create_envp_for_process() const
     // restore original environ pointer
     result = environ;
     environ = original;
-    pthread_mutex_unlock(&envp_lock);
+    envp_mtx.unlock();
 
     return result;
 }
@@ -185,11 +181,12 @@ void *runner::waitpid_body(void *waitpid_param) {
     int status;
     runner *self = (runner *)waitpid_param;
 
-    // report that waitpid thread has been started
-    pthread_mutex_lock(&self->waitpid_lock);
-    self->waitpid_ready = true;
-    pthread_mutex_unlock(&self->waitpid_lock);
-    pthread_cond_signal(&self->waitpid_cond);
+    // report back to main thread
+    {
+      std::lock_guard<std::mutex> lock(self->waitpid_cond_mtx);
+      self->waitpid_ready = true;
+    }
+    self->waitpid_cond.notify_one();
 
     self->signal = signal_signal_no;
     self->exit_code = 0;
@@ -219,7 +216,7 @@ void *runner::waitpid_body(void *waitpid_param) {
     if (getrusage(RUSAGE_CHILDREN, &self->ru) != -1)
         self->ru_success = true;
 
-    pthread_exit(NULL);
+    return(NULL);
 }
 
 void runner::run_process_async() {
@@ -230,7 +227,7 @@ void runner::run_process_async() {
 
 bool runner::wait_for()
 {
-    pthread_join(waitpid_thread, NULL);
+    waitpid_thread.join();
     running = false;
     return true;
 }
@@ -240,11 +237,10 @@ void runner::requisites() {
     affinity.set(proc_pid);
 #endif
     // wait till waitpid body completely starts
-    pthread_mutex_lock(&waitpid_lock);
-    pthread_create(&waitpid_thread, NULL, waitpid_body, (void *)this);
+    waitpid_thread = std::thread(waitpid_body, (void *)this);
+    std::unique_lock<std::mutex> lock(waitpid_cond_mtx);
     while (!waitpid_ready)
-        pthread_cond_wait(&waitpid_cond, &waitpid_lock);
-    pthread_mutex_unlock(&waitpid_lock);
+        waitpid_cond.wait(lock);
 
     // child is now blocked with read() on other end of the pipe. 
     close(child_sync[0]);

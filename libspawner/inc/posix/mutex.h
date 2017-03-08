@@ -2,53 +2,43 @@
 #define _POSIX_MUTEX_H_
 
 #include <atomic>
-#include <pthread.h>
+#include <mutex>
 
 #include "inc/error.h"
+
+// TODO: all this code shall be reviewed since right now it just provides pipes/buffer stubs compilation
 
 class mutex_c {
 public:
     mutex_c() {
-        if (instance_count_ == 0) {
-            pthread_mutex_init(&handle, NULL);
-        }
         std::atomic_fetch_add_explicit(&instance_count_, 1u, std::memory_order_relaxed);
     }
 
     ~mutex_c() {
         if (std::atomic_fetch_sub_explicit(&instance_count_, 1u, std::memory_order_release) == 1) {
             std::atomic_thread_fence(std::memory_order_acquire);
-            //unlock prior to destroy
-            unlock();
-            pthread_mutex_destroy(&handle);
+            handle.unlock();
         }
     }
 
     void lock() {
-        if (pthread_mutex_lock(&handle)) {
-            PANIC("failed to lock mutex");
-        }
+        handle.lock();
     }
 
-    // there are no easy way to check pthread mutex state
     bool is_locked() {
-        if (pthread_mutex_trylock(&handle)) {
+        std::unique_lock<std::recursive_mutex> lock(handle);
+        if (lock.owns_lock())
             return true;
-        } else {
-            // mutex is locked, unlock it back
-            unlock();
-            return false; 
-        }
+
+        return false;
     }
 
     void unlock() {
-        if (pthread_mutex_unlock(&handle)) {
-            PANIC("failed to unlock mutex");
-        }
+        handle.unlock();
     }
 
 private:
     mutable std::atomic<unsigned> instance_count_{0};
-    pthread_mutex_t handle;
+    std::recursive_mutex handle;
 };
 #endif // _POSIX_MUTEX_H_

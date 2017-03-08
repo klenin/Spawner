@@ -18,14 +18,13 @@ private:
 #if defined(__linux__)
     procfs_class proc; // rough resource usage storage
 #endif
-    static void monitor_cleanup(void *);
-    pthread_t proc_thread, monitor_thread;
+    std::thread proc_thread, monitor_thread;
     void run_monitor();
 
     void prepare_stdio();
 
-    pthread_mutex_t monitor_lock;
-    pthread_cond_t monitor_cond;
+    std::mutex monitor_cond_mtx;
+    std::condition_variable monitor_cond;
     bool monitor_ready = false;
 
 protected:

@@ -20,13 +20,10 @@ secure_runner::secure_runner(const std::string &program,
     prev_consumed(0),
     prev_elapsed(0)
 {
-    pthread_mutex_init(&monitor_lock, NULL);
-    pthread_cond_init(&monitor_cond, NULL);
 }
 
-secure_runner::~secure_runner() {
-    pthread_mutex_destroy(&monitor_lock);
-    pthread_cond_destroy(&monitor_cond);
+secure_runner::~secure_runner()
+{
 }
 
 void secure_runner::create_process() {
@@ -123,12 +120,11 @@ bool secure_runner::create_restrictions() {
 void secure_runner::requisites() {
     creation_time = get_current_time();
 
-    // wait till monitor thread starts
-    pthread_mutex_lock(&monitor_lock);
-    pthread_create(&monitor_thread, NULL, check_limits_proc, (void *)this);
+    monitor_thread = std::thread(check_limits_proc, (void *)this);
+    // wait for monitor thread
+    std::unique_lock<std::mutex> lock(monitor_cond_mtx);
     while (!monitor_ready)
-        pthread_cond_wait(&monitor_cond, &monitor_lock);
-    pthread_mutex_unlock(&monitor_lock);
+        monitor_cond.wait(lock);
 
     runner::requisites();
 }
@@ -145,8 +141,8 @@ report_class secure_runner::get_report() {
 
 bool secure_runner::wait_for() {
     runner::wait_for();
-    //pthread_cancel(monitor_thread);
-    pthread_join(monitor_thread, NULL);
+    monitor_thread.join();
+
     return true;
 }
 
@@ -254,19 +250,15 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
     if (self->options.monitorInterval % 1000000)
         req.tv_nsec = (self->options.monitorInterval % 1000000) * 1000;
 
-    // report that monitor thread has been started
-    pthread_mutex_lock(&self->monitor_lock);
-    self->monitor_ready = true;
-    pthread_mutex_unlock(&self->monitor_lock);
-    pthread_cond_signal(&self->monitor_cond);
+    // report back to main thread
+    {
+        std::lock_guard<std::mutex> lock(self->monitor_cond_mtx);
+        self->monitor_ready = true;
+    }
+    self->monitor_cond.notify_one();
 
     // Main loop..
-    // Linux version will break upon procfs entry removal.
-    // All others will be cancelled upon pthread_cancel().
-    pthread_cleanup_push(monitor_cleanup, NULL);
-
     while (self->running) {
-        pthread_testcancel();
 #if defined(__linux__)
         if(!self->proc.fill_all())
             break;
@@ -401,11 +393,5 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
         nanosleep(&req, nullptr);
     }
 
-    pthread_cleanup_pop(1);
-    pthread_exit(NULL);
-}
-
-
-void secure_runner::monitor_cleanup(void *cleanup_param) {
-    // do nothing
+    return NULL;
 }
