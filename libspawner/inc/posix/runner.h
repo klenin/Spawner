@@ -10,9 +10,12 @@
 #include "linux_seccomp.h"
 #endif
 
+#include <thread>
+#include <condition_variable>
+
 class runner: public base_runner {
 private:
-    pthread_t waitpid_thread;
+    std::thread waitpid_thread;
     pid_t proc_pid;
 
     struct rusage ru;  // precise resource usage storage
@@ -34,10 +37,10 @@ private:
     void release_argv_for_process(char **argv) const;
     
     // environ pointer protector, may be replaced with global lock
-    mutable pthread_mutex_t envp_lock;
+    mutable std::mutex envp_mtx;
 
-    pthread_mutex_t waitpid_lock;
-    pthread_cond_t waitpid_cond;
+    std::mutex waitpid_cond_mtx;
+    std::condition_variable waitpid_cond;
     bool waitpid_ready = false;
 
     signal_t signal;
