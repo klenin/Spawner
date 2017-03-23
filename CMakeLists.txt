@@ -12,10 +12,16 @@ if(WIN32)
             # Visual Studio 12 2013
             set(CMAKE_GENERATOR_TOOLSET "v120_xp" CACHE STRING "CMAKE_GENERATOR_TOOLSET" FORCE)
             set(CMAKE_VS_PLATFORM_TOOLSET "v120_xp" CACHE STRING "CMAKE_VS_PLATFORM_TOOLSET" FORCE)
-        elseif (NOT ${CMAKE_MATCH_1} LESS 14)
-            # Visual Studio 14 2015 / Visual Studio 15 2017
+        elseif (${CMAKE_MATCH_1} EQUAL 14)
+            # Visual Studio 14 2015
             set(CMAKE_GENERATOR_TOOLSET "v140_xp" CACHE STRING "CMAKE_GENERATOR_TOOLSET" FORCE)
             set(CMAKE_VS_PLATFORM_TOOLSET "v140_xp" CACHE STRING "CMAKE_VS_PLATFORM_TOOLSET" FORCE)
+        elseif (${CMAKE_MATCH_1} EQUAL 15)
+            # Visual Studio 15 2017
+            set(CMAKE_GENERATOR_TOOLSET "v141_xp" CACHE STRING "CMAKE_GENERATOR_TOOLSET" FORCE)
+            set(CMAKE_VS_PLATFORM_TOOLSET "v141_xp" CACHE STRING "CMAKE_VS_PLATFORM_TOOLSET" FORCE)
+        else()
+            message(FATAL_ERROR "Supported Visual Studio: 12 (v120_xp), 14 (v140_xp), 15 (v141_xp)")
         endif()
     endif()
 endif()
