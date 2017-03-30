@@ -16,55 +16,85 @@ include_directories("${PROJECT_SOURCE_DIR}")
 
 set(CMAKE_BUILD_TYPE ${SP_BUILD_TYPE})
 
-set(SOURCES
-    src/md5/md5.c
-    src/options.cpp
-    src/restrictions.cpp
-    src/multibyte.cpp
-    src/session.cpp
-    src/uconvert.cpp
-    src/compatibility.cpp
-    src/error.cpp
-    src/report.cpp
-    src/base_runner.cpp
-    src/hexdump.cpp
-)
-
 set(HEADERS
+    # Single headers
     sp.h
+    inc/status.h
+
+    # General headers
     inc/md5/md5.h
-    inc/delegate.h
-    inc/options.h
-    inc/restrictions.h
-    inc/uconvert.h
+    inc/base_runner.h
     inc/compatibility.h
     inc/error.h
-    inc/report.h
-    inc/base_runner.h
-    inc/session.h
-    inc/status.h
-    inc/pipes.h
     inc/hexdump.h
+    inc/multibyte.h
+    inc/options.h
+    inc/report.h
+    inc/restrictions.h
+    inc/session.h
+    inc/uconvert.h
+
+    # Headers for platform-specific implementations
+    inc/buffer.h
+    inc/delegate.h
+    inc/pipes.h
+)
+
+set(SOURCES
+    src/md5/md5.c
+    src/base_runner.cpp
+    src/compatibility.cpp
+    src/error.cpp
+    src/hexdump.cpp
+    src/multibyte.cpp
+    src/options.cpp
+    src/report.cpp
+    src/restrictions.cpp
+    src/session.cpp
+    src/uconvert.cpp
 )
 
 set(LIB_WIN32_HEADERS
     inc/win32/mutex.h
     inc/win32/platform.h
-    inc/win32/exceptions.h
-    inc/win32/stack_walker.h
     inc/win32/platform_report.h
     inc/win32/runner.h
     inc/win32/securerunner.h
+
+    inc/win32/exceptions.h
+    inc/win32/stack_walker.h
+)
+
+set(LIB_WIN32_SOURCES
+    src/win32/buffer.cpp
+    src/win32/delegate.cpp
+    src/win32/pipes.cpp
+
+    src/win32/platform.cpp
+    src/win32/runner.cpp
+    src/win32/securerunner.cpp
 )
 
 set(LIB_POSIX_HEADERS
-    inc/posix/platform.h
-    inc/posix/signals.h
-    inc/posix/rlimit.h
-    inc/posix/platform_report.h
     inc/posix/mutex.h
+    inc/posix/platform.h
+    inc/posix/platform_report.h    
     inc/posix/runner.h
     inc/posix/securerunner.h
+
+    inc/posix/signals.h
+    inc/posix/rlimit.h
+)
+
+set(LIB_POSIX_SOURCES
+    src/posix/buffer.cpp
+    src/posix/delegate.cpp
+    src/posix/pipes.cpp
+
+    src/posix/platform.cpp
+    src/posix/runner.cpp
+    src/posix/securerunner.cpp
+    src/posix/rlimit.cpp
 )
 
 set(LIB_LINUX_HEADERS
@@ -73,33 +103,15 @@ set(LIB_LINUX_HEADERS
     inc/posix/linux_seccomp.h
 )
 
-set(LIB_WIN32_SOURCES
-    src/win32/buffer.cpp
-    src/win32/delegate.cpp
-    src/win32/pipes.cpp
-    src/win32/platform.cpp
-    src/win32/runner.cpp
-    src/win32/securerunner.cpp
-)
-set(LIB_UNIX_SOURCES
-    src/posix/buffer.cpp
-    src/posix/delegate.cpp
-    src/posix/pipes.cpp
-    src/posix/platform.cpp
-    src/posix/runner.cpp
-    src/posix/securerunner.cpp
-    src/posix/rlimit.cpp
-)
-
 set(LIB_LINUX_SOURCES
     src/posix/linux_affinity.cpp
-    src/posix/linux_seccomp.cpp
     src/posix/linux_procfs.cpp
+    src/posix/linux_seccomp.cpp
 )
 
 if(UNIX OR CYGWIN)
-    set(SOURCES ${SOURCES} ${LIB_UNIX_SOURCES})
-    set(HEADERS ${HEADERS} ${LIB_UNIX_HEADERS})
+    set(SOURCES ${SOURCES} ${LIB_POSIX_SOURCES})
+    set(HEADERS ${HEADERS} ${LIB_POSIX_HEADERS})
     if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
         set(SOURCES ${SOURCES} ${LIB_LINUX_SOURCES})
         set(HEADERS ${HEADERS} ${LIB_LINUX_HEADERS})
