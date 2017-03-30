@@ -81,7 +81,7 @@ set(LIB_WIN32_SOURCES
     src/win32/runner.cpp
     src/win32/securerunner.cpp
 )
-set(LIB_UNIX_SOURCES
+set(LIB_POSIX_SOURCES
     src/posix/buffer.cpp
     src/posix/delegate.cpp
     src/posix/pipes.cpp
@@ -98,8 +98,8 @@ set(LIB_LINUX_SOURCES
 )
 
 if(UNIX OR CYGWIN)
-    set(SOURCES ${SOURCES} ${LIB_UNIX_SOURCES})
-    set(HEADERS ${HEADERS} ${LIB_UNIX_HEADERS})
+    set(SOURCES ${SOURCES} ${LIB_POSIX_SOURCES})
+    set(HEADERS ${HEADERS} ${LIB_POSIX_HEADERS})
     if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
         set(SOURCES ${SOURCES} ${LIB_LINUX_SOURCES})
         set(HEADERS ${HEADERS} ${LIB_LINUX_HEADERS})
