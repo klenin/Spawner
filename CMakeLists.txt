@@ -63,21 +63,21 @@ endif()
 
 set(SP_BUILD_TYPE ${CMAKE_BUILD_TYPE})
 
-set(SOURCES
-    src/arguments.cpp
-    src/main.cpp
-    src/spawner_base.cpp
-    src/spawner_new.cpp
-    src/spawner_old.cpp
-    src/spawner_pcms2.cpp
-)
-
 set(HEADERS
     inc/arguments.h
     inc/spawner_base.h
     inc/spawner_new.h
     inc/spawner_old.h
     inc/spawner_pcms2.h
+)
+
+set(SOURCES
+    src/main.cpp
+    src/arguments.cpp
+    src/spawner_base.cpp
+    src/spawner_new.cpp
+    src/spawner_old.cpp
+    src/spawner_pcms2.cpp
 )
 
 set(LIBRARIES libspawner)
