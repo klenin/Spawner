@@ -9,7 +9,6 @@ set(${PROJECT_NAME}_MAJOR_VERSION 0)
 set(${PROJECT_NAME}_MINOR_VERSION 2)
 set(${PROJECT_NAME}_PATCH_LEVEL 0)
 
-
 include_directories("${PROJECT_SOURCE_DIR}/inc")
 include_directories("${PROJECT_SOURCE_DIR}/inc/md5")
 include_directories("${PROJECT_SOURCE_DIR}")
@@ -45,6 +44,8 @@ set(HEADERS
     inc/status.h
     inc/pipes.h
     inc/hexdump.h
+    inc/buffer.h
+    inc/multibyte.h
 )
 
 set(LIB_WIN32_HEADERS
@@ -81,6 +82,7 @@ set(LIB_WIN32_SOURCES
     src/win32/runner.cpp
     src/win32/securerunner.cpp
 )
+
 set(LIB_POSIX_SOURCES
     src/posix/buffer.cpp
     src/posix/delegate.cpp
