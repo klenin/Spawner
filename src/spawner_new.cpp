@@ -617,7 +617,7 @@ void spawner_new_c::init_arguments() {
 
     console_default_parser->add_argument_parser(c_lst(short_arg("D")),
         new options_callback_argument_parser_c(&options, &options_class::add_environment_variable)
-    )->set_description("Define additinal enviromnent variable for <executable>");
+    )->set_description("Define additional environment variable for <executable>");
 
     console_default_parser->add_argument_parser(c_lst(short_arg("so"), long_arg("out")),
         environment_default_parser->add_argument_parser(c_lst("SP_OUTPUT_FILE"),
