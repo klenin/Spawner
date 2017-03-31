@@ -137,7 +137,7 @@ bool command_handler_c::parse(int argc, char *argv[]) {
 
 command_handler_c* handler = nullptr;
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 BOOL WINAPI CtrlHandlerRoutine(DWORD dwCtrlType) {
     if (handler != nullptr) {
         set_error_text("Ctrl+C pressed");
@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
 #if defined(_MSC_VER)
     _set_abort_behavior(0, _WRITE_ABORT_MSG);
 #endif
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
     SetConsoleCtrlHandler(CtrlHandlerRoutine, TRUE);
 #endif
     set_on_panic_action([&]() {
