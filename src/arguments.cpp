@@ -77,12 +77,6 @@ settings_parser_c::settings_parser_c()
 int settings_parser_c::current_position() {
     return position;
 }
-void settings_parser_c::fetch_current_position() {
-    fetched_position = position;
-}
-void settings_parser_c::restore_position() {
-    position = fetched_position;
-}
 size_t settings_parser_c::saved_count() {
     return saved_positions.size();
 }
@@ -132,10 +126,6 @@ std::vector<std::string> settings_parser_c::get_program_arguments() {
 void settings_parser_c::set_separator(const std::string &s) {
     separator = long_arg(s);
 }
-void settings_parser_c::reset_program() {
-    program = "";
-    program_arguments.clear();
-}
 bool settings_parser_c::parse(int argc, char *argv[]) {
     arg_c = argc;
     arg_v = argv;
@@ -146,11 +136,11 @@ bool settings_parser_c::parse(int argc, char *argv[]) {
 
     while (current_position() < argc && !stopped) {
         for (auto parser = parsers.begin(); parser != parsers.end(); parser++) {
-            fetch_current_position();
+            int fetched_position = position;
             if ((*parser)->parse(*this)) {
-                save_current_position((*parser));
+                save_current_position(*parser);
             }
-            restore_position();
+            position = fetched_position;
         }
         if (saved_count() == 1) {
             try {
