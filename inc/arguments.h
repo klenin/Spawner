@@ -106,10 +106,10 @@ protected:
     abstract_argument_parser_c *current_argument_parser;
     bool initialized;
 public:
-    //abstract_parser_c(const parser_t &parser){}
-    abstract_parser_c() : initialized(false) {}
+    //abstract_parser_c(const parser_t &parser) {}
+    abstract_parser_c() : initialized(false), current_argument_parser(nullptr) {}
     ~abstract_parser_c();
-    virtual bool invoke_initialization(abstract_settings_parser_c &parser_object){return false;} //init settings for parser object
+    virtual bool invoke_initialization(abstract_settings_parser_c &parser_object) {return false;} //init settings for parser object
     virtual abstract_argument_parser_c *add_argument_parser(const std::vector<std::string> &params, abstract_argument_parser_c *argument_parser);
     virtual bool parse(abstract_settings_parser_c &parser_object) {return false;}
     virtual bool invoke(abstract_settings_parser_c &parser_object) {return false;}

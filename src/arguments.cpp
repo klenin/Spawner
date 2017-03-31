@@ -68,8 +68,12 @@ void settings_parser_c::set_dividers(const std::vector<std::string> &d) {
     dividers.insert(dividers.begin(), d.begin(), d.end());
 }
 
-settings_parser_c::settings_parser_c() : position(0), stopped(0) {
-}
+settings_parser_c::settings_parser_c()
+    : position(0)
+    , stopped(0)
+    , arg_c(0)
+    , arg_v(nullptr)
+{}
 int settings_parser_c::current_position() {
     return position;
 }
@@ -192,8 +196,11 @@ std::string settings_parser_c::help() {
     return result;
 }
 
-console_argument_parser_c::console_argument_parser_c() : abstract_parser_c() {
-}
+console_argument_parser_c::console_argument_parser_c()
+    : abstract_parser_c()
+    , last_state(argument_ok_state)
+    , parser_object(nullptr)
+{}
 bool console_argument_parser_c::parse(abstract_settings_parser_c &parser_object) {
     console_argument_parser_c::parser_object = &parser_object;
     last_state = argument_error_state;

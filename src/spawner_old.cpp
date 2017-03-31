@@ -7,6 +7,7 @@ spawner_old_c::spawner_old_c(settings_parser_c &parser)
     , spawner_base_c()
     , options(session_class::base_session)
     , runas(false)
+    , runner_instance(nullptr)
 {
 
 }
