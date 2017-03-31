@@ -1,5 +1,6 @@
 #ifndef _PIPES_H_
 #define _PIPES_H_
+
 #include <sstream>
 #include <string>
 #include <memory>
@@ -10,7 +11,7 @@
 #include "platform.h"
 #include "mutex.h"
 
-enum pipes_t/*rename*/ {
+enum pipes_t /*rename*/ {
     STD_INPUT_PIPE,
     STD_OUTPUT_PIPE,
     STD_ERROR_PIPE
@@ -33,7 +34,6 @@ protected:
     pipe_t readPipe;
     pipe_t writePipe;
     std_pipe_t pipe_type;
-    bool state;
     pipe_t input_pipe();
     pipe_t output_pipe();
     void wait();
@@ -52,7 +52,6 @@ public:
     size_t read(void *data, size_t size);
     virtual void bufferize();
     void finish();
-    bool valid();
     virtual pipe_t get_pipe();
     void remove_buffer(const std::shared_ptr<buffer_c>& buffer);
 };
@@ -97,4 +96,5 @@ public:
     }
     std::function<void(const std::string&, output_pipe_c*)> process_message;
 };
+
 #endif // _PIPES_H_
