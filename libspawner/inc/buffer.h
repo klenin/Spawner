@@ -116,12 +116,7 @@ private:
 
 void dprintf(const char* format, ...);
 
-class input_stdin_buffer_c
-    : public input_buffer_c
-    , protected handle_buffer_c {
-protected:
-    unsigned color;
-
+class input_stdin_buffer_c : public input_buffer_c, protected handle_buffer_c {
 public:
     input_stdin_buffer_c();
     virtual bool readable();
