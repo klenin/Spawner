@@ -146,7 +146,6 @@ struct environment_argument_t {
 class settings_parser_c: public abstract_settings_parser_c {
 private:
     int position;
-    int fetched_position;
     bool stopped;
 
     std::vector<std::pair<int, abstract_parser_c*> > saved_positions;
@@ -172,8 +171,6 @@ public:
     //void register_constructors(parser_constructor_t *parser_constructors);
 
     int current_position();
-    void fetch_current_position();
-    void restore_position();
     size_t saved_count();
     void stop();
 
@@ -184,7 +181,6 @@ public:
     std::string get_program();
     std::vector<std::string> get_program_arguments();
     void set_separator(const std::string &s);
-    void reset_program();
 
     bool parse(int argc, char *argv[]);
 
@@ -203,7 +199,6 @@ protected:
     std::map<std::string, bool> is_flag;
     std::string argument;
     std::string value;
-    argument_type_t argument_name;
     parsing_state_e last_state;
     std::map<std::string, console_argument_t> symbol_table;
     abstract_settings_parser_c *parser_object;
