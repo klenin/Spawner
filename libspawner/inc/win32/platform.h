@@ -75,6 +75,7 @@ static OPEN_JOB_OBJECT OpenJobObjectA;
 
 typedef PROCESS_INFORMATION process_info_t;
 typedef HANDLE pipe_t;
+typedef HANDLE pipe_handle;
 typedef STARTUPINFO startupinfo_t;
 typedef DWORD process_id;
 

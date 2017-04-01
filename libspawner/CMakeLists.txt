@@ -28,6 +28,7 @@ set(SOURCES
     src/report.cpp
     src/base_runner.cpp
     src/hexdump.cpp
+    src/pipe_broadcaster.cpp
 )
 
 set(HEADERS
@@ -45,6 +46,8 @@ set(HEADERS
     inc/status.h
     inc/pipes.h
     inc/hexdump.h
+    inc/system_pipe.h
+    inc/pipe_broadcaster.h
 )
 
 set(LIB_WIN32_HEADERS
@@ -80,6 +83,7 @@ set(LIB_WIN32_SOURCES
     src/win32/platform.cpp
     src/win32/runner.cpp
     src/win32/securerunner.cpp
+    src/win32/system_pipe.cpp
 )
 set(LIB_UNIX_SOURCES
     src/posix/buffer.cpp
@@ -89,6 +93,7 @@ set(LIB_UNIX_SOURCES
     src/posix/runner.cpp
     src/posix/securerunner.cpp
     src/posix/rlimit.cpp
+    src/posix/system_pipe.cpp
 )
 
 set(LIB_LINUX_SOURCES

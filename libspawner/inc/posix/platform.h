@@ -16,6 +16,8 @@
 
 typedef int pipe_t;
 
+typedef int pipe_handle;
+
 typedef int handle_t;
 #define INVALID_HANDLE_VALUE -1
 const handle_t handle_default_value = INVALID_HANDLE_VALUE;
