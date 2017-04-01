@@ -44,7 +44,6 @@ void hexDump(const void *addr, int len) {
 void dprintf(const char* format, ...) {
   int final_n;
   int n = strlen(format) * 2;
-  std::string str;
   std::unique_ptr<char[]> formatted;
   va_list ap;
   for (;;) {

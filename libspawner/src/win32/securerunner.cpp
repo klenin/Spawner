@@ -38,7 +38,7 @@ bool secure_runner::create_restrictions() {
     if (restrictions.get_restriction(restriction_memory_limit) != restriction_no_limit)
     {
         joeli.JobMemoryLimit = restrictions.get_restriction(restriction_memory_limit);
-        joeli.ProcessMemoryLimit = restrictions.get_restriction(restriction_memory_limit);
+        joeli.ProcessMemoryLimit = joeli.JobMemoryLimit;
         joeli.BasicLimitInformation.LimitFlags |=
             JOB_OBJECT_LIMIT_PROCESS_MEMORY | JOB_OBJECT_LIMIT_JOB_MEMORY;
     }

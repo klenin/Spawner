@@ -70,9 +70,7 @@ command_handler_c::command_handler_c()
 }
 
 command_handler_c::~command_handler_c() {
-    if (spawner) {
-        delete spawner;
-    }
+    delete spawner;
 }
 
 bool command_handler_c::set_legacy(const std::string &s) {
