@@ -14,7 +14,7 @@
 
 struct options_class
 {
-    static const unsigned SHARED_MEMORY_BUF_SIZE = 4069;
+    static const size_t SHARED_MEMORY_BUF_SIZE = 4069;
 
     session_class session;
     std::string report_file;  /* bad, need many values

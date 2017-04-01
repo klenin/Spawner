@@ -101,7 +101,7 @@ size_t system_pipe::read(char* bytes, size_t count) const {
         return 0;
 
     size_t bytes_read;
-    if (!ReadFile(input_handle, (LPVOID)bytes, (DWORD)count, (LPDWORD)&bytes_read, nullptr)) {
+    if (!ReadFile(input_handle, bytes, count, reinterpret_cast<LPDWORD>(&bytes_read), nullptr)) {
         auto error = GetLastError();
         // We force closed write side of the pipe.
         if (error != ERROR_OPERATION_ABORTED && error != ERROR_BROKEN_PIPE)
@@ -116,7 +116,7 @@ size_t system_pipe::write(const char* bytes, size_t count) const {
         return 0;
 
     size_t bytes_written;
-    if (!WriteFile(output_handle, (LPCVOID)bytes, (DWORD)count, (LPDWORD)&bytes_written, nullptr)) {
+    if (!WriteFile(output_handle, bytes, count, reinterpret_cast<LPDWORD>(&bytes_written), nullptr)) {
         auto error = GetLastError();
         // Pipe may be already closed.
         if (error != ERROR_OPERATION_ABORTED && error != ERROR_BROKEN_PIPE)

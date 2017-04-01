@@ -41,7 +41,7 @@ void spawner_new_c::json_report(runner *runner_instance,
     rapidjson_write("Limit");
     writer.StartObject();
 
-    restrictions_class runner_restrictions = ((secure_runner*)runner_instance)->get_restrictions();
+    restrictions_class runner_restrictions = dynamic_cast<secure_runner*>(runner_instance)->get_restrictions();
     struct {
         const char *field;
         unit_t unit;
@@ -66,11 +66,11 @@ void spawner_new_c::json_report(runner *runner_instance,
             writer.Uint64(runner_restrictions[restriction_items[i].restriction]);
         }
         else {
-            writer.Double((double)convert(
+            writer.Double(static_cast<double>(convert(
                 value_t(restriction_items[i].unit, restriction_items[i].degree),
                 value_t(restriction_items[i].unit),
-                (long double)runner_restrictions[restriction_items[i].restriction]
-            ));
+                static_cast<long double>(runner_restrictions[restriction_items[i].restriction])
+            )));
         }
     }
     writer.EndObject();
@@ -94,7 +94,7 @@ void spawner_new_c::json_report(runner *runner_instance,
         { "Memory", runner_report.peak_memory_used, unit_memory_byte, degree_default },
         { "BytesWritten", runner_report.write_transfer_count, unit_memory_byte, degree_default },
         { "KernelTime", runner_report.kernel_time, unit_time_second, degree_micro },
-        { "ProcessorLoad", (uint64_t)(runner_report.load_ratio * 100), unit_no_unit, degree_centi },
+        { "ProcessorLoad", (runner_report.load_ratio * 100), unit_no_unit, degree_centi },
         { nullptr, 0, unit_no_unit, degree_default },
     };
     for (int i = 0; result_items[i].field; ++i) {
@@ -103,11 +103,11 @@ void spawner_new_c::json_report(runner *runner_instance,
             writer.Uint64(result_items[i].value);
         }
         else {
-            writer.Double((double)convert(
+            writer.Double(static_cast<double>(convert(
                 value_t(result_items[i].unit, result_items[i].degree),
                 value_t(result_items[i].unit),
-                (long double)result_items[i].value
-            ));
+                static_cast<long double>(result_items[i].value)
+            )));
         }
     }
     rapidjson_write("WorkingDirectory");
@@ -165,7 +165,7 @@ int spawner_new_c::get_agent_index_(const std::string& message) {
 
     if (agent_index == 0) {
         return 0;
-    } else if (agent_index < 1 || agent_index > int(runners.size() - 1)) {
+    } else if (agent_index < 1 || agent_index > (runners.size() - 1)) {
         agent_index = -1;
     }
 
@@ -187,7 +187,7 @@ int spawner_new_c::agent_to_runner_index_(int agent_index) {
     if (agent_runner_index >= controller_index_) {
         agent_runner_index++;
     }
-    PANIC_IF(agent_runner_index <= 0 || agent_runner_index >= (int)runners.size());
+    PANIC_IF(agent_runner_index <= 0 || agent_runner_index >= runners.size());
     return agent_runner_index;
 }
 

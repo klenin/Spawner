@@ -13,7 +13,7 @@ void hexDump(const void *addr, int len) {
     mutex.lock();
     int i;
     unsigned char buff[17];
-    unsigned char *pc = (unsigned char*)addr;
+    const unsigned char *pc = reinterpret_cast<const unsigned char*>(addr);
 
     for (i = 0; i < len; i++) {
         if ((i % 16) == 0) {

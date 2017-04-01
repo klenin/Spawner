@@ -21,7 +21,7 @@ public:
 
         stringstream_tmp << val;
         str = stringstream_tmp.str();
-        md5_append(&md5_state, (md5_byte_t*)str.c_str(), str.length());
+        md5_append(&md5_state, reinterpret_cast<const md5_byte_t*>(str.c_str()), str.length());
         return *this;
     }
 

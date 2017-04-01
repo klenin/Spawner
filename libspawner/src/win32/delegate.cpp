@@ -60,10 +60,10 @@ void delegate_runner::create_process() {
     {
         if (restrictions.restrictions[i] != restriction_no_limit)
         {
-            std::string argument = "-" + cmd_arg.find((restriction_kind_t)i)->second;
+            std::string argument = "-" + cmd_arg.find(static_cast<restriction_kind_t>(i))->second;
 
             argument += " " + std::to_string(restrictions.restrictions[i]);
-            argument += cmd_units.find((restriction_kind_t)i)->second;
+            argument += cmd_units.find(static_cast<restriction_kind_t>(i))->second;
 
             options.push_argument_front(argument);
         }

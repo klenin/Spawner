@@ -132,14 +132,14 @@ void secure_runner::create_process()
 
 thread_return_t secure_runner::check_limits_proc( thread_param_t param )
 {
-    secure_runner *self = (secure_runner*)param;
+    secure_runner *self = reinterpret_cast<secure_runner*>(param);
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
 
     double total_rate = 10000.0;
     LONGLONG last_quad_part = 0;
     bool is_idle = false;
     self->report.load_ratio = 0.0;
-    static const double sec_clocks = (double)1000.0/CLOCKS_PER_SEC;
+    static const double sec_clocks = 1000.0 / CLOCKS_PER_SEC;
 
     unsigned long long idle_dt = self->get_time_since_create();
     unsigned long long dt = 0, idle_time = 0;
@@ -171,7 +171,7 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
         }
 
         if (restrictions.check_restriction(restriction_processor_time_limit) &&
-            (DOUBLE)(bai.BasicInfo.TotalUserTime.QuadPart - self->base_time_processor_) >
+            static_cast<DOUBLE>(bai.BasicInfo.TotalUserTime.QuadPart - self->base_time_processor_) >
             10 * restrictions.get_restriction(restriction_processor_time_limit))
         {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, nullptr);
@@ -187,7 +187,7 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
         if ((dt=self->get_time_since_create() - idle_dt) > 100000) {//10ms
             idle_dt = self->get_time_since_create();
 
-            double load_ratio = 10000.0*(double)(bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part)/dt;
+            double load_ratio = 10000.0 * (bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part) / dt;
             if (load_ratio < 0.0) {
                 load_ratio = 0.0;
             }

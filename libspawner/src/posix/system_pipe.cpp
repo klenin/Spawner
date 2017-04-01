@@ -98,7 +98,7 @@ size_t system_pipe::read(char* bytes, size_t count) const {
     if (bytes_read < 0)
         PANIC(strerror(errno));
 
-    return (size_t)bytes_read;
+    return bytes_read;
 }
 
 size_t system_pipe::write(const char* bytes, size_t count) const {
@@ -111,7 +111,7 @@ size_t system_pipe::write(const char* bytes, size_t count) const {
     if (bytes_written > 0)
         flush();
 
-    return (size_t)bytes_written;
+    return bytes_written;
 }
 
 void system_pipe::flush() const {

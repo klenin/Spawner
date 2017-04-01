@@ -71,7 +71,7 @@ bool secure_runner::create_restrictions() {
 void secure_runner::requisites() {
     creation_time = get_current_time();
 
-    monitor_thread = std::thread(check_limits_proc, (void *)this);
+    monitor_thread = std::thread(check_limits_proc, reinterpret_cast<void*>(this));
     // wait for monitor thread
     std::unique_lock<std::mutex> lock(monitor_cond_mtx);
     while (!monitor_ready)
@@ -181,7 +181,7 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
 
     struct timespec req;
 
-    secure_runner *self = (secure_runner *)monitor_param;
+    secure_runner *self = reinterpret_cast<secure_runner*>(monitor_param);
 
     proc_pid = self->get_proc_pid();
 
@@ -266,8 +266,8 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
         //    "./sp --out /dev/null /bin/yes"
 #define TICK_THRESHOLD 5
 
-        self->proc_consumed = (double)self->proc.stat_utime / tick_res;
-        double wclk_elapsed = (double)current_time / 1000000;
+        self->proc_consumed = static_cast<double>(self->proc.stat_utime) / tick_res;
+        double wclk_elapsed = static_cast<double>(current_time) / 1000000;
         double load_ratio = (self->proc_consumed - self->prev_consumed) / (wclk_elapsed - self->prev_elapsed);
 
         if (wclk_elapsed - self->prev_elapsed > 0.2) {
@@ -283,7 +283,7 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
             int step = idle_limit * self->options.monitorInterval / 10 / load_ratios_max_size;
             if (ticks_elapsed % step == 0 && self->last_tick != ticks_elapsed) {
                 // printf("consumed: %g (procfs value %lu) ", proc_consumed, self->proc.stat_utime);
-                restriction = (double)self->get_restriction(restriction_load_ratio) / 10000;
+                restriction = static_cast<double>(self->get_restriction(restriction_load_ratio)) / 10000;
                 // printf("load_ratio: %g, restriction: %g\n", load_ratio, restriction);
                 bool can_use_load_ratios = self->load_ratios.size() == load_ratios_max_size;
                 if (can_use_load_ratios) {
@@ -318,7 +318,7 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
 
         // precise cpu usage judge
         if (self->check_restriction(restriction_processor_time_limit) && tick_detected) {
-            double restriction = (double)self->get_restriction(restriction_processor_time_limit) / 1000000;
+            double restriction = static_cast<double>(self->get_restriction(restriction_processor_time_limit)) / 1000000;
             // printf("time limit: %g, utime: %lu, consumed: %g\n",
             //    (double)restriction, self->proc.stat_utime, proc_consumed);
             if (self->proc_consumed >= restriction) {
@@ -328,7 +328,7 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
                 // SIGXCPU can be ignored
                 kill(proc_pid, SIGXCPU);
                 // wait some time for signal delivery
-                usleep((useconds_t)tick_to_micros);
+                usleep(static_cast<useconds_t>(tick_to_micros));
                 kill(proc_pid, SIGKILL);
                 self->terminate_reason = terminate_reason_time_limit;
                 self->process_status = process_finished_terminated;
@@ -343,7 +343,7 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
 #endif
             kill(proc_pid, SIGXCPU);
 #if defined(__linux__)
-            usleep((useconds_t)tick_to_micros);
+            usleep(static_cast<useconds_t>(tick_to_micros));
 #else
             usleep(100 * 1000);
 #endif
