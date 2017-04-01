@@ -5,6 +5,7 @@ base_runner::base_runner (const std::string &program, const options_class &optio
         : program(program)
         , options(options)
         , process_status(process_not_started)
+        , creation_time(0)
 {
 }
 
