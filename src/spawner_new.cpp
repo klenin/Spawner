@@ -190,7 +190,7 @@ int spawner_new_c::normal_to_runner_index_(int normal_index) {
     return normal_runner_index;
 }
 
-void spawner_new_c::process_controller_message_(const std::string& message, output_pipe_c* pipe) {
+void spawner_new_c::process_controller_message_(const std::string& message) {
     static_cast<secure_runner*>(runners[controller_index_])->prolong_time_limits();
     const int hash_pos = message.find_first_of('#');
     if (hash_pos == std::string::npos) {
@@ -198,150 +198,113 @@ void spawner_new_c::process_controller_message_(const std::string& message, outp
     } else if (hash_pos == 0) {
         PANIC("missing header in controller message");
     }
-    char control_letter = message[hash_pos - 1];
-    bool send_to_normal = false;
+    auto control_letter = message[hash_pos - 1];
+    auto send_to_normal = false;
 
-    const int normal_index = get_normal_index_(message);
+    const auto normal_index = get_normal_index_(message);
+    auto runner_index = -1;
     if (normal_index == -1) {
-        const std::string error_message = message.substr(0, hash_pos) + "I#\n";
-        controller_buffer_->write(error_message.c_str(), error_message.size());
+        const auto error_message = message.substr(0, hash_pos) + "I#\n";
+        controller_broadcaster_->write(error_message.c_str(), error_message.size());
         send_to_normal = true;
     } else if (normal_index == 0) {
         // this is a message to spawner
-    } else switch (control_letter) {
-    case 'W': {
-        wait_normal_mutex_.lock();
-        awaited_normals_[normal_index - 1] = true;
-        int runner_index = normal_to_runner_index_(normal_index);
-        runners[runner_index]->resume();
-        wait_normal_mutex_.unlock();
-        break;
     }
-    case 'S': {
-        int runner_index = normal_to_runner_index_(normal_index);
-        static_cast<secure_runner*>(runners[runner_index])->force_stop = true;
-        break;
-    }
-    default:
-        send_to_normal = true;
-        break;
+    else {
+        runner_index = normal_to_runner_index_(normal_index);
+        switch (control_letter) {
+        case 'W': {
+            wait_normal_mutex_.lock();
+            awaited_normals_[normal_index - 1] = true;
+            runners[runner_index]->resume();
+            wait_normal_mutex_.unlock();
+            break;
+        }
+        case 'S': {
+            static_cast<secure_runner*>(runners[runner_index])->force_stop = true;
+            break;
+        }
+        default:
+            send_to_normal = true;
+            break;
+        }
     }
 
-    for (uint i = 0; i < pipe->get_buffer_count(); ++i) {
-        auto& buffer = pipe->get_output_buffer(i);
-        auto at_index = buffer_to_runner_index_.find(buffer);
-        if (at_index == buffer_to_runner_index_.end()) {
-            pipe->write_buffer(i, message.c_str(), message.size());
-        } else if (send_to_normal && at_index->second == normal_index) {
-            pipe->write_buffer(i, message.c_str() + hash_pos + 1, message.size() - hash_pos - 1);
-        }
+    //TODO: what if normal_index == -1?
+    if (runner_index != -1) {
+        auto pipe = runners[runner_index]->get_pipe(std_stream_input);
+        pipe->write(message.c_str() + hash_pos + 1, message.size() - hash_pos - 1);
     }
 }
 
-void spawner_new_c::process_normal_message_(const std::string& message, output_pipe_c* pipe, int normal_index) {
+void spawner_new_c::process_normal_message_(const std::string& message, int normal_index) {
     std::string mod_message = std::to_string(normal_index) + "#" + message;
-    for (uint i = 0; i < pipe->get_buffer_count(); ++i) {
-        pipe->write_buffer(i, mod_message.c_str(), mod_message.size());
-    }
+    auto runner = runners[normal_to_runner_index_(normal_index)];
+    runner->get_pipe(std_stream_input)->write(mod_message.c_str(), mod_message.size());
     wait_normal_mutex_.lock();
     if (awaited_normals_[normal_index - 1]) {
-        int runner_index = normal_to_runner_index_(normal_index);
         awaited_normals_[normal_index - 1] = false;
-        runners[runner_index]->suspend();
-        static_cast<secure_runner*>(runners[runner_index])->prolong_time_limits();
+        runner->suspend();
+        static_cast<secure_runner*>(runner)->prolong_time_limits();
     } else {
         // it hasn't been waited for, but sent a message. what do?
     }
     wait_normal_mutex_.unlock();
 }
 
-void spawner_new_c::setup_stream_(const std::string& stream_str, pipes_t this_pipe_type, runner* this_runner) {
-    size_t pos = stream_str.find(".");
-    // malformed argument
-    PANIC_IF(pos == std::string::npos);
-    size_t index = stoi(stream_str.substr(1, pos - 1), nullptr, 10);
-    std::string stream = stream_str.substr(pos + 1);
-    // invalid index
-    PANIC_IF(index >= runners.size() || index < 0);
-    pipes_t other_pipe_type;
-    if (stream == "stderr") {
-        other_pipe_type = STD_ERROR_PIPE;
+void spawner_new_c::setup_stream_(const std::string& stream_str, std_stream_type source_type, runner* this_runner) {
+    auto source_pipe = this_runner->get_pipe(source_type);
+
+    if (stream_str == "*std") {
+        if (source_type == std_stream_input) {
+            get_std(std_stream_input)->connect(source_pipe);
+        }
+        else {
+            source_pipe->connect(get_std(source_type));
+        }
+        return;
     }
-    else if (stream == "stdin") {
-        other_pipe_type = STD_INPUT_PIPE;
+
+    int index;
+    char stream[10];
+    sscanf(stream_str.c_str(), "*%d.%s", &index, stream);
+    PANIC_IF(index < 0 || index >= runners.size());
+
+    auto target_runner = runners[index];
+
+    pipe_broadcaster_ptr target_pipe;
+    if (strcmp(stream, "stdin") == 0) {
+        PANIC_IF(source_type == std_stream_input);
+        target_pipe = target_runner->get_pipe(std_stream_input);
+        source_pipe->connect(target_pipe);
     }
-    else if (stream == "stdout") {
-        other_pipe_type = STD_OUTPUT_PIPE;
+    else if (strcmp(stream, "stdout") == 0) {
+        PANIC_IF(source_type != std_stream_input);
+        target_pipe = target_runner->get_pipe(std_stream_output);
+        target_pipe->connect(source_pipe);
+    }
+    else if (strcmp(stream, "stderr") == 0) {
+        PANIC_IF(source_type != std_stream_input);
+        target_pipe = target_runner->get_pipe(std_stream_error);
+        target_pipe->connect(source_pipe);
     }
     else {
         PANIC("invalid stream name");
     }
-    runner *target_runner = runners[index];
-    std::shared_ptr<input_pipe_c> input_pipe = nullptr;
-    std::shared_ptr<output_pipe_c> output_pipe = nullptr;
-    pipes_t out_pipe_type = STD_ERROR_PIPE;
-    runner* out_pipe_runner = nullptr;
-    runner* in_pipe_runner = nullptr;
 
-    if (this_pipe_type == STD_INPUT_PIPE && other_pipe_type != STD_INPUT_PIPE) {
-
-        input_pipe = std::static_pointer_cast<input_pipe_c>(this_runner->get_pipe(this_pipe_type));
-        output_pipe = std::static_pointer_cast<output_pipe_c>(target_runner->get_pipe(other_pipe_type));
-        out_pipe_type = other_pipe_type;
-        out_pipe_runner = target_runner;
-        in_pipe_runner = this_runner;
-
-    } else if (this_pipe_type != STD_INPUT_PIPE && other_pipe_type == STD_INPUT_PIPE) {
-
-        input_pipe = std::static_pointer_cast<input_pipe_c>(target_runner->get_pipe(other_pipe_type));
-        output_pipe = std::static_pointer_cast<output_pipe_c>(this_runner->get_pipe(this_pipe_type));
-        out_pipe_type = this_pipe_type;
-        out_pipe_runner = this_runner;
-        in_pipe_runner = target_runner;
-    } else {
-        PANIC("invalid pipe mapping");
-    }
-
-    std::shared_ptr<duplex_buffer_c> buffer = std::make_shared<duplex_buffer_c>();
-    in_pipe_runner->duplex_buffers.push_back(buffer);
-    out_pipe_runner->duplex_buffers.push_back(buffer);
-    input_pipe->add_input_buffer(buffer);
-    output_pipe->add_output_buffer(buffer);
-
-    int out_runner_index = -1;
-    int in_runner_index = -1;
-    for (size_t i = 0; i < runners.size(); i++) {
-        if (runners[i] == out_pipe_runner) {
-            out_runner_index = i;
-        }
-        if (runners[i] == in_pipe_runner) {
-            in_runner_index = i;
-        }
-    }
-
-    if (out_runner_index == controller_index_) {
-        int index = in_runner_index;
-        if (index > controller_index_) {
-            index--;
-        }
-        buffer_to_runner_index_[buffer] = index + 1;
-    }
-
-    if (control_mode_enabled
-     && out_pipe_type == STD_OUTPUT_PIPE
-     && !output_pipe->process_message) {
-
-        if (out_pipe_runner->get_options().controller) {
-            output_pipe->process_message = [=](const std::string& message, output_pipe_c* pipe) {
-                process_controller_message_(message, pipe);
+    if (control_mode_enabled && strcmp(stream, "stdout") == 0 && target_pipe->process_message == nullptr) {
+        if (target_runner->get_options().controller) {
+            target_pipe->process_message = [=](const char* buffer, size_t count) {
+                string message(buffer, count);
+                process_controller_message_(message);
             };
         } else {
-            int index = out_runner_index;
             if (index > controller_index_) {
                 index--;
             }
-            output_pipe->process_message = [=](const std::string& message, output_pipe_c* pipe) {
-                process_normal_message_(message, pipe, index + 1);
+            target_pipe->process_message = [=](const char* buffer, size_t count) {
+                string message(buffer, count);
+                process_normal_message_(message, index + 1);
             };
         }
     }
@@ -357,7 +320,7 @@ bool spawner_new_c::init() {
             PANIC_IF(controller_index_ != -1);
             controller_index_ = i;
             control_mode_enabled = true;
-            controller_buffer_ = std::make_shared<pipe_buffer_c>(runners[i]->get_input_pipe());
+            controller_broadcaster_ = runners[i]->get_pipe(std_stream_input);
         }
     }
     if (controller_index_ != -1) {
@@ -369,23 +332,12 @@ bool spawner_new_c::init() {
             }
             sr->on_terminate = [=]() {
                 on_terminate_mutex_.lock();
-                for (auto& r : runners) {
-                    if (r == sr) {
-                        continue;
-                    }
-                    for (auto& b : sr->duplex_buffers) {
-                        for (int pi = STD_INPUT_PIPE; pi <= STD_ERROR_PIPE; pi++) {
-                            auto&& p = r->get_pipe(static_cast<const pipes_t>(pi));
-                            p->remove_buffer(b);
-                        }
-                    }
-                }
-
                 if (i > 0 && awaited_normals_[i - 1]) {
                     wait_normal_mutex_.lock();
                     awaited_normals_[i - 1] = false;
                     std::string message = std::to_string(i) + "I#\n";
-                    controller_buffer_->write(message.c_str(), message.size());
+                    //TODO: broadcast?
+                    controller_broadcaster_->write(message.c_str(), message.size());
                     wait_normal_mutex_.unlock();
                 }
                 on_terminate_mutex_.unlock();
@@ -397,11 +349,11 @@ bool spawner_new_c::init() {
         options_class runner_options = runner->get_options();
         struct {
             std::vector<std::string> &streams;
-            pipes_t pipe_type;
+            std_stream_type type;
         } streams[] = {
-            { runner_options.stdinput, STD_INPUT_PIPE },
-            { runner_options.stdoutput, STD_OUTPUT_PIPE },
-            { runner_options.stderror, STD_ERROR_PIPE },
+            { runner_options.stdinput, std_stream_input },
+            { runner_options.stdoutput, std_stream_output },
+            { runner_options.stderror, std_stream_error },
         };
         for (auto& stream_item : streams) {
             for (auto& stream_str : stream_item.streams) {
@@ -409,7 +361,7 @@ bool spawner_new_c::init() {
                 if (stream_str[0] != '*') {
                     continue;
                 }
-                setup_stream_(stream_str, stream_item.pipe_type, runner);
+                setup_stream_(stream_str, stream_item.type, runner);
             }
         }
     }
@@ -440,31 +392,23 @@ bool spawner_new_c::init_runner() {
     }
 
     {//if (!options.session_id.length()) {
-        std::shared_ptr<output_pipe_c> output = std::make_shared<output_pipe_c>();
-        std::shared_ptr<output_pipe_c> error = std::make_shared<output_pipe_c>();
-        std::shared_ptr<input_pipe_c> input = std::make_shared<input_pipe_c>();
-        for (uint i = 0; i < options.stdoutput.size(); ++i) {
-            std::shared_ptr<output_buffer_c> buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
-            if (buffer) {
-                output->add_output_buffer(buffer);
-            }
-        }
-        for (uint i = 0; i < options.stderror.size(); ++i) {
-            std::shared_ptr<output_buffer_c> buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
-            if (buffer) {
-                error->add_output_buffer(buffer);
-            }
-        }
-        for (uint i = 0; i < options.stdinput.size(); ++i) {
-            std::shared_ptr<input_buffer_c> buffer = create_input_buffer(options.stdinput[i]);
-            if (buffer) {
-                input->add_input_buffer(buffer);
-            }
-        }
-        secure_runner_instance->set_pipe(STD_OUTPUT_PIPE, output);
-        secure_runner_instance->set_pipe(STD_ERROR_PIPE, error);
-        secure_runner_instance->set_pipe(STD_INPUT_PIPE, input);
+        auto stdinput = secure_runner_instance->get_pipe(std_stream_input);
+        auto stdoutput = secure_runner_instance->get_pipe(std_stream_output);
+        auto stderror = secure_runner_instance->get_pipe(std_stream_error);
+
+        for (auto& input : options.stdinput)
+            if (input[0] != '*')
+                get_or_create_file_pipe(input, read_mode)->connect(stdinput);
+
+        for (auto& output : options.stdoutput)
+            if (output[0] != '*')
+                stdoutput->connect(get_or_create_file_pipe(output, write_mode));
+
+        for (auto& error : options.stderror)
+            if (error[0] != '*')
+                stderror->connect(get_or_create_file_pipe(error, write_mode));
     }
+
     runners.push_back(secure_runner_instance);
     return true;
 }
@@ -473,6 +417,9 @@ void spawner_new_c::run() {
     begin_report();
     for (auto& i : runners) {
         i->run_process_async();
+    }
+    for (auto& file_pipe : file_pipes) {
+        file_pipe.second->start_read();
     }
     for (auto& i : runners) {
         i->wait_for();

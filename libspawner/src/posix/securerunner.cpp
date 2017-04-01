@@ -30,57 +30,8 @@ void secure_runner::create_process() {
     runner::create_process();
 }
 
-void secure_runner::prepare_stdio() {
-    int in, out, err;
-    // multiple stdout/error files are not supported
-
-    // no panics here since we are "child"
-    if (options.stdinput.size() == 1)
-        if((access(options.stdinput[0].c_str(), R_OK) != -1)) {
-            in = open(options.stdinput[0].c_str(), O_RDONLY | O_NOFOLLOW);
-            if (in == -1)
-                exit(EXIT_FAILURE);
-            else {
-                close(STDIN_FILENO);
-                dup2(in, STDIN_FILENO);
-            }
-        }
-
-    if (options.stdoutput.size() == 1) {
-        out = open(options.stdoutput[0].c_str(),
-            O_WRONLY | O_CREAT | O_NOFOLLOW,
-            S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
-        if (out == -1)
-            exit(EXIT_FAILURE);
-        else {
-            close(STDOUT_FILENO);
-            dup2(out, STDOUT_FILENO);
-        }
-    }
-
-    // try to merge stderr and stdout
-    if (options.stderror.size() == 1) {
-        if (options.stdoutput.size() == 1 && options.stderror[0] == options.stdoutput[0]) {
-            close(STDERR_FILENO);
-            dup2(STDOUT_FILENO, STDERR_FILENO);
-        }
-        else {
-            err = open(options.stderror[0].c_str(),
-                O_WRONLY | O_CREAT | O_NOFOLLOW,
-                S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
-            if (err == -1)
-                exit(EXIT_FAILURE);
-            else {
-                close(STDERR_FILENO);
-                dup2(err, STDERR_FILENO);
-            }
-        }
-    }
-}
-
 
 void secure_runner::init_process(const char *cmd_toexec, char **process_argv, char **process_envp) {
-    prepare_stdio();
     create_restrictions();
     runner::init_process(cmd_toexec, process_argv, process_envp);
 }

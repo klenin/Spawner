@@ -50,30 +50,21 @@ bool spawner_old_c::init()
     }
 
         {//if (!options.session_id.length()) {
-            std::shared_ptr<output_pipe_c> output = std::make_shared<output_pipe_c>();
-            std::shared_ptr<output_pipe_c> error = std::make_shared<output_pipe_c>();
-            std::shared_ptr<input_pipe_c> input = std::make_shared<input_pipe_c>();
-            for (uint i = 0; i < options.stdoutput.size(); ++i) {
-                std::shared_ptr<output_buffer_c> buffer = create_output_buffer(options.stdoutput[i], STD_OUTPUT_PIPE);
-                if (buffer) {
-                    output->add_output_buffer(buffer);
-                }
-            }
-            for (uint i = 0; i < options.stderror.size(); ++i) {
-                std::shared_ptr<output_buffer_c> buffer = create_output_buffer(options.stderror[i], STD_ERROR_PIPE);
-                if (buffer) {
-                    error->add_output_buffer(buffer);
-                }
-            }
-            for (uint i = 0; i < options.stdinput.size(); ++i) {
-                std::shared_ptr<input_buffer_c > buffer = create_input_buffer(options.stdinput[i]);
-                if (buffer) {
-                    input->add_input_buffer(buffer);
-                }
-            }
-            runner_instance->set_pipe(STD_OUTPUT_PIPE, output);
-            runner_instance->set_pipe(STD_ERROR_PIPE, error);
-            runner_instance->set_pipe(STD_INPUT_PIPE, input);
+            auto stdinput = runner_instance->get_pipe(std_stream_input);
+            auto stdoutput = runner_instance->get_pipe(std_stream_output);
+            auto stderror = runner_instance->get_pipe(std_stream_error);
+
+            for (auto& input : options.stdinput)
+                if (input[0] != '*')
+                    get_or_create_file_pipe(input, read_mode)->connect(stdinput);
+
+            for (auto& output : options.stdoutput)
+                if (output[0] != '*')
+                    stdoutput->connect(get_or_create_file_pipe(output, write_mode));
+
+            for (auto& error : options.stderror)
+                if (error[0] != '*')
+                    stderror->connect(get_or_create_file_pipe(error, write_mode));
         }
     return true;
 }
@@ -81,8 +72,10 @@ bool spawner_old_c::init()
 void spawner_old_c::run() {
     begin_report();
     runner_instance->run_process_async();
+    for (auto& file_pipe : file_pipes) {
+        file_pipe.second->start_read();
+    }
     runner_instance->wait_for();
-
     print_report();
 }
 

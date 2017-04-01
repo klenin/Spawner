@@ -246,12 +246,13 @@ void runner::create_process() {
     si.cb = sizeof(si);
     {//if (!options.delegated) {//#TODO fix this
         si.dwFlags = STARTF_USESTDHANDLES;
-        if (pipes.find(STD_OUTPUT_PIPE) != pipes.end())
-            si.hStdOutput = pipes[STD_OUTPUT_PIPE]->get_pipe();
-        if (pipes.find(STD_ERROR_PIPE) != pipes.end())
-            si.hStdError = pipes[STD_ERROR_PIPE]->get_pipe();
-        if (pipes.find(STD_INPUT_PIPE) != pipes.end())
-            si.hStdInput = pipes[STD_INPUT_PIPE]->get_pipe();
+        auto end = streams.end();
+        if (streams.find(std_stream_input) != end)
+            si.hStdInput = streams[std_stream_input]->get_pipe()->get_input_handle();
+        if (streams.find(std_stream_output) != end)
+            si.hStdOutput = streams[std_stream_output]->get_pipe()->get_output_handle();
+        if (streams.find(std_stream_error) != end)
+            si.hStdError = streams[std_stream_error]->get_pipe()->get_output_handle();
     }
     si.lpDesktop = "";
     process_creation_flags = PROCESS_CREATION_FLAGS;
@@ -337,10 +338,6 @@ void runner::requisites() {
         process_status = process_still_active;
     } else {
         process_status = process_suspended;
-    }
-    for (auto& it : pipes) {
-        std::shared_ptr<pipe_c> pipe = it.second;
-        pipe->bufferize();
     }
     if (options.debug) {
         debug();
