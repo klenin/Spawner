@@ -58,7 +58,7 @@ system_pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode) {
         access = GENERIC_WRITE;
         creationDisposition = CREATE_ALWAYS;
     } else
-        throw std::runtime_error("Both file open mode not supported");
+        PANIC("Bad pipe mode");
 
     auto file = CreateFile(filename.c_str(), access, FILE_SHARE_READ, nullptr, creationDisposition, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (file == INVALID_HANDLE_VALUE)

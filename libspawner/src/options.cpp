@@ -1,4 +1,5 @@
 #include "options.h"
+
 #include <algorithm>
 #include <iterator>
 
@@ -71,7 +72,7 @@ std::string options_class::get_argument(const size_t &index) const {
     if (index < arguments.size()) {
         return *std::next(arguments.cbegin(), index);
     }
-    return ""; // !TODO! raise an error
+    return ""; //TODO: raise an error
 }
 
 size_t options_class::get_arguments_count() const {
@@ -87,7 +88,7 @@ std::string options_class::format_arguments() const
     return arguments_string;
 }
 
-//TODO! rethink this
+//TODO: rethink this
 void options_class::add_stdinput(const std::string &name) {
     //check if file exists
     if (std::find(stdinput.begin(), stdinput.end(), name) != stdinput.end()) {
@@ -138,7 +139,7 @@ void options_class::add_environment_variable(const std::string &envStr) {
     environmentVars.push_back(std::make_pair(name, val));
 }
 
-//TODO! rethink this
+//TODO: rethink this
 void options_class::clear_stdinput() {
     stdinput.clear();
 }

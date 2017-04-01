@@ -241,7 +241,7 @@ void runner::create_process() {
     ZeroMemory(&si, sizeof(si));
 
     si.cb = sizeof(si);
-    {//if (!options.delegated) {//#TODO fix this
+    {//if (!options.delegated) { //TODO: fix this
         si.dwFlags = STARTF_USESTDHANDLES;
         auto end = streams.end();
         if (streams.find(std_stream_input) != end)
@@ -251,7 +251,10 @@ void runner::create_process() {
         if (streams.find(std_stream_error) != end)
             si.hStdError = streams[std_stream_error]->get_pipe()->get_output_handle();
     }
+
+    //FIXME: C++11 forbids implicit conversion of a string constant to 'char*'
     si.lpDesktop = "";
+
     process_creation_flags = PROCESS_CREATION_FLAGS;
 
     if (options.hide_gui)
@@ -272,7 +275,7 @@ void runner::create_process() {
     if (!wd)
     {
         char working_directory[MAX_PATH + 1];
-        if (GetCurrentDirectoryA(MAX_PATH, working_directory))//error here is not critical
+        if (GetCurrentDirectoryA(MAX_PATH, working_directory)) //error here is not critical
             report.working_directory = working_directory;
     }
 
@@ -295,7 +298,7 @@ void runner::create_process() {
         //IMPORTANT: if logon option selected & failed signalize it
         DWORD len = MAX_USER_NAME;
         wchar_t user_name[MAX_USER_NAME];
-        if (GetUserNameW(user_name, &len)) { // Error here is not critical.
+        if (GetUserNameW(user_name, &len)) { //error here is not critical
             report.login = user_name;
         }
         running = init_process(command_line, wd);
@@ -472,9 +475,9 @@ void runner::get_times(unsigned long long *_creation_time, unsigned long long *e
 void runner::run_process() {
     if (options.debug && !running_async) {
         run_process_async();
-        WaitForSingleObject(running_thread, 100);//may stuck here
-        WaitForSingleObject(init_semaphore, INFINITE);//may stuck here
-        WaitForSingleObject(process_info.hProcess, INFINITE);//may stuck here
+        WaitForSingleObject(running_thread, 100); //may stuck here
+        WaitForSingleObject(init_semaphore, INFINITE); //may stuck here
+        WaitForSingleObject(process_info.hProcess, INFINITE); //may stuck here
         return;
     }
     create_process();
@@ -516,15 +519,16 @@ void runner::wait_for(const unsigned long& interval) {
 }
 
 bool runner::wait_for_init(const unsigned long &interval) {
-    while (init_semaphore == INVALID_HANDLE_VALUE) {//not very good, made for synchro with async(mutex belongs to creator thread)
+    while (init_semaphore == INVALID_HANDLE_VALUE) {
+        //not very good, made for synchro with async (mutex belongs to the creator thread)
         Sleep(5);
     }
-    return WaitForSingleObject(init_semaphore, interval) == WAIT_OBJECT_0;// TODO: get rid of this
+    return WaitForSingleObject(init_semaphore, interval) == WAIT_OBJECT_0; //TODO: get rid of this
 }
 
 void runner::safe_release() {
     process_status = process_spawner_crash;
-    free();// make it safe!!!
+    free(); // make it safe!!!
 }
 
 void runner::enumerate_threads_(std::function<void(handle_t)> on_thread) {

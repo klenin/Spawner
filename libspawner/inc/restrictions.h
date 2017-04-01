@@ -2,8 +2,9 @@
 #define _SPAWNER_RESTRICTIONS_H_
 
 #include <string>
-#include <inc/session.h>
 #include <climits>
+
+#include <inc/session.h>
 
 enum restriction_kind_t
 {
@@ -23,7 +24,8 @@ typedef unsigned long restriction_t;
 const restriction_t restriction_no_limit = ULONG_MAX;
 const restriction_t restriction_limited = 1;
 
-//TODO move source to platform independent .cpp
+//TODO: move source to platform independent .cpp
+//TODO: rewrite as a class
 struct restrictions_class
 {
     restriction_t restrictions[restriction_max];
@@ -36,4 +38,4 @@ struct restrictions_class
     static restriction_kind_t restriction_by_name(const std::string &name);
 };
 
-#endif//_SPAWNER_RESTRICTIONS_H_
+#endif //_SPAWNER_RESTRICTIONS_H_

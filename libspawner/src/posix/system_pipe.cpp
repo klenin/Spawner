@@ -92,24 +92,24 @@ size_t system_pipe::read(char* bytes, size_t count) const {
     if (!is_readable())
         return 0;
 
-    ssize_t readed = ::read(input_handle, bytes, count);
-    if (readed < 0)
+    ssize_t bytes_read = ::read(input_handle, bytes, count);
+    if (bytes_read < 0)
         PANIC(strerror(errno));
 
-    return (size_t)readed;
+    return (size_t)bytes_read;
 }
 
 size_t system_pipe::write(const char* bytes, size_t count) const {
     if (!is_writable())
         return 0;
 
-    ssize_t writed = ::write(output_handle, bytes, count);
-    if (writed < 0)
+    ssize_t bytes_written = ::write(output_handle, bytes, count);
+    if (bytes_written < 0)
         PANIC(strerror(errno));
-    if (writed > 0)
+    if (bytes_written > 0)
         flush();
 
-    return (size_t)writed;
+    return (size_t)bytes_written;
 }
 
 void system_pipe::flush() const {

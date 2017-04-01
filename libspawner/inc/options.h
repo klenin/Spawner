@@ -1,10 +1,11 @@
 #ifndef _SPAWNER_OPTIONS_H_
 #define _SPAWNER_OPTIONS_H_
 
-#include <inc/session.h>
-
 #include <list>
 #include <vector>
+
+#include <inc/session.h>
+
 // hide_gui - creates process with hidden flag turned on
 // silent_errors - on windows, if error occurs program doesn't show "send report" dialog
 // #to do: make some options as map of variant
@@ -52,7 +53,7 @@ struct options_class
     std::vector<std::string> stderror;
     std::list< std::pair< std::string, std::string > > environmentVars;
     std::list<std::string> arguments;
-    std::string report_file;//bad, need many values but this causes many outputs if environment variable and command line argument both present
+    std::string report_file; //bad, need many values but this causes many outputs if environment variable and command line argument both present
     std::string shared_memory;
     std::string mutex;
     bool hide_gui;
@@ -69,5 +70,5 @@ struct options_class
     std::string environmentMode;
 };
 
-#endif//_SPAWNER_OPTIONS_H_
+#endif //_SPAWNER_OPTIONS_H_
 

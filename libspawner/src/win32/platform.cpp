@@ -48,7 +48,13 @@ int get_spawner_pid()
 void push_shm_report(const char *shm_name, const std::string &report)
 {
     HANDLE hOut = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, shm_name);
-    LPCSTR pRep = (LPTSTR)MapViewOfFile(hOut, FILE_MAP_ALL_ACCESS, 0, 0, options_class::SHARED_MEMORY_BUF_SIZE);
+    LPCSTR pRep = (LPTSTR)MapViewOfFile(
+        hOut,
+        FILE_MAP_ALL_ACCESS,
+        0,
+        0,
+        options_class::SHARED_MEMORY_BUF_SIZE
+    );
 
     memcpy((PVOID)pRep, report.c_str(), sizeof(char) * report.length());
 

@@ -41,23 +41,23 @@ void hexDump(const void *addr, int len) {
 }
 
 void dprintf(const char* format, ...) {
-  int final_n;
-  int n = strlen(format) * 2;
-  std::string str;
-  std::unique_ptr<char[]> formatted;
-  va_list ap;
-  for (;;) {
-    formatted.reset(new char[n]);
-    strcpy(&formatted[0], format);
-    va_start(ap, format);
-    final_n = vsnprintf(&formatted[0], n, format, ap);
-    va_end(ap);
-    if (final_n < 0 || final_n >= n) {
-      n += std::abs(final_n - n + 1);
-    } else {
-      break;
+    int final_n;
+    int n = strlen(format) * 2;
+    std::string str;
+    std::unique_ptr<char[]> formatted;
+    va_list ap;
+    for (;;) {
+        formatted.reset(new char[n]);
+        strcpy(&formatted[0], format);
+        va_start(ap, format);
+        final_n = vsnprintf(&formatted[0], n, format, ap);
+        va_end(ap);
+        if (final_n < 0 || final_n >= n) {
+            n += std::abs(final_n - n + 1);
+        } else {
+            break;
+        }
     }
-  }
 
-  fwrite(formatted.get(), sizeof(char), final_n, stdout);
+    fwrite(formatted.get(), sizeof(char), final_n, stdout);
 }
