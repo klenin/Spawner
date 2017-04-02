@@ -21,9 +21,7 @@ void spawner_old_c::init_std_streams()
 
 spawner_old_c::~spawner_old_c()
 {
-    if (runner_instance) {
-        delete runner_instance;
-    }
+    delete runner_instance;
 }
 
 bool spawner_old_c::init()

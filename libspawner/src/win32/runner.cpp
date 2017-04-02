@@ -66,7 +66,7 @@ runner::env_vars_list_t runner::read_environment(const WCHAR* source) const
     {
         std::string envStr(w2a((const WCHAR*)env));
 
-        int pos = envStr.find("=");
+        int pos = envStr.find('=');
 
         vars.push_back(make_pair(envStr.substr(0, pos), envStr.substr(pos + 1)));
 
@@ -244,7 +244,7 @@ void runner::create_process() {
     ZeroMemory(&si, sizeof(si));
 
     si.cb = sizeof(si);
-    {//if (!options.delegated) {//#TODO fix this
+    {//if (!options.delegated) { //TODO: fix this
         si.dwFlags = STARTF_USESTDHANDLES;
         if (pipes.find(STD_OUTPUT_PIPE) != pipes.end())
             si.hStdOutput = pipes[STD_OUTPUT_PIPE]->get_pipe();
@@ -253,7 +253,10 @@ void runner::create_process() {
         if (pipes.find(STD_INPUT_PIPE) != pipes.end())
             si.hStdInput = pipes[STD_INPUT_PIPE]->get_pipe();
     }
+
+    //FIXME: C++11 forbids implicit conversion of a string constant to 'char*'
     si.lpDesktop = "";
+
     process_creation_flags = PROCESS_CREATION_FLAGS;
 
     if (options.hide_gui)
@@ -270,11 +273,11 @@ void runner::create_process() {
 
     // Extracting program name and generating cmd line
     report.working_directory = options.working_directory;
-    const char *wd = (options.working_directory != "")?options.working_directory.c_str():NULL;
+    const char *wd = options.working_directory.empty() ? nullptr : options.working_directory.c_str();
     if (!wd)
     {
         char working_directory[MAX_PATH + 1];
-        if (GetCurrentDirectoryA(MAX_PATH, working_directory))//error here is not critical
+        if (GetCurrentDirectoryA(MAX_PATH, working_directory)) //error here is not critical
             report.working_directory = working_directory;
     }
 
@@ -282,14 +285,14 @@ void runner::create_process() {
     std::string command_line =
         index_path_sep != std::string::npos ? program.substr(index_path_sep + 1) : program;
 
-    if (options.string_arguments != "") {
+    if (!options.string_arguments.empty()) {
         command_line += " " + options.string_arguments;
     }
     for (auto arg = options.arguments.begin(); arg != options.arguments.end(); ++arg) {
         command_line += " " + quote(*arg);
     }
 
-    if (options.login != "") {
+    if (!options.login.empty()) {
         report.login = a2w(options.login.c_str());
         running = init_process_with_logon(command_line, wd);
     }
@@ -297,7 +300,7 @@ void runner::create_process() {
         //IMPORTANT: if logon option selected & failed signalize it
         DWORD len = MAX_USER_NAME;
         wchar_t user_name[MAX_USER_NAME];
-        if (GetUserNameW(user_name, &len)) { // Error here is not critical.
+        if (GetUserNameW(user_name, &len)) { //error here is not critical
             report.login = user_name;
         }
         running = init_process(command_line, wd);
@@ -475,9 +478,9 @@ void runner::get_times(unsigned long long *_creation_time, unsigned long long *e
 void runner::run_process() {
     if (options.debug && !running_async) {
         run_process_async();
-        WaitForSingleObject(running_thread, 100);//may stuck here
-        WaitForSingleObject(init_semaphore, INFINITE);//may stuck here
-        WaitForSingleObject(process_info.hProcess, INFINITE);//may stuck here
+        WaitForSingleObject(running_thread, 100); //may stuck here
+        WaitForSingleObject(init_semaphore, INFINITE); //may stuck here
+        WaitForSingleObject(process_info.hProcess, INFINITE); //may stuck here
         return;
     }
     create_process();
@@ -517,15 +520,16 @@ bool runner::wait_for(const unsigned long &interval) {
 }
 
 bool runner::wait_for_init(const unsigned long &interval) {
-    while (init_semaphore == handle_default_value) {//not very good, made for synchro with async(mutex belongs to creator thread)
+    while (init_semaphore == handle_default_value) {
+        //not very good, made for synchro with async (mutex belongs to the creator thread)
         Sleep(5);
     }
-    return WaitForSingleObject(init_semaphore, interval) == WAIT_OBJECT_0;// TODO: get rid of this
+    return WaitForSingleObject(init_semaphore, interval) == WAIT_OBJECT_0; //TODO: get rid of this
 }
 
 void runner::safe_release() {
     process_status = process_spawner_crash;
-    free();// make it safe!!!
+    free(); // make it safe!!!
 }
 
 void runner::enumerate_threads_(std::function<void(handle_t)> on_thread) {

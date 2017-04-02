@@ -106,11 +106,6 @@ void pipe_c::finish()
     }
 }
 
-bool pipe_c::valid()
-{
-    return state;
-}
-
 pipe_t pipe_c::get_pipe()
 {
     return 0;

@@ -26,7 +26,7 @@ protected:
     startupinfo_t si;
     process_info_t process_info;
     thread_t running_thread;
-    volatile handle_t init_semaphore;//rename to mutex_init_signal
+    volatile handle_t init_semaphore; //rename to mutex_init_signal
     static handle_t main_job_object;
     static handle_t main_job_object_access_mutex;
     static bool allow_breakaway;
@@ -66,4 +66,5 @@ public:
     void resume();
     bool is_running();
 };
+
 #endif // _WIN_RUNNER_H
