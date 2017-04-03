@@ -68,7 +68,7 @@ std::string options_class::get_arguments() const
     return result;
 }
 
-std::string options_class::get_argument(const size_t &index) const {
+std::string options_class::get_argument(const size_t index) const {
     if (index < arguments.size()) {
         return *std::next(arguments.cbegin(), index);
     }

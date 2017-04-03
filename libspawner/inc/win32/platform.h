@@ -63,7 +63,7 @@ typedef DWORD process_id;
 const DWORD PROCESS_CREATION_FLAGS = (CREATE_SUSPENDED | /*CREATE_PRESERVE_CODE_AUTHZ_LEVEL | */CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB);
 
 #define CloseHandleSafe(handle) (CloseHandleSafe_real(handle))
-void CloseHandleSafe_debug(HANDLE &handle, char *file, unsigned int line);
+void CloseHandleSafe_debug(HANDLE &handle, const char *file, unsigned int line);
 void CloseHandleSafe_real(HANDLE &handle);
 
 const unsigned long infinite = INFINITE;

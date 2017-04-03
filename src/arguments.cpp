@@ -145,7 +145,7 @@ bool settings_parser_c::parse(int argc, char *argv[]) {
         if (saved_count() == 1) {
             try {
                 pop_saved_parser()->invoke(*this);
-            } catch (std::string error) {
+            } catch (std::string &error) {
                 std::cerr << "Invalid parameter value: " << arg_v[position - 1] << " with error: " << error << std::endl;
                 return false;
             }
@@ -181,7 +181,7 @@ void settings_parser_c::pop_back() {
 std::string settings_parser_c::help() {
     std::string result;
     for (auto parser = parsers.begin(); parser != parsers.end(); ++parser) {
-        result += (*parser)->help(this);
+        result += (*parser)->help(*this);
     }
     return result;
 }
@@ -265,11 +265,11 @@ bool console_argument_parser_c::invoke_initialization(abstract_settings_parser_c
     return true;
 }
 
-std::string console_argument_parser_c::help(abstract_settings_parser_c *parser) {
+std::string console_argument_parser_c::help(const abstract_settings_parser_c &parser) {
     std::ostringstream res;
     std::string dividers = " ";
-    if (parser->dividers.size()) {
-        dividers = parser->dividers[0];
+    if (parser.dividers.size()) {
+        dividers = parser.dividers[0];
     }
     for (auto i = parsers.begin(); i != parsers.end(); i++) {
         //iterating over all arguments

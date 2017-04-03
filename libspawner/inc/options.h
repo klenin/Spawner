@@ -41,7 +41,7 @@ struct options_class
     void clear_stdoutput();
     void clear_stderror();
     std::string get_arguments() const;
-    std::string get_argument(const size_t &index) const;
+    std::string get_argument(size_t index) const;
     size_t get_arguments_count() const;
     std::string format_arguments() const;
     std::string string_arguments;
