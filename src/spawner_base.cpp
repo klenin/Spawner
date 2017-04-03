@@ -1,7 +1,5 @@
 #include "spawner_base.h"
 
-static std::map<std::string, std::shared_ptr<output_buffer_c>> output_cache;
-
 pipe_broadcaster_ptr spawner_base_c::get_or_create_file_pipe(const std::string& path, pipe_mode mode) {
     auto file_pipe = file_pipes.find(path);
     if (file_pipe == file_pipes.end()) {

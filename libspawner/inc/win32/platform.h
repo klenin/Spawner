@@ -74,7 +74,6 @@ static OPEN_JOB_OBJECT OpenJobObjectA;
 #endif//OpenJobObject
 
 typedef PROCESS_INFORMATION process_info_t;
-typedef HANDLE pipe_t;
 typedef HANDLE pipe_handle;
 typedef STARTUPINFO startupinfo_t;
 typedef DWORD process_id;
@@ -90,8 +89,6 @@ const unsigned long exit_code_still_active = STILL_ACTIVE;
 const unsigned long exit_code_exception_int_divide_by_zero = EXCEPTION_INT_DIVIDE_BY_ZERO;
 
 const unsigned long infinite = INFINITE;
-
-const handle_t handle_default_value = INVALID_HANDLE_VALUE;
 
 BOOL WINAPI CancelSynchronousIo_wrapper(HANDLE);
 

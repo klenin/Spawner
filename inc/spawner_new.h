@@ -25,8 +25,6 @@ protected:
     std::vector<runner*> runners;
     size_t order;
     bool control_mode_enabled;
-    std::map<std::shared_ptr<output_buffer_c>, int> buffer_to_runner_index_;
-    // std::map<int, std::shared_ptr<output_buffer_c>> runner_index_to_buffer_;
     pipe_broadcaster_ptr controller_broadcaster_;
     int controller_index_ = -1;
     mutex_c wait_normal_mutex_;

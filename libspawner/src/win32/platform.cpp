@@ -32,7 +32,7 @@ void load_open_job_object() {
 void CloseHandleSafe_debug(HANDLE &handle, char *file, unsigned int line)
 {
     try {
-        if (handle == handle_default_value || handle == NULL)
+        if (handle == INVALID_HANDLE_VALUE || handle == NULL)
             return;
         if (!CloseHandle(handle))
             PANIC(get_win_last_error_string());
@@ -40,16 +40,16 @@ void CloseHandleSafe_debug(HANDLE &handle, char *file, unsigned int line)
         std::ofstream log_file("C:\\CATS\\cats-judge\\log.log", std::ofstream::app);
         log_file << file << ":" << line << " " << handle << std::endl;
     }
-    handle = handle_default_value;
+    handle = INVALID_HANDLE_VALUE;
 }
 
 void CloseHandleSafe_real(HANDLE &handle)
 {
-    if (handle == handle_default_value || handle == NULL)
+    if (handle == INVALID_HANDLE_VALUE || handle == NULL)
         return;
     if (!CloseHandle(handle))
         PANIC(get_win_last_error_string());
-    handle = handle_default_value;
+    handle = INVALID_HANDLE_VALUE;
 }
 
 typedef BOOL(WINAPI *CancelSynchronousIo_func_type)(HANDLE);

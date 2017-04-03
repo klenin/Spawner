@@ -14,7 +14,7 @@
 
 const size_t MAX_USER_NAME = 1024;
 
-handle_t runner::main_job_object = handle_default_value;
+handle_t runner::main_job_object = INVALID_HANDLE_VALUE;
 handle_t runner::main_job_object_access_mutex = CreateMutex(NULL, 0, NULL);
 bool runner::allow_breakaway = true;
 
@@ -22,7 +22,7 @@ void runner::set_allow_breakaway(bool allow) {
     if (allow_breakaway == allow) {
         return;
     }
-    if (main_job_object == handle_default_value) {
+    if (main_job_object == INVALID_HANDLE_VALUE) {
         main_job_object = CreateJobObject(NULL, NULL);
         AssignProcessToJobObject(main_job_object, GetCurrentProcess());
     }
@@ -352,8 +352,8 @@ thread_return_t runner::async_body(thread_param_t param) {
 
 runner::runner(const std::string &program, const options_class &options)
     : base_runner(program, options)
-    , running_thread(handle_default_value)
-    , init_semaphore(handle_default_value) {
+    , running_thread(INVALID_HANDLE_VALUE)
+    , init_semaphore(INVALID_HANDLE_VALUE) {
 
     init_semaphore = CreateSemaphore(NULL, 0, 10, NULL);
     ZeroMemory(&process_info, sizeof(process_info));
@@ -514,7 +514,7 @@ bool runner::wait_for(const unsigned long &interval) {
 }
 
 bool runner::wait_for_init(const unsigned long &interval) {
-    while (init_semaphore == handle_default_value) {//not very good, made for synchro with async(mutex belongs to creator thread)
+    while (init_semaphore == INVALID_HANDLE_VALUE) {//not very good, made for synchro with async(mutex belongs to creator thread)
         Sleep(5);
     }
     return WaitForSingleObject(init_semaphore, interval) == WAIT_OBJECT_0;// TODO: get rid of this
@@ -530,7 +530,7 @@ void runner::enumerate_threads_(std::function<void(handle_t)> on_thread) {
         return;
     }
     HANDLE thread_snapshot_h = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
-    if (thread_snapshot_h == handle_default_value) {
+    if (thread_snapshot_h == INVALID_HANDLE_VALUE) {
         return;
     }
     THREADENTRY32 thread_entry;

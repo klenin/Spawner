@@ -7,7 +7,6 @@
 #include "inc/options.h"
 #include "inc/status.h"
 #include "inc/multibyte.h"
-#include "inc/pipes.h"
 #include "inc/pipe_broadcaster.h"
 
 #include "platform_report.h"
