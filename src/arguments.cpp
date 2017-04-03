@@ -38,7 +38,7 @@ abstract_parser_c::~abstract_parser_c() {
 }
 
 abstract_argument_parser_c *abstract_parser_c::add_argument_parser(const std::vector<std::string> &params, abstract_argument_parser_c *argument_parser) {
-    for (auto i = params.begin(); i != params.end(); i++) {
+    for (auto i = params.begin(); i != params.end(); ++i) {
         parameters[*i] = argument_parser->reference();
     }
     parsers[argument_parser] = params;
@@ -99,11 +99,11 @@ void settings_parser_c::save_current_position(abstract_parser_c *associated_pars
 abstract_parser_c *settings_parser_c::pop_saved_parser() {
     auto value = saved_positions.front();//std::pair<int, void*>
     position = value.first;
-    saved_positions.erase(saved_positions.begin(), saved_positions.begin()+1);
+    saved_positions.erase(saved_positions.begin());
     return value.second;
 }
 void settings_parser_c::clear_parsers() {
-    for (auto i = parsers.begin(); i != parsers.end(); i++) {
+    for (auto i = parsers.begin(); i != parsers.end(); ++i) {
         delete (*i);
     }
     parsers.clear();
@@ -135,7 +135,7 @@ bool settings_parser_c::parse(int argc, char *argv[]) {
     }
 
     while (current_position() < argc && !stopped) {
-        for (auto parser = parsers.begin(); parser != parsers.end(); parser++) {
+        for (auto parser = parsers.begin(); parser != parsers.end(); ++parser) {
             int fetched_position = position;
             if ((*parser)->parse(*this)) {
                 save_current_position(*parser);
@@ -180,7 +180,7 @@ void settings_parser_c::pop_back() {
 
 std::string settings_parser_c::help() {
     std::string result;
-    for (auto parser = parsers.begin(); parser != parsers.end(); parser++) {
+    for (auto parser = parsers.begin(); parser != parsers.end(); ++parser) {
         result += (*parser)->help(this);
     }
     return result;
@@ -203,7 +203,7 @@ bool console_argument_parser_c::parse(abstract_settings_parser_c &parser_object)
     return last_state == argument_ok_state;
 }
 abstract_argument_parser_c *console_argument_parser_c::add_flag_parser(const std::vector<std::string> &params, abstract_argument_parser_c *argument_parser) {
-    for (auto i = params.begin(); i != params.end(); i++) {
+    for (auto i = params.begin(); i != params.end(); ++i) {
         is_flag[*i] = true;
     }
     return add_argument_parser(params, argument_parser);
@@ -223,7 +223,7 @@ console_argument_parser_c::parsing_state_e console_argument_parser_c::process_ar
     }
     size_t length = s.length();
     size_t divider_length = 0;
-    for (auto i = parser_object->dividers.begin(); i != parser_object->dividers.end(); i++) {
+    for (auto i = parser_object->dividers.begin(); i != parser_object->dividers.end(); ++i) {
         size_t pos = s.find(*i);
         length = min_def(length, pos);
         if (length == pos) {
