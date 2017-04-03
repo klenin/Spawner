@@ -1,46 +1,43 @@
 #include "spawner_base.h"
 
-static std::map<std::string, std::shared_ptr<output_buffer_c>> output_cache;
-
-std::shared_ptr<output_buffer_c> spawner_base_c::create_output_buffer(const std::string &name,
-    const pipes_t &pipe_type) {
-    std::shared_ptr<output_buffer_c> output_buffer = nullptr;
-    if (name == "std") {
-        unsigned int color = FOREGROUND_BLUE | FOREGROUND_GREEN;
-        if (pipe_type == STD_ERROR_PIPE) {
-            color = FOREGROUND_RED | FOREGROUND_INTENSITY;
-        }
-        output_buffer = std::make_shared<output_stdout_buffer_c>(color);
+pipe_broadcaster_ptr spawner_base_c::get_or_create_file_pipe(const std::string& path, pipe_mode mode) {
+    auto file_pipe = file_pipes.find(path);
+    if (file_pipe == file_pipes.end()) {
+        auto file = mode == read_mode ? pipe_broadcaster::open_file(path) : pipe_broadcaster::create_file(path);
+        file_pipes[path] = file;
+        return file;
     }
-    else if (name[0] == '*') {
-    }
-    else if (name.length()) {
-        std::map<std::string, std::shared_ptr<output_buffer_c>>::iterator it = output_cache.find(name);
-        if (it != output_cache.end()) {
-            output_buffer = it->second;
-        }
-        else {
-            output_buffer = std::make_shared<output_file_buffer_c>(name);
-            output_cache[name] = output_buffer;
-        }
-    }
-    return output_buffer;
+    return file_pipe->second;
 }
 
-std::shared_ptr<input_buffer_c> spawner_base_c::create_input_buffer(const std::string &name) {
-    std::shared_ptr<input_buffer_c> input_buffer = nullptr;
-    if (name == "std") {
-        input_buffer = std::make_shared<input_stdin_buffer_c>();
+pipe_broadcaster_ptr spawner_base_c::get_std(std_stream_type type) {
+    switch (type) {
+    case std_stream_input:
+        if (spawner_stdin == nullptr) {
+            spawner_stdin = pipe_broadcaster::open_std(type);
+        }
+        return spawner_stdin;
+    case std_stream_output:
+        if (spawner_stdout == nullptr) {
+            spawner_stdout = pipe_broadcaster::open_std(type);
+        }
+        return spawner_stdout;
+    case std_stream_error:
+        if (spawner_stderr == nullptr) {
+            spawner_stderr = pipe_broadcaster::open_std(type);
+        }
+        return spawner_stderr;
+    default:
+        PANIC("Unknown std stream type");
     }
-    else if (name[0] == '*') {
-    }
-    else if (name.length()) {
-        input_buffer = std::make_shared<input_file_buffer_c>(name);
-    }
-    return input_buffer;
+
+    return nullptr;
 }
 
-spawner_base_c::spawner_base_c() {
+spawner_base_c::spawner_base_c()
+    : spawner_stdin(nullptr)
+    , spawner_stdout(nullptr)
+    , spawner_stderr(nullptr) {
 
 }
 

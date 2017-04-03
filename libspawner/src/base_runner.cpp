@@ -1,29 +1,28 @@
 #include "base_runner.h"
 
-
-base_runner::base_runner (const std::string &program, const options_class &options)
-        : program(program)
-        , options(options)
-        , process_status(process_not_started)
-        , creation_time(0)
-{
-}
-
-void base_runner::set_pipe(const pipes_t &pipe_type, std::shared_ptr<pipe_c> pipe_object) {
-    pipes[pipe_type] = pipe_object;
-}
-
-std::shared_ptr<pipe_c> base_runner::get_pipe(const pipes_t &pipe_type) {
-    if (pipes.find(pipe_type) == pipes.end()) {
-        return 0;
+pipe_broadcaster_ptr base_runner::get_pipe(const std_stream_type& stream_type) {
+    auto stream = streams.find(stream_type);
+    if (stream == streams.end()) {
+        switch (stream_type) {
+        case std_stream_input:
+            streams[std_stream_input] = pipe_broadcaster::create_pipe(write_mode);
+            break;
+        case std_stream_output:
+        case std_stream_error:
+            streams[stream_type] = pipe_broadcaster::create_pipe(read_mode);
+            break;
+        default:
+            PANIC("Unknown stream type");
+        }
+        stream = streams.find(stream_type);
     }
-    return pipes[pipe_type];
+
+    return stream->second;
 }
 
-std::shared_ptr<input_pipe_c> base_runner::get_input_pipe() {
-    return std::static_pointer_cast<input_pipe_c>(get_pipe(STD_INPUT_PIPE));
-}
-
-std::shared_ptr<output_pipe_c> base_runner::get_output_pipe() {
-    return std::static_pointer_cast<output_pipe_c>(get_pipe(STD_INPUT_PIPE));
+base_runner::base_runner(const std::string& program, const options_class& options)
+    : program(program)
+    , options(options)
+    , process_status(process_not_started)
+    , creation_time(0) {
 }

@@ -63,7 +63,7 @@ bool secure_runner::create_restrictions() {
 
     }
 
-    hIOCP = CreateIoCompletionPort(handle_default_value, NULL, 1, 1);
+    hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 1, 1);
     le = GetLastError();
 
     JOBOBJECT_ASSOCIATE_COMPLETION_PORT joacp;
@@ -278,9 +278,9 @@ secure_runner::secure_runner(const std::string &program,
     : runner(program, options)
     , start_restrictions(restrictions)
     , restrictions(restrictions)
-    , hIOCP(handle_default_value)
-    , hJob(handle_default_value)
-    , check_thread(handle_default_value)
+    , hIOCP(INVALID_HANDLE_VALUE)
+    , hJob(INVALID_HANDLE_VALUE)
+    , check_thread(INVALID_HANDLE_VALUE)
     , terminate_reason(terminate_reason_not_terminated) {
 }
 
@@ -310,7 +310,7 @@ report_class secure_runner::get_report() {
     report.process_status = get_process_status();
     if (get_process_status() == process_spawner_crash) {
         report.terminate_reason = terminate_reason_none;
-    } else if (hJob != handle_default_value) {
+    } else if (hJob != INVALID_HANDLE_VALUE) {
         if (!QueryInformationJobObject(hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL)) {
             //throw GetWin32Error("QueryInformationJobObject");
         }

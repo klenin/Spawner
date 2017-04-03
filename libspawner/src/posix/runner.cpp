@@ -40,7 +40,7 @@ char **runner::create_envp_for_process() const
 {
     extern char **environ;
     char **original;
-    char **result;    
+    char **result;
 
     auto curr_vars = read_environment();
     original = environ;
@@ -89,7 +89,7 @@ char **runner::create_argv_for_process() const
         argv_len += options.get_argument(i).size() + 1;
 
     // TODO: check return values from mallocs and count max len
-    // progname/argv count 
+    // progname/argv count
 
     // Array of pointers [argv_count + final terminating NULL ptr]
     // Plus ptr to progname
@@ -103,7 +103,7 @@ char **runner::create_argv_for_process() const
     strncpy(argv_buff, program.c_str(), program.size() + 1);
     argv_pos = program.size() + 1;
 
-    // arguments 
+    // arguments
     for (i = 0; i < argv_count; i++) {
         strncpy(argv_buff + argv_pos, options.get_argument(i).c_str(), options.get_argument(i).size() + 1);
         result[i + 1] = argv_buff + argv_pos;
@@ -142,7 +142,7 @@ unsigned long long runner::get_time_since_create() {
 unsigned long long runner::get_current_time()
 {
     struct timespec ts;
-    
+
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
         // XXX shut off process
         PANIC("get_current_time(): failed clock_gettime()");
@@ -161,7 +161,7 @@ void runner::init_process(const char *cmd_toexec, char **process_argv, char **pr
         if (change_credentials())
             exit(EXIT_FAILURE);
     if (read(child_sync[0], &child_syncbuf, sizeof(child_syncbuf)) == -1) {
-        // no panics since we are child, just kill itself 
+        // no panics since we are child, just kill itself
         //PANIC("failed get sync message from parent");
         exit(EXIT_FAILURE);
     }
@@ -242,7 +242,7 @@ void runner::requisites() {
     while (!waitpid_ready)
         waitpid_cond.wait(lock);
 
-    // child is now blocked with read() on other end of the pipe. 
+    // child is now blocked with read() on other end of the pipe.
     close(child_sync[0]);
     write(child_sync[1], &child_syncbuf, sizeof(child_syncbuf));
     process_status = process_still_active;
@@ -251,12 +251,12 @@ void runner::requisites() {
 
 void runner::report_login() {
     uid_t u, eu;
-   
+
     struct passwd *pwdp, pwd;
     char pwdbuf[8192];
 
     std::string login;
-    
+
     pwdp = nullptr;
     if (options.login != "") {
         getpwnam_r(options.login.c_str(), &pwd, pwdbuf, sizeof(pwdbuf), &pwdp);
@@ -355,17 +355,43 @@ void runner::create_process() {
 
     if (pipe(child_sync) == -1)
         PANIC("failed to create pipe() for syncing with the child\n");
+
+    auto stdinput = streams[std_stream_input]->get_pipe();
+    auto stdoutput = streams[std_stream_output]->get_pipe();
+    auto stderror = streams[std_stream_error]->get_pipe();
+
     proc_pid = fork();
-    if (proc_pid == -1) {
+    if (proc_pid == 0) { //child
+        //redirect stdin
+        if (dup2(stdinput->get_input_handle(), STDIN_FILENO) == -1) {
+            PANIC(strerror(errno));
+        }
+        //redirect stdout
+        if (dup2(stdoutput->get_output_handle(), STDOUT_FILENO) == -1) {
+            PANIC(strerror(errno));
+        }
+        //redirect stderr
+        if (dup2(stderror->get_output_handle(), STDERR_FILENO) == -1) {
+            PANIC(strerror(errno));
+        }
+        //close all descriptors
+        stdinput->close();
+        stdoutput->close();
+        stderror->close();
+
+        init_process(cmd_toexec, argv, envp);
+    } else if (proc_pid > 0) { // parent
+        process_status = process_suspended;
+        running = true;
+
+        stdinput->close(read_mode);
+        stdoutput->close(write_mode);
+        stderror->close(write_mode);
+    } else { //error fork()
         process_status = process_not_started;
         PANIC("failed to fork()\n");
     }
-    if (proc_pid) {
-        process_status = process_suspended;
-        running = true;
-    } else
-        init_process(cmd_toexec, argv, envp);
-    
+
     if (wd != nullptr)
         chdir(cwd);
 
@@ -378,7 +404,7 @@ void runner::create_process() {
 }
 
 void runner::runner_free() {
-    
+
 }
 
 int runner::get_exit_code()

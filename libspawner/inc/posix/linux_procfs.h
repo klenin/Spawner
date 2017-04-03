@@ -9,8 +9,8 @@
 
 #define STAT_LAST STAT_RSS_POS
 
-#define IO_RD_STR "read_bytes: "
-#define IO_WR_STR "write_bytes: "
+#define IO_RD_STR "rchar: "
+#define IO_WR_STR "wchar: "
 
 
 struct procfs_class {

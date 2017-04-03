@@ -5,12 +5,12 @@
 #include <map>
 #include <memory>
 
-#include "inc/pipes.h"
 #include "inc/status.h"
 #include "inc/report.h"
 #include "inc/options.h"
 #include "inc/base_runner.h"
 #include "platform.h"
+#include "mutex.h"
 
 class runner : public base_runner {
 private:
