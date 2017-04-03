@@ -81,7 +81,7 @@ size_t options_class::get_arguments_count() const {
 std::string options_class::format_arguments() const
 {
     std::string arguments_string = get_arguments();
-    if (arguments_string == "") {
+    if (arguments_string.empty()) {
         return "<none>";
     }
     return arguments_string;

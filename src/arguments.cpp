@@ -109,7 +109,7 @@ void settings_parser_c::clear_parsers() {
     parsers.clear();
 }
 void settings_parser_c::clear_program_parser() {
-    program = "";
+    program.clear();
     program_arguments.clear();
 }
 

@@ -133,7 +133,7 @@ void spawner_new_c::json_report(runner *runner_instance,
     writer.EndArray();
 
     rapidjson_write("CreateProcessMethod");
-    rapidjson_write(options.login == "" ? "CreateProcess" : "WithLogon");
+    rapidjson_write(options.login.empty() ? "CreateProcess" : "WithLogon");
     rapidjson_write("UserName");
     writer.String(runner_report.login.c_str());
     rapidjson_write("TerminateReason");
