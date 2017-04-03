@@ -27,6 +27,7 @@ set(SOURCES
     src/report.cpp
     src/base_runner.cpp
     src/hexdump.cpp
+    src/pipe_broadcaster.cpp
 )
 
 set(HEADERS
@@ -42,10 +43,10 @@ set(HEADERS
     inc/base_runner.h
     inc/session.h
     inc/status.h
-    inc/pipes.h
     inc/hexdump.h
-    inc/buffer.h
     inc/multibyte.h
+    inc/system_pipe.h
+    inc/pipe_broadcaster.h
 )
 
 set(LIB_WIN32_HEADERS
@@ -75,22 +76,20 @@ set(LIB_LINUX_HEADERS
 )
 
 set(LIB_WIN32_SOURCES
-    src/win32/buffer.cpp
     src/win32/delegate.cpp
-    src/win32/pipes.cpp
     src/win32/platform.cpp
     src/win32/runner.cpp
     src/win32/securerunner.cpp
+    src/win32/system_pipe.cpp
 )
 
 set(LIB_POSIX_SOURCES
-    src/posix/buffer.cpp
     src/posix/delegate.cpp
-    src/posix/pipes.cpp
     src/posix/platform.cpp
     src/posix/runner.cpp
     src/posix/securerunner.cpp
     src/posix/rlimit.cpp
+    src/posix/system_pipe.cpp
 )
 
 set(LIB_LINUX_SOURCES

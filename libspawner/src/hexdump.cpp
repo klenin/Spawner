@@ -7,7 +7,6 @@
 #include <memory>
 
 #include "mutex.h"
-#include "buffer.h"
 
 void hexDump(const void *addr, int len) {
     static mutex_c mutex;
@@ -59,6 +58,6 @@ void dprintf(const char* format, ...) {
       break;
     }
   }
-  static output_stdout_buffer_c stdout_buffer(FOREGROUND_INTENSITY | FOREGROUND_GREEN | FOREGROUND_RED);
-  stdout_buffer.write(formatted.get(), final_n);
+
+  fwrite(formatted.get(), sizeof(char), final_n, stdout);
 }
