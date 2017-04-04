@@ -27,14 +27,14 @@ protected:
     bool control_mode_enabled;
     multipipe_ptr controller_broadcaster_;
     int controller_index_ = -1;
-    mutex_c wait_normal_mutex_;
+    mutex_c wait_agent_mutex_;
     mutex_c on_terminate_mutex_;
-    std::vector<bool> awaited_normals_;
+    std::vector<bool> awaited_agents_;
     void setup_stream_(const std::string& stream_str, std_stream_type source_type, runner* this_runner);
     void process_controller_message_(const std::string& message);
-    void process_normal_message_(const std::string& message, int runner_index);
-    int get_normal_index_(const std::string& message);
-    int normal_to_runner_index_(int normal_index);
+    void process_agent_message_(const std::string& message, int runner_index);
+    int get_agent_index_(const std::string& message);
+    int agent_to_runner_index_(int normal_index);
 public:
     spawner_new_c(settings_parser_c &parser);
     virtual ~spawner_new_c();
