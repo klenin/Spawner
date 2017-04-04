@@ -20,7 +20,7 @@
 void CloseHandleSafe_debug(HANDLE &handle, char *file, unsigned int line)
 {
     try {
-        if (handle == INVALID_HANDLE_VALUE || handle == NULL)
+        if (handle == INVALID_HANDLE_VALUE || handle == nullptr)
             return;
         if (!CloseHandle(handle))
             PANIC(get_win_last_error_string());
@@ -33,7 +33,7 @@ void CloseHandleSafe_debug(HANDLE &handle, char *file, unsigned int line)
 
 void CloseHandleSafe_real(HANDLE &handle)
 {
-    if (handle == INVALID_HANDLE_VALUE || handle == NULL)
+    if (handle == INVALID_HANDLE_VALUE || handle == nullptr)
         return;
     if (!CloseHandle(handle))
         PANIC(get_win_last_error_string());
@@ -224,7 +224,7 @@ std::string get_win_last_error_string(PDWORD_PTR args) {
             FORMAT_MESSAGE_FROM_SYSTEM |
             FORMAT_MESSAGE_ALLOCATE_BUFFER |
             (args ? FORMAT_MESSAGE_ARGUMENT_ARRAY : FORMAT_MESSAGE_IGNORE_INSERTS),
-            NULL,
+            nullptr,
             error_code,
             lang_id,
             (LPSTR)&error_text,

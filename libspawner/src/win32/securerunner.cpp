@@ -25,7 +25,7 @@ bool secure_runner::try_handle_createproc_error() {
     LOADED_IMAGE exe_image;
     char* exe_path_rw = _strdup(program.c_str());
 
-    if (MapAndLoad(exe_path_rw, NULL, &exe_image, FALSE, TRUE)) {
+    if (MapAndLoad(exe_path_rw, nullptr, &exe_image, FALSE, TRUE)) {
         const DWORD stack_segment_size = exe_image.FileHeader->OptionalHeader.SizeOfStackReserve;
         const DWORD data_segment_size = exe_image.FileHeader->OptionalHeader.SizeOfUninitializedData;
         const restriction_t proc_memory_limit = restrictions.get_restriction(restriction_memory_limit);
@@ -60,12 +60,12 @@ bool secure_runner::create_restrictions() {
     if (get_process_status() == process_spawner_crash)
         return false;
 
-    HANDLE jobHandle = NULL;
+    HANDLE jobHandle = nullptr;
 
     /* implement restriction value check */
     std::string job_name = "Local\\";
     job_name += options.session.hash();
-    hJob = CreateJobObject(NULL, job_name.c_str());
+    hJob = CreateJobObject(nullptr, job_name.c_str());
     DWORD le = GetLastError();
 
     // Assigning created process to job object
@@ -104,7 +104,7 @@ bool secure_runner::create_restrictions() {
 
     }
 
-    hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 1, 1);
+    hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 1, 1);
     le = GetLastError();
 
     JOBOBJECT_ASSOCIATE_COMPLETION_PORT joacp;
@@ -145,18 +145,18 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
     while (1) {
         restrictions_class restrictions = self->restrictions;
 
-        if (!QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL))
+        if (!QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), nullptr))
             break;
 
         if (bai.BasicInfo.ActiveProcesses == 0)
         {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_EXIT_PROCESS, COMPLETION_KEY, NULL);
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_EXIT_PROCESS, COMPLETION_KEY, nullptr);
             break;
         }
 
         if (restrictions.get_restriction(restriction_write_limit) != restriction_no_limit &&
             bai.IoInfo.WriteTransferCount > restrictions.get_restriction(restriction_write_limit)) {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT, COMPLETION_KEY, NULL);
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT, COMPLETION_KEY, nullptr);
             break;
         }
 
@@ -170,13 +170,13 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
         if (restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit &&
             (DOUBLE)(bai.BasicInfo.TotalUserTime.QuadPart - self->base_time_processor_) >
             10 * restrictions.get_restriction(restriction_processor_time_limit)) {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, NULL);
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, nullptr);
             break;
         }
         if (restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit &&
             (self->get_time_since_create() - self->base_time_user_) >
             10 * restrictions.get_restriction(restriction_user_time_limit)) {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, NULL);//freezed
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, nullptr);//freezed
             break;
         }
         if ((dt=self->get_time_since_create() - idle_dt) > 100000) {//10ms
@@ -196,7 +196,7 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
                         idle_time = idle_dt;
                     }
                     if ((self->get_time_since_create() - idle_time) > 10*restrictions.get_restriction(restriction_idle_time_limit)) {
-                        PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT, COMPLETION_KEY, NULL);//freezed
+                        PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT, COMPLETION_KEY, nullptr);//freezed
                         break;
                     }
                 } else {
@@ -209,11 +209,11 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             && bai.BasicInfo.TotalProcesses > restrictions.get_restriction(restriction_processes_count_limit)
             )
         {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_COUNT_LIMIT, COMPLETION_KEY, NULL);
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_COUNT_LIMIT, COMPLETION_KEY, nullptr);
             break;
         }
         if (self->force_stop) {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_CONTROLLER_STOP, COMPLETION_KEY, NULL);
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_CONTROLLER_STOP, COMPLETION_KEY, nullptr);
             break;
         }
         Sleep(1);
@@ -338,13 +338,13 @@ void secure_runner::requisites()
     apply_restrictions();
     runner::requisites();
 
-    check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
+    check_thread = CreateThread(nullptr, 0, check_limits_proc, this, 0, nullptr);
 }
 
 report_class secure_runner::get_report() {
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
     if (hJob != INVALID_HANDLE_VALUE) {
-        if (!QueryInformationJobObject(hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL)) {
+        if (!QueryInformationJobObject(hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), nullptr)) {
             //throw GetWin32Error("QueryInformationJobObject");
         }
 
@@ -353,7 +353,7 @@ report_class secure_runner::get_report() {
         report.write_transfer_count = bai.IoInfo.WriteTransferCount;
 
         JOBOBJECT_EXTENDED_LIMIT_INFORMATION xli;
-        if (!QueryInformationJobObject(hJob, JobObjectExtendedLimitInformation, &xli, sizeof(xli), NULL)) {
+        if (!QueryInformationJobObject(hJob, JobObjectExtendedLimitInformation, &xli, sizeof(xli), nullptr)) {
             //throw GetWin32Error("QueryInformationJobObject");
         }
 

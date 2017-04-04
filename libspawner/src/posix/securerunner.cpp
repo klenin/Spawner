@@ -355,5 +355,5 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
         nanosleep(&req, nullptr);
     }
 
-    return NULL;
+    return nullptr;
 }

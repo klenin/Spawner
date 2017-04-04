@@ -44,7 +44,7 @@ public:
     operator std::vector<std::string>() const;
 };
 
-#define c_lst(...) compact_list_c(0, ##__VA_ARGS__, NULL)
+#define c_lst(...) compact_list_c(0, ##__VA_ARGS__, nullptr)
 
 class abstract_settings_parser_c {
 public:

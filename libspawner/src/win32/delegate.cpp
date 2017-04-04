@@ -20,7 +20,7 @@ delegate_runner::delegate_runner(const std::string &program,
 void delegate_runner::create_process() {
     char path[MAX_PATH + 1];
 
-    if (GetFullPathNameA(program_to_run.c_str(), MAX_PATH, path, NULL))
+    if (GetFullPathNameA(program_to_run.c_str(), MAX_PATH, path, nullptr))
     {
         program_to_run = path;
     }
@@ -116,7 +116,7 @@ void delegate_runner::create_process() {
 
     CreateFileMappingA(
         INVALID_HANDLE_VALUE,
-        NULL,
+        nullptr,
         PAGE_READWRITE,
         0,
         options_class::SHARED_MEMORY_BUF_SIZE,

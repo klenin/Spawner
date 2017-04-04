@@ -85,7 +85,7 @@ void settings_parser_c::stop() {
 }
 const char *settings_parser_c::get_next_argument() {
     if (position >= arg_c) {
-        return NULL;
+        return nullptr;
     }
     if (arg_v[position] == separator) {
         position++;

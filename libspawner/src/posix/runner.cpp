@@ -59,7 +59,7 @@ char **runner::create_envp_for_process() const
         //setenv("SPAWNER_VERSION", "POSIX", 1);
         } else if (options.environmentMode == "clear")
         for (auto i = curr_vars.cbegin(); i != curr_vars.cend(); ++i)
-            // use unsetenv() or leave environ pointer with NULL
+            // use unsetenv() or leave environ pointer with nullptr
             setenv(i->first.c_str(), "" , 1);
         else if (options.environmentMode == "inherit")
         for (auto i = curr_vars.cbegin(); i != curr_vars.cend(); ++i)
@@ -93,7 +93,7 @@ char **runner::create_argv_for_process() const
     // TODO: check return values from mallocs and count max len
     // progname/argv count
 
-    // Array of pointers [argv_count + final terminating NULL ptr]
+    // Array of pointers [argv_count + final terminating nullptr]
     // Plus ptr to progname
     result = (char **)malloc((argv_count + 2) * sizeof(char *));
 
@@ -112,7 +112,7 @@ char **runner::create_argv_for_process() const
         argv_pos += options.get_argument(i).size() + 1;
     }
 
-    // Last element of a result array is terminating NULL ptr
+    // Last element of a result array is terminating nullptr
     result[argv_count + 1] = nullptr;
 
     return result;
@@ -223,7 +223,7 @@ void *runner::waitpid_body(void *waitpid_param) {
         stream.second->finalize();
     }
 
-    return(NULL);
+    return nullptr;
 }
 
 void runner::run_process_async() {
@@ -339,7 +339,7 @@ void runner::create_process() {
     std::string run_program = program;
     report.working_directory = options.working_directory;
     const char *wd = (options.working_directory != "")?options.working_directory.c_str():nullptr;
-    cmd_toexec = realpath(run_program.c_str(), NULL);
+    cmd_toexec = realpath(run_program.c_str(), nullptr);
     if (cmd_toexec == nullptr)
         PANIC("failed to realpath() for child program\n");
 
@@ -349,7 +349,7 @@ void runner::create_process() {
 
     // XXX move to secure runner and/or to forked child
     if (wd != nullptr) {
-        cwd = getcwd(NULL, 0);
+        cwd = getcwd(nullptr, 0);
         if (cwd == nullptr)
             PANIC("failed to getcwd()");
         if (chdir(wd) == -1)
