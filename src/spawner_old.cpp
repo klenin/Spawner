@@ -76,6 +76,7 @@ void spawner_old_c::run() {
     for (auto& file_pipe : file_pipes) {
         file_pipe.second->start_read();
     }
+    runner_instance->get_pipe(std_stream_input)->check_parents();
     runner_instance->wait_for();
     print_report();
 }

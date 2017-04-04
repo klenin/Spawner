@@ -265,8 +265,10 @@ void spawner_new_c::setup_stream_(const std::string& stream_str, std_stream_type
         return;
     }
 
+    const auto max_stream_str_size = 20;
+    PANIC_IF(stream_str.size() > max_stream_str_size);
     int index;
-    char stream[10];
+    char stream[max_stream_str_size];
     sscanf(stream_str.c_str(), "*%d.%s", &index, stream);
     PANIC_IF(index < 0 || index >= runners.size());
 
@@ -420,6 +422,9 @@ void spawner_new_c::run() {
     }
     for (auto& file_pipe : file_pipes) {
         file_pipe.second->start_read();
+    }
+    for (auto& i : runners) {
+        i->get_pipe(std_stream_input)->check_parents();
     }
     for (auto& i : runners) {
         i->wait_for();

@@ -59,6 +59,7 @@ public:
     ~pipe_broadcaster();
 
     void start_read();
+    void check_parents();
 
     void connect(weak_ptr<pipe_broadcaster> pipe);
     void disconnect(weak_ptr<pipe_broadcaster> pipe);

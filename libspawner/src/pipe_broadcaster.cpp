@@ -74,11 +74,12 @@ void pipe_broadcaster::write(const char* bytes, size_t count, set<int>& src) {
     write_mutex.lock();
 
     src.insert(id);
-    for (auto& pipe : childs)
-        if (src.find(pipe.first) == src.end())
-            if (auto p = pipe.second.lock()) {
-                p->write(bytes, count, src);
-            }
+    for (auto& pipe : childs) {
+        PANIC_IF(src.find(pipe.first) != src.end());
+        if (auto p = pipe.second.lock()) {
+            p->write(bytes, count, src);
+        }
+    }
 
     if (mode == write_mode)
         core_pipe->write(bytes, count);
@@ -132,6 +133,11 @@ void pipe_broadcaster::start_read() {
     listen_thread = new thread(&pipe_broadcaster::listen, this);
 }
 
+void pipe_broadcaster::check_parents() {
+    if (parents.size() == 0)
+        close_and_notify();
+}
+
 void pipe_broadcaster::connect(weak_ptr<pipe_broadcaster> pipe) {
     if (auto p = pipe.lock()) {
         childs[p->id] = pipe;
@@ -143,8 +149,7 @@ void pipe_broadcaster::disconnect(weak_ptr<pipe_broadcaster> pipe) {
     if (auto p = pipe.lock()) {
         childs.erase(p->id);
         p->parents.erase(id);
-        if (p->parents.size() == 0)
-            p->close_and_notify();
+        p->check_parents();
     }
 }
 
