@@ -13,7 +13,6 @@ multipipe::multipipe(system_pipe_ptr pipe, int bsize, pipe_mode mode, bool autos
     : id(++PIPE_ID_COUNTER)
     , core_pipe(pipe)
     , listen_thread(nullptr)
-    , done(false)
     , buffer_size(bsize)
     , read_tail_len(0)
     , write_tail_len(0)
@@ -34,18 +33,14 @@ void multipipe::listen() {
         process_message = [=](const char* buf, size_t count) { write(buf, count); };
     }
 
-    while (!done) {
-        auto readed = core_pipe->read(read_buffer, buffer_size);
-        if (readed == 0) {
-            if (core_pipe->is_file() && core_pipe->is_readable()) {
-                break;
-            }
-            sleep_for(milliseconds(SLEEP_TIME));
-            continue;
+    while (true) {
+        auto bytes_read = core_pipe->read(read_buffer, buffer_size);
+        if (bytes_read == 0) {
+            break;
         }
 
         auto t = read_buffer;
-        for (auto i = 0; i < readed; i++, t++) {
+        for (auto i = 0; i < bytes_read; i++, t++) {
             // TODO maybe increase buffer dynamic?
             read_tail_buffer[read_tail_len++] = *t;
             if (*t == '\n' || read_tail_len >= buffer_size) {
@@ -60,7 +55,9 @@ void multipipe::listen() {
 
 bool multipipe::stop() {
     if (listen_thread != nullptr) {
-        done = true;
+        // Close pipe to stop blocking read on Windows.
+        // On Linux child pipe is already closed after fork before exec.
+        core_pipe->close(write_mode);
         system_pipe::cancel_sync_io(listen_thread->native_handle());
         listen_thread->join();
         delete listen_thread;
@@ -120,8 +117,7 @@ multipipe_ptr multipipe::create_file(const string& filename, int buffer_size) {
 }
 
 multipipe::~multipipe() {
-    if (!stop())
-        close_and_notify();
+    finalize();
     delete read_buffer;
     delete read_tail_buffer;
 }
@@ -135,6 +131,11 @@ void multipipe::start_read() {
 
 void multipipe::check_parents() {
     if (parents.size() == 0)
+        close_and_notify();
+}
+
+void multipipe::finalize() {
+    if (!stop())
         close_and_notify();
 }
 

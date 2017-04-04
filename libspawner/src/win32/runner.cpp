@@ -531,6 +531,9 @@ void runner::run_process() {
         return;
     }
     wait();
+    for (auto& stream : streams) {
+        stream.second->finalize();
+    }
 }
 
 void runner::run_process_async() {

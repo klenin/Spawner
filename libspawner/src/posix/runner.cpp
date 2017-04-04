@@ -1,3 +1,4 @@
+#include <iostream>
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -211,6 +212,10 @@ void *runner::waitpid_body(void *waitpid_param) {
     if (getrusage(RUSAGE_CHILDREN, &self->ru) != -1)
         self->ru_success = true;
 
+    for (auto& stream : self->streams) {
+        stream.second->finalize();
+    }
+
     return(NULL);
 }
 
@@ -351,21 +356,24 @@ void runner::create_process() {
     proc_pid = fork();
     if (proc_pid == 0) { //child
         //redirect stdin
+        close(STDIN_FILENO);
         if (dup2(stdinput->get_input_handle(), STDIN_FILENO) == -1) {
             PANIC(strerror(errno));
         }
         //redirect stdout
+        close(STDOUT_FILENO);
         if (dup2(stdoutput->get_output_handle(), STDOUT_FILENO) == -1) {
             PANIC(strerror(errno));
         }
         //redirect stderr
+        close(STDERR_FILENO);
         if (dup2(stderror->get_output_handle(), STDERR_FILENO) == -1) {
             PANIC(strerror(errno));
         }
         //close all descriptors
-        stdinput->close();
-        stdoutput->close();
-        stderror->close();
+#ifdef __linux__
+        procfd_class::close_all_pipes_without_std();
+#endif
 
         init_process(cmd_toexec, argv, envp);
     } else if (proc_pid > 0) { // parent
@@ -375,7 +383,7 @@ void runner::create_process() {
         stdinput->close(read_mode);
         stdoutput->close(write_mode);
         stderror->close(write_mode);
-    } else { //error fork()
+    } else { // error fork()
         process_status = process_not_started;
         PANIC("failed to fork()\n");
     }
