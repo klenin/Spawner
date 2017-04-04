@@ -18,17 +18,17 @@ using std::map;
 using std::set;
 using std::weak_ptr;
 
-class pipe_broadcaster;
-typedef shared_ptr<pipe_broadcaster> pipe_broadcaster_ptr;
+class multipipe;
+typedef shared_ptr<multipipe> multipipe_ptr;
 
-class pipe_broadcaster {
+class multipipe {
     static int PIPE_ID_COUNTER;
     static const int SLEEP_TIME;
     static const int DEFAULT_BUFFER_SIZE;
 
     int id;
 
-    pipe_ptr core_pipe;
+    system_pipe_ptr core_pipe;
     thread* listen_thread;
     mutex write_mutex;
 
@@ -39,9 +39,9 @@ class pipe_broadcaster {
 
     pipe_mode mode;
     set<int> parents;
-    map<int, weak_ptr<pipe_broadcaster>> childs;
+    map<int, weak_ptr<multipipe>> sinks;
 
-    pipe_broadcaster(pipe_ptr pipe, int buffer_size, pipe_mode mode, bool autostart = true);
+    multipipe(system_pipe_ptr pipe, int buffer_size, pipe_mode mode, bool autostart = true);
 
     void listen();
     bool stop();
@@ -52,20 +52,21 @@ class pipe_broadcaster {
     void flush();
 
 public:
-    static pipe_broadcaster_ptr open_std(std_stream_type type, int buffer_size = DEFAULT_BUFFER_SIZE);
-    static pipe_broadcaster_ptr create_pipe(pipe_mode mode, int buffer_size = DEFAULT_BUFFER_SIZE);
-    static pipe_broadcaster_ptr open_file(const string& filename, int buffer_size = DEFAULT_BUFFER_SIZE);
-    static pipe_broadcaster_ptr create_file(const string& filename, int buffer_size = DEFAULT_BUFFER_SIZE);
-    ~pipe_broadcaster();
+    static multipipe_ptr open_std(std_stream_type type, int buffer_size = DEFAULT_BUFFER_SIZE);
+    static multipipe_ptr create_pipe(pipe_mode mode, int buffer_size = DEFAULT_BUFFER_SIZE);
+    static multipipe_ptr open_file(const string& filename, int buffer_size = DEFAULT_BUFFER_SIZE);
+    static multipipe_ptr create_file(const string& filename, int buffer_size = DEFAULT_BUFFER_SIZE);
+    ~multipipe();
 
     void start_read();
+    void check_parents();
 
-    void connect(weak_ptr<pipe_broadcaster> pipe);
-    void disconnect(weak_ptr<pipe_broadcaster> pipe);
+    void connect(weak_ptr<multipipe> pipe);
+    void disconnect(weak_ptr<multipipe> pipe);
 
     void write(const char* bytes, size_t count);
 
-    pipe_ptr get_pipe() const;
+    system_pipe_ptr get_pipe() const;
 
     std::function<void(const char* buffer, size_t count)> process_message;
 };

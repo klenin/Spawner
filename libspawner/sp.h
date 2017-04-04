@@ -5,7 +5,7 @@
 #include "inc/error.h"
 #include "inc/session.h"
 #include "inc/delegate.h"
-#include "inc/pipe_broadcaster.h"
+#include "inc/multipipe.h"
 #include "runner.h"
 #include "securerunner.h"
 

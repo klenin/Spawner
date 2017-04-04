@@ -27,7 +27,7 @@ set(SOURCES
     src/report.cpp
     src/base_runner.cpp
     src/hexdump.cpp
-    src/pipe_broadcaster.cpp
+    src/multipipe.cpp
 )
 
 set(HEADERS
@@ -46,7 +46,7 @@ set(HEADERS
     inc/hexdump.h
     inc/multibyte.h
     inc/system_pipe.h
-    inc/pipe_broadcaster.h
+    inc/multipipe.h
 )
 
 set(LIB_WIN32_HEADERS
