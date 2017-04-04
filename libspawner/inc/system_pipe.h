@@ -10,7 +10,7 @@ using std::shared_ptr;
 using std::string;
 
 class system_pipe;
-typedef shared_ptr<system_pipe> pipe_ptr;
+typedef shared_ptr<system_pipe> system_pipe_ptr;
 
 enum std_stream_type
 {
@@ -34,9 +34,9 @@ class system_pipe {
     explicit system_pipe(bool is_file);
 
 public:
-    static pipe_ptr open_std(std_stream_type type);
-    static pipe_ptr open_pipe(pipe_mode mode);
-    static pipe_ptr open_file(const string& filename, pipe_mode mode);
+    static system_pipe_ptr open_std(std_stream_type type);
+    static system_pipe_ptr open_pipe(pipe_mode mode);
+    static system_pipe_ptr open_file(const string& filename, pipe_mode mode);
 
     pipe_handle get_input_handle() const;
     pipe_handle get_output_handle() const;

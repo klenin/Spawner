@@ -11,7 +11,7 @@ system_pipe::system_pipe(bool is_file) {
     output_handle = -1;
 }
 
-pipe_ptr system_pipe::open_std(std_stream_type type) {
+system_pipe_ptr system_pipe::open_std(std_stream_type type) {
     auto pipe = new system_pipe(true); // true -> fix for Ctrl+Z(win)|Ctrl+D(posix)
 
     switch (type) {
@@ -28,10 +28,10 @@ pipe_ptr system_pipe::open_std(std_stream_type type) {
             PANIC("Unknown std stream type");
     }
 
-    return pipe_ptr(pipe);
+    return system_pipe_ptr(pipe);
 }
 
-pipe_ptr system_pipe::open_pipe(pipe_mode mode) {
+system_pipe_ptr system_pipe::open_pipe(pipe_mode mode) {
     int pipefd[2];
     if (pipe(pipefd) < 0) {
         PANIC(strerror(errno));
@@ -40,10 +40,10 @@ pipe_ptr system_pipe::open_pipe(pipe_mode mode) {
     auto pipe = new system_pipe(false);
     pipe->input_handle = pipefd[0];
     pipe->output_handle = pipefd[1];
-    return pipe_ptr(pipe);
+    return system_pipe_ptr(pipe);
 }
 
-pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode) {
+system_pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode) {
     auto oflag = 0;
     if (mode == read_mode) {
         oflag |= O_RDONLY | O_NOFOLLOW;
@@ -65,7 +65,7 @@ pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode) {
     if (mode == write_mode)
         pipe->output_handle = fd;
 
-    return pipe_ptr(pipe);
+    return system_pipe_ptr(pipe);
 }
 
 pipe_handle system_pipe::get_input_handle() const {

@@ -1,15 +1,15 @@
 #include "base_runner.h"
 
-pipe_broadcaster_ptr base_runner::get_pipe(const std_stream_type& stream_type) {
+multipipe_ptr base_runner::get_pipe(const std_stream_type& stream_type) {
     auto stream = streams.find(stream_type);
     if (stream == streams.end()) {
         switch (stream_type) {
         case std_stream_input:
-            streams[std_stream_input] = pipe_broadcaster::create_pipe(write_mode);
+            streams[std_stream_input] = multipipe::create_pipe(write_mode);
             break;
         case std_stream_output:
         case std_stream_error:
-            streams[stream_type] = pipe_broadcaster::create_pipe(read_mode);
+            streams[stream_type] = multipipe::create_pipe(read_mode);
             break;
         default:
             PANIC("Unknown stream type");

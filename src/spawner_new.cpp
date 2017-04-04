@@ -274,7 +274,7 @@ void spawner_new_c::setup_stream_(const std::string& stream_str, std_stream_type
 
     auto target_runner = runners[index];
 
-    pipe_broadcaster_ptr target_pipe;
+    multipipe_ptr target_pipe;
     if (strcmp(stream, "stdin") == 0) {
         PANIC_IF(source_type == std_stream_input);
         target_pipe = target_runner->get_pipe(std_stream_input);

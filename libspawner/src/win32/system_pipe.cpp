@@ -8,7 +8,7 @@ system_pipe::system_pipe(bool is_file) {
     output_handle = INVALID_HANDLE_VALUE;
 }
 
-pipe_ptr system_pipe::open_std(std_stream_type type) {
+system_pipe_ptr system_pipe::open_std(std_stream_type type) {
     auto pipe = new system_pipe(true); // true -> fix for Ctrl+Z(win)|Ctrl+D(posix)
 
     switch (type) {
@@ -25,10 +25,10 @@ pipe_ptr system_pipe::open_std(std_stream_type type) {
             PANIC("Bad pipe mode");
     }
 
-    return pipe_ptr(pipe);
+    return system_pipe_ptr(pipe);
 }
 
-pipe_ptr system_pipe::open_pipe(pipe_mode mode) {
+system_pipe_ptr system_pipe::open_pipe(pipe_mode mode) {
     SECURITY_ATTRIBUTES saAttr;
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
     saAttr.bInheritHandle = TRUE;
@@ -45,10 +45,10 @@ pipe_ptr system_pipe::open_pipe(pipe_mode mode) {
     if (mode == read_mode && !SetHandleInformation(pipe->input_handle, HANDLE_FLAG_INHERIT, 0))
         PANIC(get_win_last_error_string());
 
-    return pipe_ptr(pipe);
+    return system_pipe_ptr(pipe);
 }
 
-pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode) {
+system_pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode) {
     DWORD access;
     DWORD creationDisposition;
     if (mode == read_mode) {
@@ -71,7 +71,7 @@ pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode) {
     if (mode == write_mode)
         pipe->output_handle = file;
 
-    return pipe_ptr(pipe);
+    return system_pipe_ptr(pipe);
 }
 
 pipe_handle system_pipe::get_input_handle() const {

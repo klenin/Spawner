@@ -25,7 +25,7 @@ protected:
     std::vector<runner*> runners;
     size_t order;
     bool control_mode_enabled;
-    pipe_broadcaster_ptr controller_broadcaster_;
+    multipipe_ptr controller_broadcaster_;
     int controller_index_ = -1;
     mutex_c wait_normal_mutex_;
     mutex_c on_terminate_mutex_;

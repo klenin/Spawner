@@ -7,14 +7,14 @@
 #include "inc/options.h"
 #include "inc/status.h"
 #include "inc/multibyte.h"
-#include "inc/pipe_broadcaster.h"
+#include "inc/multipipe.h"
 
 #include "platform_report.h"
 
 class base_runner {
 protected:
     typedef std::list<std::pair<std::string, std::string>> env_vars_list_t;
-    std::map<std_stream_type, pipe_broadcaster_ptr> streams;
+    std::map<std_stream_type, multipipe_ptr> streams;
     bool running = false;
     bool running_async = false;
     report_class report;
@@ -23,7 +23,7 @@ protected:
     unsigned long long int creation_time;
     std::string program;
 public:
-    pipe_broadcaster_ptr get_pipe(const std_stream_type &stream_type);
+    multipipe_ptr get_pipe(const std_stream_type &stream_type);
     virtual restrictions_class get_restrictions() const {return restrictions_class(); }
     base_runner(const std::string &program, const options_class &options);
 };

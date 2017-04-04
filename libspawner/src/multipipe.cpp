@@ -1,15 +1,15 @@
 #include <chrono>
 
-#include "pipe_broadcaster.h"
+#include "multipipe.h"
 
 using std::chrono::milliseconds;
 using std::this_thread::sleep_for;
 
-int pipe_broadcaster::PIPE_ID_COUNTER = 0;
-const int pipe_broadcaster::SLEEP_TIME = 100;
-const int pipe_broadcaster::DEFAULT_BUFFER_SIZE = 65536;
+int multipipe::PIPE_ID_COUNTER = 0;
+const int multipipe::SLEEP_TIME = 100;
+const int multipipe::DEFAULT_BUFFER_SIZE = 65536;
 
-pipe_broadcaster::pipe_broadcaster(pipe_ptr pipe, int bsize, pipe_mode mode, bool autostart)
+multipipe::multipipe(system_pipe_ptr pipe, int bsize, pipe_mode mode, bool autostart)
     : id(++PIPE_ID_COUNTER)
     , core_pipe(pipe)
     , listen_thread(nullptr)
@@ -26,7 +26,7 @@ pipe_broadcaster::pipe_broadcaster(pipe_ptr pipe, int bsize, pipe_mode mode, boo
         start_read();
 }
 
-void pipe_broadcaster::listen() {
+void multipipe::listen() {
     if (mode != read_mode && core_pipe->is_readable())
         return;
 
@@ -58,7 +58,7 @@ void pipe_broadcaster::listen() {
     close_and_notify();
 }
 
-bool pipe_broadcaster::stop() {
+bool multipipe::stop() {
     if (listen_thread != nullptr) {
         done = true;
         system_pipe::cancel_sync_io(listen_thread->native_handle());
@@ -70,11 +70,11 @@ bool pipe_broadcaster::stop() {
     return false;
 }
 
-void pipe_broadcaster::write(const char* bytes, size_t count, set<int>& src) {
+void multipipe::write(const char* bytes, size_t count, set<int>& src) {
     write_mutex.lock();
 
     src.insert(id);
-    for (auto& pipe : childs) {
+    for (auto& pipe : sinks) {
         PANIC_IF(src.find(pipe.first) != src.end());
         if (auto p = pipe.second.lock()) {
             p->write(bytes, count, src);
@@ -87,77 +87,77 @@ void pipe_broadcaster::write(const char* bytes, size_t count, set<int>& src) {
     write_mutex.unlock();
 }
 
-void pipe_broadcaster::close_and_notify() {
+void multipipe::close_and_notify() {
     flush();
 
-    auto childs = this->childs;
+    auto childs = this->sinks;
     for (auto& pipe : childs)
         disconnect(pipe.second);
 
     core_pipe->close();
 }
 
-void pipe_broadcaster::flush() {
+void multipipe::flush() {
     if (read_tail_len > 0) {
         write(read_tail_buffer, read_tail_len);
     }
 }
 
-pipe_broadcaster_ptr pipe_broadcaster::open_std(std_stream_type type, int buffer_size) {
-    return pipe_broadcaster_ptr(new pipe_broadcaster(system_pipe::open_std(type), buffer_size, type == std_stream_input ? read_mode : write_mode));
+multipipe_ptr multipipe::open_std(std_stream_type type, int buffer_size) {
+    return multipipe_ptr(new multipipe(system_pipe::open_std(type), buffer_size, type == std_stream_input ? read_mode : write_mode));
 }
 
-pipe_broadcaster_ptr pipe_broadcaster::create_pipe(pipe_mode mode, int buffer_size) {
-    return pipe_broadcaster_ptr(new pipe_broadcaster(system_pipe::open_pipe(mode), buffer_size, mode));
+multipipe_ptr multipipe::create_pipe(pipe_mode mode, int buffer_size) {
+    return multipipe_ptr(new multipipe(system_pipe::open_pipe(mode), buffer_size, mode));
 }
 
-pipe_broadcaster_ptr pipe_broadcaster::open_file(const string& filename, int buffer_size) {
-    return pipe_broadcaster_ptr(new pipe_broadcaster(system_pipe::open_file(filename, read_mode), buffer_size, read_mode, false));
+multipipe_ptr multipipe::open_file(const string& filename, int buffer_size) {
+    return multipipe_ptr(new multipipe(system_pipe::open_file(filename, read_mode), buffer_size, read_mode, false));
 }
 
-pipe_broadcaster_ptr pipe_broadcaster::create_file(const string& filename, int buffer_size) {
-    return pipe_broadcaster_ptr(new pipe_broadcaster(system_pipe::open_file(filename, write_mode), buffer_size, write_mode));
+multipipe_ptr multipipe::create_file(const string& filename, int buffer_size) {
+    return multipipe_ptr(new multipipe(system_pipe::open_file(filename, write_mode), buffer_size, write_mode));
 }
 
-pipe_broadcaster::~pipe_broadcaster() {
+multipipe::~multipipe() {
     if (!stop())
         close_and_notify();
     delete read_buffer;
     delete read_tail_buffer;
 }
 
-void pipe_broadcaster::start_read() {
+void multipipe::start_read() {
     if (mode != read_mode || listen_thread != nullptr)
         return;
 
-    listen_thread = new thread(&pipe_broadcaster::listen, this);
+    listen_thread = new thread(&multipipe::listen, this);
 }
 
-void pipe_broadcaster::check_parents() {
+void multipipe::check_parents() {
     if (parents.size() == 0)
         close_and_notify();
 }
 
-void pipe_broadcaster::connect(weak_ptr<pipe_broadcaster> pipe) {
+void multipipe::connect(weak_ptr<multipipe> pipe) {
     if (auto p = pipe.lock()) {
-        childs[p->id] = pipe;
+        sinks[p->id] = pipe;
         p->parents.insert(id);
     }
 }
 
-void pipe_broadcaster::disconnect(weak_ptr<pipe_broadcaster> pipe) {
+void multipipe::disconnect(weak_ptr<multipipe> pipe) {
     if (auto p = pipe.lock()) {
-        childs.erase(p->id);
+        sinks.erase(p->id);
         p->parents.erase(id);
         p->check_parents();
     }
 }
 
-void pipe_broadcaster::write(const char* bytes, size_t count) {
+void multipipe::write(const char* bytes, size_t count) {
     auto src = set<int>();
     write(bytes, count, src);
 }
 
-pipe_ptr pipe_broadcaster::get_pipe() const {
+system_pipe_ptr multipipe::get_pipe() const {
     return core_pipe;
 }
