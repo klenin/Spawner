@@ -7,27 +7,16 @@
 session_class session_class::base_session;
 
 session_class::session_class() {
-    md5_init(&md5_state);
     (*this) << get_spawner_pid();
 }
 
-session_class::session_class(const session_class &session) {
-    md5_init(&md5_state);
-    memcpy(&md5_state, &session.md5_state, sizeof(md5_state_t));
-}
+session_class::session_class(const session_class &session)
+    : md5_state(session.md5_state)
+{}
 
 std::string session_class::hash() const {
-    md5_state_t md5_state_tmp;
-    md5_byte_t digest[16];
-    std::ostringstream result;
-
-    memcpy(&md5_state_tmp, &md5_state, sizeof(md5_state_t));
-    md5_finish(&md5_state_tmp, digest);
-
-    for (int i = 0; i < 16; ++i) {
-        result << std::setfill('0') << std::setw(2) << std::hex << (int)digest[i];
-    }
-    return result.str();
+    using namespace md5_cpp11;
+    return to_hex_string(builder(md5_state).finalize());
 }
 
 //template<typename T>

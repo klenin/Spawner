@@ -27,7 +27,7 @@ if(WIN32)
 endif()
 
 # Project name
-project(sp)
+project(sp CXX)
 
 # Project version
 set(${PROJECT_NAME}_MAJOR_VERSION 0)
