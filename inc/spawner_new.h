@@ -34,7 +34,7 @@ protected:
     void process_controller_message_(const std::string& message);
     void process_agent_message_(const std::string& message, int runner_index);
     int get_agent_index_(const std::string& message);
-    int agent_to_runner_index_(int normal_index);
+    int agent_to_runner_index_(int agent_index);
 public:
     spawner_new_c(settings_parser_c &parser);
     virtual ~spawner_new_c();
