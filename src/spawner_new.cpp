@@ -153,41 +153,41 @@ void spawner_new_c::json_report(runner *runner_instance,
     writer.EndObject();
 }
 
-int spawner_new_c::get_normal_index_(const std::string& message) {
-    int normal_index = -1;
+int spawner_new_c::get_agent_index_(const std::string& message) {
+    int agent_index = -1;
     try {
-        normal_index = stoi(message);
+        agent_index = stoi(message);
     // std::invalid_argument std::out_of_range
     } catch (...) {
-        normal_index = -1;
+        agent_index = -1;
     }
 
-    if (normal_index == 0) {
+    if (agent_index == 0) {
         return 0;
-    } else if (normal_index < 1 || normal_index > int(runners.size() - 1)) {
-        normal_index = -1;
+    } else if (agent_index < 1 || agent_index > int(runners.size() - 1)) {
+        agent_index = -1;
     }
 
-    if (normal_index != -1) {
-        int normal_runner_index = normal_to_runner_index_(normal_index);
-        auto status = runners[normal_runner_index]->get_process_status();
+    if (agent_index != -1) {
+        int agent_runner_index = agent_to_runner_index_(agent_index);
+        auto status = runners[agent_runner_index]->get_process_status();
         if (status != process_still_active
          && status != process_suspended
          && status != process_not_started) {
-            normal_index = -1;
+            agent_index = -1;
         }
     }
-    return normal_index;
+    return agent_index;
 }
 
-int spawner_new_c::normal_to_runner_index_(int normal_index) {
-    // normal_index must be valid here
-    int normal_runner_index = normal_index - 1;
-    if (normal_runner_index >= controller_index_) {
-        normal_runner_index++;
+int spawner_new_c::agent_to_runner_index_(int agent_index) {
+    // agent_index must be valid here
+    int agent_runner_index = agent_index - 1;
+    if (agent_runner_index >= controller_index_) {
+        agent_runner_index++;
     }
-    PANIC_IF(normal_runner_index <= 0 || normal_runner_index >= (int)runners.size());
-    return normal_runner_index;
+    PANIC_IF(agent_runner_index <= 0 || agent_runner_index >= (int)runners.size());
+    return agent_runner_index;
 }
 
 void spawner_new_c::process_controller_message_(const std::string& message) {
@@ -199,25 +199,25 @@ void spawner_new_c::process_controller_message_(const std::string& message) {
         PANIC("missing header in controller message");
     }
     auto control_letter = message[hash_pos - 1];
-    auto send_to_normal = false;
+    auto send_to_agent = false;
 
-    const auto normal_index = get_normal_index_(message);
+    const auto agent_index = get_agent_index_(message);
     auto runner_index = -1;
-    if (normal_index == -1) {
+    if (agent_index == -1) {
         const auto error_message = message.substr(0, hash_pos) + "I#\n";
         controller_broadcaster_->write(error_message.c_str(), error_message.size());
-        send_to_normal = true;
-    } else if (normal_index == 0) {
+        send_to_agent = true;
+    } else if (agent_index == 0) {
         // this is a message to spawner
     }
     else {
-        runner_index = normal_to_runner_index_(normal_index);
+        runner_index = agent_to_runner_index_(agent_index);
         switch (control_letter) {
         case 'W': {
-            wait_normal_mutex_.lock();
-            awaited_normals_[normal_index - 1] = true;
+            wait_agent_mutex_.lock();
+            awaited_agents_[agent_index - 1] = true;
             runners[runner_index]->resume();
-            wait_normal_mutex_.unlock();
+            wait_agent_mutex_.unlock();
             break;
         }
         case 'S': {
@@ -225,31 +225,31 @@ void spawner_new_c::process_controller_message_(const std::string& message) {
             break;
         }
         default:
-            send_to_normal = true;
+            send_to_agent = true;
             break;
         }
     }
 
-    //TODO: what if normal_index == -1?
+    //TODO: what if agent_index == -1?
     if (runner_index != -1) {
         auto pipe = runners[runner_index]->get_pipe(std_stream_input);
         pipe->write(message.c_str() + hash_pos + 1, message.size() - hash_pos - 1);
     }
 }
 
-void spawner_new_c::process_normal_message_(const std::string& message, int normal_index) {
-    std::string mod_message = std::to_string(normal_index) + "#" + message;
-    auto runner = runners[normal_to_runner_index_(normal_index)];
+void spawner_new_c::process_agent_message_(const std::string& message, int agent_index) {
+    std::string mod_message = std::to_string(agent_index) + "#" + message;
+    auto runner = runners[agent_to_runner_index_(agent_index)];
     runner->get_pipe(std_stream_input)->write(mod_message.c_str(), mod_message.size());
-    wait_normal_mutex_.lock();
-    if (awaited_normals_[normal_index - 1]) {
-        awaited_normals_[normal_index - 1] = false;
+    wait_agent_mutex_.lock();
+    if (awaited_agents_[agent_index - 1]) {
+        awaited_agents_[agent_index - 1] = false;
         runner->suspend();
         static_cast<secure_runner*>(runner)->prolong_time_limits();
     } else {
         // it hasn't been waited for, but sent a message. what do?
     }
-    wait_normal_mutex_.unlock();
+    wait_agent_mutex_.unlock();
 }
 
 void spawner_new_c::setup_stream_(const std::string& stream_str, std_stream_type source_type, runner* this_runner) {
@@ -306,7 +306,7 @@ void spawner_new_c::setup_stream_(const std::string& stream_str, std_stream_type
             }
             target_pipe->process_message = [=](const char* buffer, size_t count) {
                 string message(buffer, count);
-                process_normal_message_(message, index + 1);
+                process_agent_message_(message, index + 1);
             };
         }
     }
@@ -326,7 +326,7 @@ bool spawner_new_c::init() {
         }
     }
     if (controller_index_ != -1) {
-        awaited_normals_.resize(runners.size() - 1);
+        awaited_agents_.resize(runners.size() - 1);
         for (size_t i = 0; i < runners.size(); i++) {
             secure_runner* sr = static_cast<secure_runner*>(runners[i]);
             if (i != controller_index_) {
@@ -334,13 +334,13 @@ bool spawner_new_c::init() {
             }
             sr->on_terminate = [=]() {
                 on_terminate_mutex_.lock();
-                if (i > 0 && awaited_normals_[i - 1]) {
-                    wait_normal_mutex_.lock();
-                    awaited_normals_[i - 1] = false;
+                if (i > 0 && awaited_agents_[i - 1]) {
+                    wait_agent_mutex_.lock();
+                    awaited_agents_[i - 1] = false;
                     std::string message = std::to_string(i) + "I#\n";
                     //TODO: broadcast?
                     controller_broadcaster_->write(message.c_str(), message.size());
-                    wait_normal_mutex_.unlock();
+                    wait_agent_mutex_.unlock();
                 }
                 on_terminate_mutex_.unlock();
             };
