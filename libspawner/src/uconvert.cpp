@@ -140,7 +140,7 @@ std::string convert(const value_t &from, const value_t &to, const long double &v
     osstream.setf(std::ios::fixed,std::ios::floatfield);
     osstream.precision(DEFAULT_PRECISION);
     osstream << res;
-    for (unsigned int i = 0; i < strlen(format); i++)
+    for (unsigned int i = 0; format[i] != '\0'; i++)
     {
         switch (format[i])
         {
@@ -187,7 +187,7 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
     if (current_index >= 0) {
         v = v.substr((size_t)(current_index), v.length() - (size_t)current_index);
     } else {
-        v = "";
+        v.clear();
     }
 
     if (to.unit_type & unit_memory) {

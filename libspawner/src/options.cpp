@@ -1,5 +1,6 @@
 #include "options.h"
 #include <algorithm>
+#include <iterator>
 
 // TODO: use c_list /dev/null || nul system dependent
 const std::string CLEAR_STRING = "nul";
@@ -24,16 +25,16 @@ options_class::options_class(const options_class &options)
     , monitorInterval(options.monitorInterval)
     , report_file(options.report_file) {
 
-    for (auto i = options.stdinput.begin(); i != options.stdinput.end(); i++) {
+    for (auto i = options.stdinput.begin(); i != options.stdinput.end(); ++i) {
         stdinput.push_back(*i);
     }
-    for (auto i = options.stdoutput.begin(); i != options.stdoutput.end(); i++) {
+    for (auto i = options.stdoutput.begin(); i != options.stdoutput.end(); ++i) {
         stdoutput.push_back(*i);
     }
-    for (auto i = options.stderror.begin(); i != options.stderror.end(); i++) {
+    for (auto i = options.stderror.begin(); i != options.stderror.end(); ++i) {
         stderror.push_back(*i);
     }
-    for (auto i = options.arguments.begin(); i != options.arguments.end(); i++) {
+    for (auto i = options.arguments.begin(); i != options.arguments.end(); ++i) {
         arguments.push_back(*i);
     }
 
@@ -68,11 +69,7 @@ std::string options_class::get_arguments() const
 
 std::string options_class::get_argument(const size_t &index) const {
     if (index < arguments.size()) {
-        std::list<std::string>::const_iterator it = arguments.begin();
-        for (size_t i = 0; i < index; ++i) {
-            it++;
-        }
-        return *it;
+        return *std::next(arguments.cbegin(), index);
     }
     return ""; // !TODO! raise an error
 }
@@ -84,7 +81,7 @@ size_t options_class::get_arguments_count() const {
 std::string options_class::format_arguments() const
 {
     std::string arguments_string = get_arguments();
-    if (arguments_string == "") {
+    if (arguments_string.empty()) {
         return "<none>";
     }
     return arguments_string;

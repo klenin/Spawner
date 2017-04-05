@@ -133,7 +133,7 @@ void spawner_new_c::json_report(runner *runner_instance,
     writer.EndArray();
 
     rapidjson_write("CreateProcessMethod");
-    rapidjson_write(options.login == "" ? "CreateProcess" : "WithLogon");
+    rapidjson_write(options.login.empty() ? "CreateProcess" : "WithLogon");
     rapidjson_write("UserName");
     writer.String(runner_report.login.c_str());
     rapidjson_write("TerminateReason");
@@ -449,7 +449,7 @@ void spawner_new_c::print_report() {
     rapidjson::StringBuffer s;
     rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_writer(s);
     report_writer.StartArray();
-    for (auto i = runners.begin(); i != runners.end(); i++) {
+    for (auto i = runners.begin(); i != runners.end(); ++i) {
         report_class rep = (*i)->get_report();
         options_class options_item = (*i)->get_options();
         std::cout.flush();

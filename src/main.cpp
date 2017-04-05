@@ -94,7 +94,7 @@ spawner_base_c *command_handler_c::create_spawner(const std::string &s) {
     reset();
     if (spawner) {
         delete spawner;
-        spawner = NULL;
+        spawner = nullptr;
     }
     if (s == "sp99") {
         spawner = new spawner_old_c(this->parser);
@@ -123,14 +123,13 @@ bool command_handler_c::parse(int argc, char *argv[]) {
     if (!parser.parse(argc, argv)) {
         return false;
     }
-    if (show_help) {
-        std::cout << spawner->help();
-        return true;
-    }
-    if (spawner && spawner->init()) {
-        spawner->run();
-    } else {
-        std::cout << spawner->help();
+    if (spawner) {
+        if (!show_help) { show_help = !spawner->init(); }
+        if (show_help) {
+            std::cout << spawner->help();
+        } else {
+            spawner->run();
+        }
     }
     return true;
 }

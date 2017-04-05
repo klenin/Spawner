@@ -66,7 +66,7 @@ runner::env_vars_list_t runner::read_environment(const WCHAR* source) const
     {
         std::string envStr(w2a((const WCHAR*)env));
 
-        int pos = envStr.find("=");
+        int pos = envStr.find('=');
 
         vars.push_back(make_pair(envStr.substr(0, pos), envStr.substr(pos + 1)));
 
@@ -271,7 +271,7 @@ void runner::create_process() {
 
     // Extracting program name and generating cmd line
     report.working_directory = options.working_directory;
-    const char *wd = (options.working_directory != "")?options.working_directory.c_str():NULL;
+    const char *wd = options.working_directory.empty() ? nullptr : options.working_directory.c_str();
     if (!wd)
     {
         char working_directory[MAX_PATH + 1];
@@ -283,14 +283,14 @@ void runner::create_process() {
     std::string command_line =
         index_path_sep != std::string::npos ? program.substr(index_path_sep + 1) : program;
 
-    if (options.string_arguments != "") {
+    if (!options.string_arguments.empty()) {
         command_line += " " + options.string_arguments;
     }
     for (auto arg = options.arguments.begin(); arg != options.arguments.end(); ++arg) {
         command_line += " " + quote(*arg);
     }
 
-    if (options.login != "") {
+    if (!options.login.empty()) {
         report.login = a2w(options.login.c_str());
         running = init_process_with_logon(command_line, wd);
     }
