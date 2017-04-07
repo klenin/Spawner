@@ -280,8 +280,7 @@ secure_runner::secure_runner(const std::string &program,
     , restrictions(restrictions)
     , hIOCP(INVALID_HANDLE_VALUE)
     , hJob(INVALID_HANDLE_VALUE)
-    , check_thread(INVALID_HANDLE_VALUE)
-    , terminate_reason(terminate_reason_not_terminated) {
+    , check_thread(INVALID_HANDLE_VALUE) {
 }
 
 secure_runner::~secure_runner()
@@ -301,16 +300,9 @@ void secure_runner::requisites()
     check_thread = CreateThread(NULL, 0, check_limits_proc, this, 0, NULL);
 }
 
-terminate_reason_t secure_runner::get_terminate_reason() {
-    return terminate_reason;
-}
-
 report_class secure_runner::get_report() {
     JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION bai;
-    report.process_status = get_process_status();
-    if (get_process_status() == process_spawner_crash) {
-        report.terminate_reason = terminate_reason_none;
-    } else if (hJob != INVALID_HANDLE_VALUE) {
+    if (hJob != INVALID_HANDLE_VALUE) {
         if (!QueryInformationJobObject(hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), NULL)) {
             //throw GetWin32Error("QueryInformationJobObject");
         }
@@ -325,7 +317,6 @@ report_class secure_runner::get_report() {
         }
 
         report.peak_memory_used = xli.PeakJobMemoryUsed;
-        report.terminate_reason = get_terminate_reason();
     }
 
     return runner::get_report();

@@ -8,7 +8,7 @@
 #include "inc/status.h"
 #include "inc/multibyte.h"
 #include "inc/multipipe.h"
-
+#include "inc/report.h"
 #include "platform_report.h"
 
 class base_runner {
@@ -20,6 +20,7 @@ protected:
     report_class report;
     options_class options;
     process_status_t process_status = process_not_started;
+    terminate_reason_t terminate_reason = terminate_reason_not_terminated;
     unsigned long long int creation_time = 0;
     std::string program;
 public:

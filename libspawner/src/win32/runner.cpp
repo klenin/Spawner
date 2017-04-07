@@ -400,6 +400,10 @@ process_status_t runner::get_process_status() {
     return process_status;
 }
 
+terminate_reason_t runner::get_terminate_reason() {
+    return terminate_reason;
+}
+
 exception_t runner::get_exception() {
     if (get_process_status() == process_finished_abnormally) {
         return (exception_t)get_exit_code();
@@ -420,8 +424,9 @@ options_class runner::get_options() const {
 }
 
 report_class runner::get_report() {
+    report.process_status = get_process_status();
+    report.terminate_reason = (process_status == process_spawner_crash) ? terminate_reason_none : get_terminate_reason();
     report.application_name = get_program();
-
     report.exception = get_exception();
     report.exit_code = get_exit_code();
     return report;

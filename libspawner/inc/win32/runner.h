@@ -45,6 +45,7 @@ public:
     virtual ~runner();
     unsigned long get_exit_code();
     virtual process_status_t get_process_status();
+    terminate_reason_t get_terminate_reason();
     process_status_t get_process_status_no_side_effects();
     exception_t get_exception();
     unsigned long get_id();
