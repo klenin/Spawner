@@ -22,7 +22,5 @@ multipipe_ptr base_runner::get_pipe(const std_stream_type& stream_type) {
 
 base_runner::base_runner(const std::string& program, const options_class& options)
     : program(program)
-    , options(options)
-    , process_status(process_not_started)
-    , creation_time(0) {
+    , options(options) {
 }

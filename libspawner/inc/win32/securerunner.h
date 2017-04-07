@@ -14,7 +14,6 @@ protected:
     restrictions_class start_restrictions;
     restrictions_class restrictions;
     thread_t check_thread;
-    terminate_reason_t terminate_reason;
     std::atomic<bool> prolong_time_limits_{false};
     LONGLONG base_time_processor_ = 0;
     unsigned long long base_time_user_ = 0;
@@ -32,8 +31,6 @@ public:
     secure_runner(const std::string &program, const options_class &options,
         const restrictions_class &restrictions);
     virtual ~secure_runner();
-
-    terminate_reason_t get_terminate_reason();
 
     restrictions_class get_restrictions() const;
     process_status_t get_process_status();

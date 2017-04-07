@@ -80,13 +80,10 @@ set(SOURCES
     src/spawner_pcms2.cpp
 )
 
-set(LIBRARIES libspawner)
+set(LIBRARIES "libspawner")
 
 if(WIN32)
-    find_library(USERENV userenv)
-    if(USERENV)
-        set(LIBRARIES ${LIBRARIES} ${USERENV})
-    endif()
+    set(LIBRARIES ${LIBRARIES} "userenv" "imagehlp")
     add_definitions(-DWINVER=0x0501 -D_WIN32_WINNT=WINVER)
 endif()
 

@@ -20,6 +20,9 @@ private:
     env_vars_list_t read_environment(const WCHAR* source) const;
     env_vars_list_t set_environment_for_process() const;
     void restore_original_environment(const env_vars_list_t& original) const;
+
+    bool program_stack_exceeds_1gb();
+    bool try_handle_createproc_error();
     mutex_c suspend_mutex_;
 protected:
     DWORD process_creation_flags;
@@ -45,6 +48,7 @@ public:
     virtual ~runner();
     unsigned long get_exit_code();
     virtual process_status_t get_process_status();
+    terminate_reason_t get_terminate_reason();
     process_status_t get_process_status_no_side_effects();
     exception_t get_exception();
     unsigned long get_id();
