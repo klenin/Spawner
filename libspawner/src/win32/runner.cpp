@@ -2,15 +2,18 @@
 
 #include "runner.h"
 #ifdef _MSC_VER
-#pragma comment(lib, "Userenv")
+#pragma comment(lib, "userenv")
+#pragma comment(lib, "imagehlp")
 #endif
 
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <algorithm>
+
 #include <WinBase.h>
 #include <UserEnv.h>
+#include <ImageHlp.h>
 
 const size_t MAX_USER_NAME = 1024;
 
@@ -136,6 +139,36 @@ void runner::restore_original_environment(const runner::env_vars_list_t& origina
     }
 }
 
+bool runner::program_stack_exceeds_1gb() {
+    LOADED_IMAGE exe_image;
+    bool stack_exceeds_1gb = false;
+    
+    char* exe_path_rw = _strdup(program.c_str());
+    if (MapAndLoad(exe_path_rw, NULL, &exe_image, FALSE, TRUE)) {
+        stack_exceeds_1gb = 0x40000000 < exe_image.FileHeader->OptionalHeader.SizeOfStackReserve;
+        UnMapAndLoad(&exe_image);
+    }
+
+    std::free(exe_path_rw);
+    return stack_exceeds_1gb;
+}
+
+bool runner::try_handle_createproc_error() {
+    DWORD error_code = GetLastError();
+
+    if ((error_code == ERROR_INVALID_PARAMETER) && program_stack_exceeds_1gb()) {
+        // Windows XP specific
+        SetLastError( error_code = ERROR_NOT_ENOUGH_MEMORY );
+    }
+
+    if (error_code == ERROR_NOT_ENOUGH_MEMORY) {
+        terminate_reason = terminate_reason_memory_limit;
+        return true;
+    }
+
+    return false;
+}
+
 bool runner::init_process(const std::string &cmd, const char *wd) {
     WaitForSingleObject(main_job_object_access_mutex, infinite);
     set_allow_breakaway(true);
@@ -156,8 +189,10 @@ bool runner::init_process(const std::string &cmd, const char *wd) {
     ReleaseMutex(main_job_object_access_mutex);
     std::free(cmd_copy);
     if (error) {
-        DWORD_PTR args[] = { (DWORD_PTR)program.c_str(), (DWORD_PTR)"", (DWORD_PTR)"", };
-        PANIC("CreateProcess \"" + program + "\": " + get_win_last_error_string(args));
+        if (!try_handle_createproc_error()) {
+            DWORD_PTR args[] = { (DWORD_PTR)program.c_str(), (DWORD_PTR)"", (DWORD_PTR)"", };
+            PANIC("CreateProcess \"" + program + "\": " + get_win_last_error_string(args));
+        }
         return false;
     }
     restore_original_environment(original);
@@ -202,9 +237,11 @@ bool runner::init_process_with_logon(const std::string &cmd, const char *wd) {
             NULL, wwd, &siw, &process_info) )
         {
             ReleaseMutex(main_job_object_access_mutex);
-            DWORD_PTR args[] = { (DWORD_PTR)program.c_str(), (DWORD_PTR)"", (DWORD_PTR)"", };
-            PANIC("CreateProcess \"" + run_program + "\": " + get_win_last_error_string(args));
-            // TODO: cleanup below is useless now since we're in panic
+            if (!try_handle_createproc_error()) {
+                DWORD_PTR args[] = { (DWORD_PTR)program.c_str(), (DWORD_PTR)"", (DWORD_PTR)"", };
+                PANIC("CreateProcess \"" + run_program + "\": " + get_win_last_error_string(args));
+                // TODO: cleanup below is useless now since we're in panic
+            }
             delete[] login;
             delete[] password;
             delete[] wprogram;
@@ -481,11 +518,13 @@ void runner::run_process() {
         return;
     }
     create_process();
+    if (!running || get_terminate_reason() != terminate_reason_not_terminated)
+        return;
+
     if (get_process_status() == process_spawner_crash
      || get_process_status() & process_finished_normal) {
         return;
     }
-    running = true;
     requisites();
     if (get_process_status() == process_spawner_crash
      || get_process_status() & process_finished_normal) {

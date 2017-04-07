@@ -83,7 +83,7 @@ set(SOURCES
 set(LIBRARIES "libspawner")
 
 if(WIN32)
-    set(LIBRARIES ${LIBRARIES} "userenv")
+    set(LIBRARIES ${LIBRARIES} "userenv" "imagehlp")
     add_definitions(-DWINVER=0x0501 -D_WIN32_WINNT=WINVER)
 endif()
 
