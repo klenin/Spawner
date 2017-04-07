@@ -11,13 +11,13 @@ const std::string& get_error_text();
 
 void panic_(const std::string& error_message, const char* filename, int line_number);
 
-#define PANIC(MESSAGE) do { panic_(MESSAGE, __FILE__, __LINE__); } while (false);
+#define PANIC(MESSAGE) do { panic_(MESSAGE, __FILE__, __LINE__); } while (false)
 
 #define PANIC_IF(CONDITION) do { \
     if (CONDITION) { \
         PANIC(#CONDITION); \
     } \
-} while (false); \
+} while (false)
 
 class finally final {
     typedef std::function<void()> handler_t_;
