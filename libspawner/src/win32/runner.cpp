@@ -353,10 +353,8 @@ thread_return_t runner::async_body(thread_param_t param) {
 runner::runner(const std::string &program, const options_class &options)
     : base_runner(program, options)
     , running_thread(INVALID_HANDLE_VALUE)
-    , init_semaphore(INVALID_HANDLE_VALUE) {
-
-    init_semaphore = CreateSemaphore(NULL, 0, 10, NULL);
-    ZeroMemory(&process_info, sizeof(process_info));
+    , init_semaphore(CreateSemaphore(NULL, 0, 10, NULL))
+    , process_info() {
 }
 
 runner::~runner() {

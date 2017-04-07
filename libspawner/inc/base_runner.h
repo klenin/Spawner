@@ -20,7 +20,7 @@ protected:
     report_class report;
     options_class options;
     process_status_t process_status = process_not_started;
-    unsigned long long int creation_time;
+    unsigned long long int creation_time = 0;
     std::string program;
 public:
     multipipe_ptr get_pipe(const std_stream_type &stream_type);
