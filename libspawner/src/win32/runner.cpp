@@ -180,8 +180,9 @@ bool runner::init_process(const std::string &cmd, const char *wd) {
         app_name, cmd_copy, NULL, NULL, /* inheritHandles */TRUE,
         process_creation_flags, NULL, wd, &si, &process_info);
 
-    ReleaseMutex(main_job_object_access_mutex);
     std::free(cmd_copy);
+    ReleaseMutex(main_job_object_access_mutex);
+    restore_original_environment(original);
 
     if (!createproc) {
         if (!try_handle_createproc_error()) {
@@ -191,7 +192,6 @@ bool runner::init_process(const std::string &cmd, const char *wd) {
         return false;
     }
 
-    restore_original_environment(original);
     get_times(&creation_time, NULL, NULL, NULL);
 
     return true;
@@ -229,33 +229,24 @@ bool runner::init_process_with_logon(const std::string &cmd, const char *wd) {
     const BOOL createproc = CreateProcessWithLogonW(login, NULL, password, 0,
         app_name, wcmd, creation_flags, NULL, wwd, &siw, &process_info);
 
-    if (!createproc) {
-        ReleaseMutex(main_job_object_access_mutex);
-        if (!try_handle_createproc_error()) {
-            DWORD_PTR args[] = { (DWORD_PTR)program.c_str(), (DWORD_PTR)"", (DWORD_PTR)"", };
-            PANIC("CreateProcess \"" + run_program + "\": " + get_win_last_error_string(args));
-            // TODO: cleanup below is useless now since we're in panic
-        }
-        delete[] login;
-        delete[] password;
-        delete[] wprogram;
-        delete[] wcmd;
-        delete[] wwd;
-        restore_original_environment(original);
-
-        return false;
-    }
-
-    set_allow_breakaway(true);
-    ReleaseMutex(main_job_object_access_mutex);
-
     delete[] login;
     delete[] password;
     delete[] wprogram;
     delete[] wcmd;
     delete[] wwd;
 
+    ReleaseMutex(main_job_object_access_mutex);
     restore_original_environment(original);
+
+    if (!createproc) {
+        if (!try_handle_createproc_error()) {
+            DWORD_PTR args[] = { (DWORD_PTR)program.c_str(), (DWORD_PTR)"", (DWORD_PTR)"", };
+            PANIC("CreateProcess \"" + run_program + "\": " + get_win_last_error_string(args));
+        }
+        return false;
+    }
+
+    set_allow_breakaway(true);
     get_times(&creation_time, NULL, NULL, NULL);
 
     return true;
