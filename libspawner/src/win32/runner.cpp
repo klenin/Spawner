@@ -177,26 +177,25 @@ bool runner::init_process(const std::string &cmd, const char *wd) {
     env_vars_list_t original = set_environment_for_process();
     char *cmd_copy = _strdup(cmd.c_str()); // CreateProcess requires write access to command line.
 
-    auto create_process_helper = [&](const char *app_name) -> BOOL {
-        return CreateProcess(
-            app_name, cmd_copy, NULL, NULL, /* inheritHandles */TRUE,
-            process_creation_flags, NULL, wd, &si, &process_info);
-    };
+    const char *app_name = options.use_cmd ? nullptr : program.c_str();
+    const BOOL createproc = CreateProcess(
+        app_name, cmd_copy, NULL, NULL, /* inheritHandles */TRUE,
+        process_creation_flags, NULL, wd, &si, &process_info);
 
-    BOOL error =
-        !create_process_helper(program.c_str()) &&
-        (!options.use_cmd || !create_process_helper(NULL));
     ReleaseMutex(main_job_object_access_mutex);
     std::free(cmd_copy);
-    if (error) {
+
+    if (!createproc) {
         if (!try_handle_createproc_error()) {
             DWORD_PTR args[] = { (DWORD_PTR)program.c_str(), (DWORD_PTR)"", (DWORD_PTR)"", };
             PANIC("CreateProcess \"" + program + "\": " + get_win_last_error_string(args));
         }
         return false;
     }
+
     restore_original_environment(original);
     get_times(&creation_time, NULL, NULL, NULL);
+
     return true;
 }
 
@@ -228,40 +227,37 @@ bool runner::init_process_with_logon(const std::string &cmd, const char *wd) {
 
     auto original = set_environment_for_process();
 
-    if ( !CreateProcessWithLogonW(login, NULL, password, 0,
-        wprogram, wcmd, creation_flags,
-        NULL, wwd, &siw, &process_info) )
-    {
-        if (!options.use_cmd || !CreateProcessWithLogonW(login, NULL, password, 0,
-            NULL, wcmd, creation_flags,
-            NULL, wwd, &siw, &process_info) )
-        {
-            ReleaseMutex(main_job_object_access_mutex);
-            if (!try_handle_createproc_error()) {
-                DWORD_PTR args[] = { (DWORD_PTR)program.c_str(), (DWORD_PTR)"", (DWORD_PTR)"", };
-                PANIC("CreateProcess \"" + run_program + "\": " + get_win_last_error_string(args));
-                // TODO: cleanup below is useless now since we're in panic
-            }
-            delete[] login;
-            delete[] password;
-            delete[] wprogram;
-            delete[] wcmd;
-            delete[] wwd;
-            restore_original_environment(original);
+    const wchar_t *app_name = options.use_cmd ? nullptr : wprogram;
+    const BOOL createproc = CreateProcessWithLogonW(login, NULL, password, 0,
+        app_name, wcmd, creation_flags, NULL, wwd, &siw, &process_info);
 
-            return false;
+    if (!createproc) {
+        ReleaseMutex(main_job_object_access_mutex);
+        if (!try_handle_createproc_error()) {
+            DWORD_PTR args[] = { (DWORD_PTR)program.c_str(), (DWORD_PTR)"", (DWORD_PTR)"", };
+            PANIC("CreateProcess \"" + run_program + "\": " + get_win_last_error_string(args));
+            // TODO: cleanup below is useless now since we're in panic
         }
+        delete[] login;
+        delete[] password;
+        delete[] wprogram;
+        delete[] wcmd;
+        delete[] wwd;
+        restore_original_environment(original);
+
+        return false;
     }
 
     set_allow_breakaway(true);
     ReleaseMutex(main_job_object_access_mutex);
+
     delete[] login;
     delete[] password;
     delete[] wprogram;
     delete[] wcmd;
     delete[] wwd;
-    restore_original_environment(original);
 
+    restore_original_environment(original);
     get_times(&creation_time, NULL, NULL, NULL);
 
     return true;
