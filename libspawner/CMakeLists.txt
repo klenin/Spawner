@@ -130,6 +130,9 @@ endif()
 set(PROJECT_LIBRARY ${PROJECT_NAME})
 
 add_library(${PROJECT_LIBRARY} ${SOURCES} ${HEADERS})
+if (BIT32)
+    set_target_properties(${PROJECT_LIBRARY} PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
+endif()
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.7")
 
