@@ -156,12 +156,10 @@ bool runner::program_stack_exceeds_1gb() {
 bool runner::try_handle_createproc_error() {
     DWORD error_code = GetLastError();
 
-    if ((error_code == ERROR_INVALID_PARAMETER) && program_stack_exceeds_1gb()) {
-        // Windows XP specific
-        SetLastError( error_code = ERROR_NOT_ENOUGH_MEMORY );
-    }
-
-    if (error_code == ERROR_NOT_ENOUGH_MEMORY) {
+    if (
+      error_code == ERROR_NOT_ENOUGH_MEMORY ||
+      (error_code == ERROR_INVALID_PARAMETER && program_stack_exceeds_1gb()) // Windows XP specific
+    ) {
         terminate_reason = terminate_reason_memory_limit;
         return true;
     }
