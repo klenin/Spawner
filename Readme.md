@@ -76,3 +76,9 @@ And with MSYS2:
 cmake -G "MSYS Makefiles"  -D CMAKE_CXX_COMPILER=g++ -D CMAKE_MAKE_PROGRAM=make ..
 make
 ```
+
+If you are using 64-bit system and want to build 32-bit:
+```
+cmake -D BIT32=True ..
+make
+```

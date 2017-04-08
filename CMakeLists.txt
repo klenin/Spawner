@@ -100,6 +100,10 @@ set(BIN_PATH "../bin/new")
 set(BIN_SPECIFIC_PATH "../bin/new/${CMAKE_GENERATOR}")
 
 add_executable(${PROJECT_EXECUTABLE} ${SOURCES} ${HEADERS})
+if (BIT32)
+    set_target_properties(${PROJECT_EXECUTABLE} PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
+endif()
+
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${BIN_PATH}
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> ${BIN_PATH}
