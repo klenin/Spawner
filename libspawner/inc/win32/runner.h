@@ -21,7 +21,6 @@ private:
     env_vars_list_t set_environment_for_process() const;
     void restore_original_environment(const env_vars_list_t& original) const;
 
-    bool program_stack_exceeds_1gb();
     bool try_handle_createproc_error();
     mutex_c suspend_mutex_;
 protected:
