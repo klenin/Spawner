@@ -17,18 +17,6 @@
 
 #include "stack_walker.h"
 
-
-#ifdef OPEN_JOB_OBJECT_DYNAMIC_LOAD
-void load_open_job_object() {
-    HINSTANCE hDLL = LoadLibrary("kernel32.dll");
-    if (!hDLL) {
-        //everything failed
-    }
-    OpenJobObjectA = (OPEN_JOB_OBJECT)GetProcAddress(hDLL, "OpenJobObjectA");
-    FreeLibrary(hDLL);
-}
-#endif//OPEN_JOB_OBJECT_DYNAMIC_LOAD
-
 void CloseHandleSafe_debug(HANDLE &handle, char *file, unsigned int line)
 {
     try {
@@ -50,28 +38,6 @@ void CloseHandleSafe_real(HANDLE &handle)
     if (!CloseHandle(handle))
         PANIC(get_win_last_error_string());
     handle = INVALID_HANDLE_VALUE;
-}
-
-typedef BOOL(WINAPI *CancelSynchronousIo_func_type)(HANDLE);
-CancelSynchronousIo_func_type CancelSynchronousIo_dyn = nullptr;
-
-void platform_init()
-{
-    HINSTANCE hKernel32 = LoadLibrary("kernel32.dll");
-
-    if (!hKernel32) {
-        return;
-    }
-
-    CancelSynchronousIo_dyn = (CancelSynchronousIo_func_type)GetProcAddress(hKernel32, "CancelSynchronousIo");
-}
-
-BOOL WINAPI CancelSynchronousIo_wrapper(HANDLE handle)
-{
-    if (CancelSynchronousIo_dyn != nullptr) {
-        return CancelSynchronousIo_dyn(handle);
-    }
-    return FALSE;
 }
 
 int get_spawner_pid()
@@ -178,64 +144,6 @@ std::string ExtractExitStatus(const report_class &rep) {
     std::ostringstream s;
     s << code;
     return s.str();
-}
-
-void ReadEnvironmentVariables(options_class &options, restrictions_class &restrictions) {
-    CHAR buffer[1024];
-    const struct {
-        const char *name;
-        restriction_kind_t restriction;
-    } restriction_bindings[] = {
-        {"SP_SECURITY_LEVEL", restriction_security_limit},
-        {"SP_TIME_LIMIT", restriction_processor_time_limit},
-        {"SP_MEMORY_LIMIT", restriction_memory_limit},
-        {"SP_WRITE_LIMIT", restriction_write_limit},
-        {"SP_DEADLINE", restriction_user_time_limit},
-        {"SP_LOAD_RATIO", restriction_load_ratio},
-        {"SP_IDLE_TIME_LIMIT", restriction_idle_time_limit}
-    };
-    const int restriction_bindings_count =
-        sizeof(restriction_bindings)/(sizeof(char*) + sizeof(restriction_kind_t));
-
-    if (GetEnvironmentVariable("SP_JSON", buffer, sizeof(buffer))) {
-        options.json = atoi(buffer) != 0;
-    }
-
-    if (GetEnvironmentVariable("SP_HIDE_REPORT", buffer, sizeof(buffer))) {
-        options.hide_report = atoi(buffer) != 0;
-    }
-
-    if (GetEnvironmentVariable("SP_HIDE_OUTPUT", buffer, sizeof(buffer))) {
-        options.hide_output = atoi(buffer) != 0;
-    }
-    for (int i = 0; i < restriction_bindings_count; ++i) {
-        if (GetEnvironmentVariable(restriction_bindings[i].name, buffer, sizeof(buffer))) {
-            SetRestriction(restrictions, restriction_bindings[i].restriction, buffer);
-        }
-    }
-    if (GetEnvironmentVariable("SP_USER", buffer, sizeof(buffer))) {
-        options.login = buffer;
-    }
-
-    if (GetEnvironmentVariable("SP_PASSWORD", buffer, sizeof(buffer))) {
-        options.password = buffer;
-    }
-
-    if (GetEnvironmentVariable("SP_REPORT_FILE", buffer, sizeof(buffer))) {
-        options.report_file = buffer;
-    }
-
-    if (GetEnvironmentVariable("SP_OUTPUT_FILE", buffer, sizeof(buffer))) {
-        options.stdoutput.push_back(buffer);
-    }
-
-    if (GetEnvironmentVariable("SP_ERROR_FILE", buffer, sizeof(buffer))) {
-        options.stderror.push_back(buffer);
-    }
-
-    if (GetEnvironmentVariable("SP_INPUT_FILE", buffer, sizeof(buffer))) {
-        options.stdinput.push_back(buffer);
-    }
 }
 
 #if defined(WANT_STACKWALKER)
