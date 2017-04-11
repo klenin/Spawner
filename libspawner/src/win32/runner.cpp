@@ -411,7 +411,7 @@ process_status_t runner::get_process_status() {
     if (process_status == process_spawner_crash) {
         return process_status;
     }
-    if (exitcode == exit_code_still_active) {
+    if (exitcode == STILL_ACTIVE) {
         process_status = process_still_active;
     } else {
         process_status = process_finished_abnormally;
