@@ -55,22 +55,6 @@ typedef HANDLE thread_t;
 #define JOB_OBJECT_ASSIGN_PROCESS           (0x0001)
 #endif
 
-#ifndef OpenJobObject
-#define OPEN_JOB_OBJECT_DYNAMIC_LOAD
-
-void load_open_job_object();
-
-typedef HANDLE (WINAPI *OPEN_JOB_OBJECT)(DWORD, BOOL, LPCSTR);
-
-static OPEN_JOB_OBJECT OpenJobObjectA;
-
-#ifdef UNICODE
-#define OpenJobObject  OpenJobObjectW
-#else
-#define OpenJobObject  OpenJobObjectA
-#endif
-#endif //OpenJobObject
-
 typedef PROCESS_INFORMATION process_info_t;
 typedef HANDLE pipe_handle;
 typedef STARTUPINFO startupinfo_t;
@@ -84,14 +68,11 @@ void CloseHandleSafe_real(HANDLE &handle);
 
 const unsigned long infinite = INFINITE;
 
-BOOL WINAPI CancelSynchronousIo_wrapper(HANDLE);
-
 #ifndef uint
 typedef unsigned int uint_32;
 typedef uint_32 uint;
 #endif//uint
 
-void platform_init();
 int get_spawner_pid();
 
 void push_shm_report(const char *, const std::string &);

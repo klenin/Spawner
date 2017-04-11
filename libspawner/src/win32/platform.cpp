@@ -17,18 +17,6 @@
 
 #include "stack_walker.h"
 
-
-#ifdef OPEN_JOB_OBJECT_DYNAMIC_LOAD
-void load_open_job_object() {
-    HINSTANCE hDLL = LoadLibrary("kernel32.dll");
-    if (!hDLL) {
-        //everything failed
-    }
-    OpenJobObjectA = (OPEN_JOB_OBJECT)GetProcAddress(hDLL, "OpenJobObjectA");
-    FreeLibrary(hDLL);
-}
-#endif//OPEN_JOB_OBJECT_DYNAMIC_LOAD
-
 void CloseHandleSafe_debug(HANDLE &handle, char *file, unsigned int line)
 {
     try {
@@ -50,28 +38,6 @@ void CloseHandleSafe_real(HANDLE &handle)
     if (!CloseHandle(handle))
         PANIC(get_win_last_error_string());
     handle = INVALID_HANDLE_VALUE;
-}
-
-typedef BOOL(WINAPI *CancelSynchronousIo_func_type)(HANDLE);
-CancelSynchronousIo_func_type CancelSynchronousIo_dyn = nullptr;
-
-void platform_init()
-{
-    HINSTANCE hKernel32 = LoadLibrary("kernel32.dll");
-
-    if (!hKernel32) {
-        return;
-    }
-
-    CancelSynchronousIo_dyn = (CancelSynchronousIo_func_type)GetProcAddress(hKernel32, "CancelSynchronousIo");
-}
-
-BOOL WINAPI CancelSynchronousIo_wrapper(HANDLE handle)
-{
-    if (CancelSynchronousIo_dyn != nullptr) {
-        return CancelSynchronousIo_dyn(handle);
-    }
-    return FALSE;
 }
 
 int get_spawner_pid()

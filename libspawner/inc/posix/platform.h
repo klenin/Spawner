@@ -30,8 +30,6 @@ std::string ExtractExitStatus(const report_class &);
 
 void platform_exit_failure();
 
-void platform_init();
-
 #ifdef __MACH__
 #define CLOCK_REALTIME 0
 unsigned long long int clock_gettime(int, struct timespec *);

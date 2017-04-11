@@ -129,9 +129,6 @@ void platform_exit_failure() {
     exit(EXIT_FAILURE);
 }
 
-void platform_init() {
-}
-
 #ifdef __MACH__
 unsigned long long int clock_gettime(int id, struct timespec *ts) {
     struct timeval tv;
