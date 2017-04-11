@@ -2,6 +2,7 @@
 #define _RUNNER_H_
 
 #include <sys/resource.h>
+#include <semaphore.h>
 
 #include "inc/base_runner.h"
 
@@ -21,9 +22,8 @@ private:
     struct rusage ru;  // precise resource usage storage
     bool ru_success = false;
 
-    // sync pipe descriptors 
-    int child_sync[2];
-    int child_syncbuf = 42;
+    //sync semaphore
+    sem_t *child_sync = nullptr;
 
     // report pipe descriptors 
     int child_report[2];
