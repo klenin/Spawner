@@ -98,24 +98,28 @@ size_t system_pipe::read(char* bytes, size_t count) const {
     if (!is_readable())
         return 0;
 
-    size_t readed;
-    if (!ReadFile(input_handle, (LPVOID)bytes, (DWORD)count, (LPDWORD)&readed, NULL) && GetLastError() != ERROR_OPERATION_ABORTED)
-        PANIC(get_win_last_error_string());
+    size_t bytes_read;
+    if (!ReadFile(input_handle, (LPVOID)bytes, (DWORD)count, (LPDWORD)&bytes_read, NULL)) {
+        auto error = GetLastError();
+        // We force closed write size of the pipe.
+        if (error != ERROR_OPERATION_ABORTED && error != ERROR_BROKEN_PIPE)
+            PANIC(get_win_last_error_string());
+    }
 
-    return readed;
+    return bytes_read;
 }
 
 size_t system_pipe::write(const char* bytes, size_t count) const {
     if (!is_writable())
         return 0;
 
-    size_t writed;
-    if (!WriteFile(output_handle, (LPCVOID)bytes, (DWORD)count, (LPDWORD)&writed, NULL))
+    size_t bytes_written;
+    if (!WriteFile(output_handle, (LPCVOID)bytes, (DWORD)count, (LPDWORD)&bytes_written, NULL))
         PANIC(get_win_last_error_string());
-    if (writed > 0)
+    if (bytes_written > 0)
         flush();
 
-    return writed;
+    return bytes_written;
 }
 
 void system_pipe::flush() const {
@@ -127,12 +131,12 @@ void system_pipe::flush() const {
 
 void system_pipe::close(pipe_mode mode) {
     if (mode == read_mode && is_readable()) {
-        CloseHandleSafe(input_handle);
+        CloseHandle(input_handle);
         input_handle = INVALID_HANDLE_VALUE;
     }
 
     if (mode == write_mode && is_writable()) {
-        CloseHandleSafe(output_handle);
+        CloseHandle(output_handle);
         output_handle = INVALID_HANDLE_VALUE;
     }
 }
@@ -147,5 +151,7 @@ bool system_pipe::is_file() const {
 }
 
 void system_pipe::cancel_sync_io(thread_t thread) {
-    CancelSynchronousIo(thread);
+    if(!CancelSynchronousIo(thread) && GetLastError() != ERROR_NOT_FOUND) {
+        PANIC(get_win_last_error_string());
+    }
 }

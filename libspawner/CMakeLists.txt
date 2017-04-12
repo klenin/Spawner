@@ -98,12 +98,14 @@ set(LIB_POSIX_SOURCES
 set(LIB_LINUX_HEADERS
     inc/posix/linux_affinity.h
     inc/posix/linux_procfs.h
+    inc/posix/linux_procfd.h
     inc/posix/linux_seccomp.h
 )
 
 set(LIB_LINUX_SOURCES
     src/posix/linux_affinity.cpp
     src/posix/linux_procfs.cpp
+    src/posix/linux_procfd.cpp
     src/posix/linux_seccomp.cpp
 )
 

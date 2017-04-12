@@ -32,7 +32,6 @@ class multipipe {
     thread* listen_thread;
     mutex write_mutex;
 
-    bool done;
     int buffer_size;
     char *read_buffer, *read_tail_buffer;
     size_t read_tail_len, write_tail_len;
@@ -60,6 +59,7 @@ public:
 
     void start_read();
     void check_parents();
+    void finalize();
 
     void connect(weak_ptr<multipipe> pipe);
     void disconnect(weak_ptr<multipipe> pipe);

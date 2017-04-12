@@ -1,8 +1,10 @@
+#include <iostream>
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
+#include <fcntl.h>
 
 #include "inc/error.h"
 
@@ -153,19 +155,13 @@ unsigned long long runner::get_current_time()
 }
 
 void runner::init_process(const char *cmd_toexec, char **process_argv, char **process_envp) {
-    close(child_sync[1]);
-
     // try to change credentials, exit on fail.
     // TODO - return value over pipe
-    if (options.login != "")
+    if (options.login != "") {
         if (change_credentials())
             exit(EXIT_FAILURE);
-    if (read(child_sync[0], &child_syncbuf, sizeof(child_syncbuf)) == -1) {
-        // no panics since we are child, just kill itself
-        //PANIC("failed get sync message from parent");
-        exit(EXIT_FAILURE);
     }
-    close(child_sync[0]);
+    sem_wait(child_sync); //syncronize with parent
     execve(cmd_toexec, process_argv, process_envp);
 }
 
@@ -216,13 +212,16 @@ void *runner::waitpid_body(void *waitpid_param) {
     if (getrusage(RUSAGE_CHILDREN, &self->ru) != -1)
         self->ru_success = true;
 
+    for (auto& stream : self->streams) {
+        stream.second->finalize();
+    }
+
     return(NULL);
 }
 
 void runner::run_process_async() {
     running_async = true;
     create_process();
-    requisites();
 }
 
 bool runner::wait_for()
@@ -241,12 +240,6 @@ void runner::requisites() {
     std::unique_lock<std::mutex> lock(waitpid_cond_mtx);
     while (!waitpid_ready)
         waitpid_cond.wait(lock);
-
-    // child is now blocked with read() on other end of the pipe.
-    close(child_sync[0]);
-    write(child_sync[1], &child_syncbuf, sizeof(child_syncbuf));
-    process_status = process_still_active;
-    close(child_sync[1]);
 }
 
 void runner::report_login() {
@@ -353,8 +346,8 @@ void runner::create_process() {
     argv = create_argv_for_process();
     envp = create_envp_for_process();
 
-    if (pipe(child_sync) == -1)
-        PANIC("failed to create pipe() for syncing with the child\n");
+    std::string sem_name = "/sync-sem-" + proc_pid;
+    child_sync = sem_open(sem_name.c_str(), O_CREAT | O_EXCL, O_RDWR, 0);
 
     auto stdinput = streams[std_stream_input]->get_pipe();
     auto stdoutput = streams[std_stream_output]->get_pipe();
@@ -363,21 +356,24 @@ void runner::create_process() {
     proc_pid = fork();
     if (proc_pid == 0) { //child
         //redirect stdin
+        close(STDIN_FILENO);
         if (dup2(stdinput->get_input_handle(), STDIN_FILENO) == -1) {
             PANIC(strerror(errno));
         }
         //redirect stdout
+        close(STDOUT_FILENO);
         if (dup2(stdoutput->get_output_handle(), STDOUT_FILENO) == -1) {
             PANIC(strerror(errno));
         }
         //redirect stderr
+        close(STDERR_FILENO);
         if (dup2(stderror->get_output_handle(), STDERR_FILENO) == -1) {
             PANIC(strerror(errno));
         }
         //close all descriptors
-        stdinput->close();
-        stdoutput->close();
-        stderror->close();
+#ifdef __linux__
+        procfd_class::close_all_pipes_without_std();
+#endif
 
         init_process(cmd_toexec, argv, envp);
     } else if (proc_pid > 0) { // parent
@@ -387,7 +383,7 @@ void runner::create_process() {
         stdinput->close(read_mode);
         stdoutput->close(write_mode);
         stderror->close(write_mode);
-    } else { //error fork()
+    } else { // error fork()
         process_status = process_not_started;
         PANIC("failed to fork()\n");
     }
@@ -401,6 +397,11 @@ void runner::create_process() {
 
     if (cwd != nullptr)
         free(cwd);
+
+    requisites();
+    sem_post(child_sync); //unlock child
+    sem_close(child_sync);
+    sem_unlink(sem_name.c_str());
 }
 
 void runner::runner_free() {

@@ -2,12 +2,14 @@
 #define _RUNNER_H_
 
 #include <sys/resource.h>
+#include <semaphore.h>
 
 #include "inc/base_runner.h"
 
 #if defined(__linux__)
 #include "linux_affinity.h"
 #include "linux_seccomp.h"
+#include "linux_procfd.h"
 #endif
 
 #include <thread>
@@ -21,11 +23,10 @@ private:
     struct rusage ru;  // precise resource usage storage
     bool ru_success = false;
 
-    // sync pipe descriptors 
-    int child_sync[2];
-    int child_syncbuf = 42;
+    //sync semaphore
+    sem_t *child_sync = nullptr;
 
-    // report pipe descriptors 
+    // report pipe descriptors
     int child_report[2];
     int child_reportbuf;
 #if defined(__linux__)
@@ -35,7 +36,7 @@ private:
     char **create_envp_for_process() const;
     char **create_argv_for_process() const;
     void release_argv_for_process(char **argv) const;
-    
+
     // environ pointer protector, may be replaced with global lock
     mutable std::mutex envp_mtx;
 
