@@ -8,6 +8,8 @@
 
 class secure_runner: public runner
 {
+private:
+    virtual bool try_handle_createproc_error() override;
 protected:
     handle_t hIOCP;
     handle_t hJob;
