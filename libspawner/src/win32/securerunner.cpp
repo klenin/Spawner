@@ -3,6 +3,9 @@
 #include <ctime>
 #include <vector>
 
+#include <WinBase.h>
+#include <ImageHlp.h>
+
 #include "inc/error.h"
 
 #ifndef JOB_OBJECT_UILIMIT_ALL
@@ -14,6 +17,44 @@
 #endif//JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
 
 const size_t MAX_RATE_COUNT = 20;
+
+bool secure_runner::try_handle_createproc_error() {
+    const DWORD error_code = GetLastError();
+    bool segments_exceed_limit;
+
+    LOADED_IMAGE exe_image;
+    char* exe_path_rw = _strdup(program.c_str());
+
+    if (MapAndLoad(exe_path_rw, NULL, &exe_image, FALSE, TRUE)) {
+        const DWORD stack_segment_size = exe_image.FileHeader->OptionalHeader.SizeOfStackReserve;
+        const DWORD data_segment_size = exe_image.FileHeader->OptionalHeader.SizeOfUninitializedData;
+        const restriction_t proc_memory_limit = restrictions.get_restriction(restriction_memory_limit);
+        segments_exceed_limit = proc_memory_limit < (stack_segment_size + data_segment_size);
+        UnMapAndLoad(&exe_image);
+    } else {
+        segments_exceed_limit = false;
+    }
+
+    std::free(exe_path_rw);
+
+    // MapAndLoad() / UnMapAndLoad() reset Windows last error, so we restore it
+    SetLastError(error_code);
+
+    const bool stackseg_related_error =
+        (error_code == ERROR_NOT_ENOUGH_MEMORY) ||
+        (error_code == ERROR_INVALID_PARAMETER); // Windows XP specific
+
+    const bool dataseg_related_error =
+        (error_code == ERROR_INVALID_PARAMETER) ||
+        (error_code == ERROR_BAD_EXE_FORMAT);
+
+    if (segments_exceed_limit && (stackseg_related_error || dataseg_related_error)) {
+        terminate_reason = terminate_reason_memory_limit;
+        return true;
+    }
+
+    return false;
+}
 
 bool secure_runner::create_restrictions() {
     if (get_process_status() == process_spawner_crash)

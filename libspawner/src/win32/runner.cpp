@@ -1,10 +1,6 @@
 #include "inc/error.h"
 
 #include "runner.h"
-#ifdef _MSC_VER
-#pragma comment(lib, "userenv")
-#pragma comment(lib, "imagehlp")
-#endif
 
 #include <iostream>
 #include <fstream>
@@ -13,7 +9,6 @@
 
 #include <WinBase.h>
 #include <UserEnv.h>
-#include <ImageHlp.h>
 
 const size_t MAX_USER_NAME = 1024;
 
@@ -140,42 +135,6 @@ void runner::restore_original_environment(const runner::env_vars_list_t& origina
 }
 
 bool runner::try_handle_createproc_error() {
-    const DWORD error_code = GetLastError();
-    bool stackseg_excessive, dataseg_excessive;
-
-    LOADED_IMAGE exe_image;
-    char* exe_path_rw = _strdup(program.c_str());
-
-    if (MapAndLoad(exe_path_rw, NULL, &exe_image, FALSE, TRUE)) {
-        stackseg_excessive = 0x40000000 < exe_image.FileHeader->OptionalHeader.SizeOfStackReserve;
-        dataseg_excessive = 0x80000000 < exe_image.FileHeader->OptionalHeader.SizeOfUninitializedData;
-        UnMapAndLoad(&exe_image);
-    } else {
-        stackseg_excessive = false;
-        dataseg_excessive = false;
-    }
-
-    std::free(exe_path_rw);
-
-    // MapAndLoad() / UnMapAndLoad() reset Windows last error, so we restore it
-    SetLastError(error_code);
-
-    const bool stackseg_related_error =
-        (error_code == ERROR_NOT_ENOUGH_MEMORY) ||
-        (error_code == ERROR_INVALID_PARAMETER); // Windows XP specific
-
-    const bool dataseg_related_error =
-        (error_code == ERROR_INVALID_PARAMETER) ||
-        (error_code == ERROR_BAD_EXE_FORMAT);
-
-    if (
-      (stackseg_related_error && stackseg_excessive) ||
-      (dataseg_related_error && dataseg_excessive)
-    ) {
-        terminate_reason = terminate_reason_memory_limit;
-        return true;
-    }
-
     return false;
 }
 
