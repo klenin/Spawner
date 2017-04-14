@@ -3,7 +3,6 @@
 
 #include <memory>
 
-#include "error.h"
 #include "platform.h"
 
 using std::shared_ptr;

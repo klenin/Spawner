@@ -1,6 +1,8 @@
+#include "system_pipe.h"
+
 #include <Windows.h>
 
-#include "system_pipe.h"
+#include "error.h"
 
 system_pipe::system_pipe(bool is_file) {
     file_flag = is_file;

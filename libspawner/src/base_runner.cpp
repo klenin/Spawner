@@ -1,5 +1,7 @@
 #include "base_runner.h"
 
+#include "error.h"
+
 multipipe_ptr base_runner::get_pipe(const std_stream_type& stream_type) {
     auto stream = streams.find(stream_type);
     if (stream == streams.end()) {

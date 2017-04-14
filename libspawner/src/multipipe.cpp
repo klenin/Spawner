@@ -1,6 +1,8 @@
+#include "multipipe.h"
+
 #include <chrono>
 
-#include "multipipe.h"
+#include "error.h"
 
 using std::chrono::milliseconds;
 using std::this_thread::sleep_for;
