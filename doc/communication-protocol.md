@@ -15,7 +15,7 @@ MUST or REQUIRED level requirements for the protocols it implements. An
 implementation that satisfies all the MUST or REQUIRED level and all the SHOULD
 level requirements for its protocols is said to be `unconditionally compliant`;
 one that satisfies all the MUST level requirements but not all the SHOULD level
-requirements for its protocols is said to be `conditionally compliant.`
+requirements for its protocols is said to be `conditionally compliant`.
 
 # Introduction
 
@@ -42,22 +42,21 @@ Both __agent__ and __controller__ are run with spawner. In a single spawner invo
 - Each __agent__'s stdin MUST be connected with __controller__'s stdout with `--in=*0.stdout`.
 - Each __agent__'s stdout MUST be connected with __controller__'s stdin with `--out=*0.stdout`
 
-Sample command line:
+Sample command line for Windows shell:
 
-```
-sp.exe --json -sr=report.json -hr=1 --separator=//
---// --controller --out=std controller.exe 3
---// --out=std --in=*0.stdout --out=*0.stdin agent-1.exe
---// --out=std --in=*0.stdout --out=*0.stdin agent-2.exe
---// --out=std --in=*0.stdout --out=*0.stdin agent-3.exe
+```winbatch
+sp.exe --json -sr=report.json -hr=1 --separator=// ^
+--// --controller --out=*std controller.exe 3 ^
+--// --out=*std --in=*0.stdout --out=*0.stdin agent-1.exe ^
+--// --out=*std --in=*0.stdout --out=*0.stdin agent-2.exe ^
+--// --out=*std --in=*0.stdout --out=*0.stdin agent-3.exe
 ```
 
 # Communication Rules
 
-- all __agent__ programs MUST start in suspended mode.
-- spawner MUST resume __agent__ in response to wait request from __controller__ to wait for __agent__ with given index.
-- spawner MUST put awaited __agent__ process into suspended state after it responded with a message.
-
+- all __agent__ programs MUST start in suspended mode
+- spawner MUST resume __agent__ in response to wait request from __controller__ to wait for __agent__ with given index
+- spawner MUST put awaited __agent__ process into suspended state after it responded with a message
 - __controller__ MAY send a message to specified __agent__
 - __controller__ MAY send a message to the spawner, informing it about waiting for specific or any __agent__ to send message to __controller__
 - __agent__ MAY send a message to the __controller__
@@ -70,11 +69,11 @@ sp.exe --json -sr=report.json -hr=1 --separator=//
 
 # Messages
 
-In general messages have a form : `<header><body>\n`. `<body>` MAY contain any character but `\n` and `\r`. `<header>` MUST always end with `#` symbol. `#` MAY be preceded by a letter which MAY be preceded by integer. e.g. `5S#Hello, world!\n`.
+In general messages have a form: `<header><body>\n`. `<body>` MAY contain any character but `\n` and `\r`. `<header>` MUST always end with `#` symbol. `#` MAY be preceded by a letter which MAY be preceded by integer. e.g. `5S#Hello, world!\n`.
 
-- __Controller__ and __agents__ MUST send messages via `stdout`
-- `stdout` MUST be flushed after sending a message. e.g. `fflush(stdout);` in C++.
-- Messages MUST be separated by newline (`\n`). e.g.
+- __controller__ and __agents__ MUST send messages via `stdout`
+- `stdout` MUST be flushed after sending a message. e.g. `fflush(stdout);` in C++
+- messages MUST be separated by newline (`\n`)
 
 ## Examples
 
@@ -111,11 +110,11 @@ __Controller__ MUST prefix message text with a number followed by `#` if intenti
 
 Considering this command line:
 
-```
-sp.exe --separator=//
---// --controller controller.exe 3
---// --in=*0.stdout --out=*0.stdin agent-1.exe
---// --in=*0.stdout --out=*0.stdin agent-2.exe
+```winbatch
+sp.exe --separator=// ^
+--// --controller controller.exe 3 ^
+--// --in=*0.stdout --out=*0.stdin agent-1.exe ^
+--// --in=*0.stdout --out=*0.stdin agent-2.exe ^
 --// --in=*0.stdout --out=*0.stdin agent-3.exe
 ```
 
@@ -150,7 +149,7 @@ Messages sent to 0 index are considered being sent to spawner an OPTIONAL letter
 
 ## Agent messages
 
-Spawner MUST prefix each __agent__ message with __agent__ index followed by `#` symbol e.g.
+Spawner MUST prefix each __agent__ message with __agent__ index followed by `#` symbol, e.g.
 ```C++
 // let this agent's index be 3
 printf("12 45 56 65\n");
