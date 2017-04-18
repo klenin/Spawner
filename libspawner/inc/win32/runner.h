@@ -13,7 +13,8 @@
 #include "mutex.h"
 
 class runner : public base_runner {
-private:
+    mutex_c suspend_mutex_;
+
     void copy_environment(TCHAR* dest, const WCHAR* source) const;
     void set_environment_var(TCHAR* dest, const std::string& varStr) const;
 
@@ -22,7 +23,8 @@ private:
     void restore_original_environment(const env_vars_list_t& original) const;
 
     virtual bool try_handle_createproc_error();
-    mutex_c suspend_mutex_;
+
+    bool process_is_finished();
 protected:
     DWORD process_creation_flags;
     startupinfo_t si;
@@ -61,7 +63,7 @@ public:
 
     virtual void run_process();
     virtual void run_process_async();
-    bool wait_for(const unsigned long &interval = INFINITE);
+    void wait_for(const unsigned long &interval = INFINITE);
     bool wait_for_init(const unsigned long &interval);
     virtual void safe_release();
     bool start_suspended = false;

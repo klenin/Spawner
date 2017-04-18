@@ -138,6 +138,10 @@ bool runner::try_handle_createproc_error() {
     return false;
 }
 
+bool runner::process_is_finished() {
+    return get_process_status() == process_spawner_crash || get_process_status() & process_finished_normal;
+}
+
 bool runner::init_process(const std::string &cmd, const char *wd) {
     WaitForSingleObject(main_job_object_access_mutex, infinite);
     set_allow_breakaway(true);
@@ -477,16 +481,13 @@ void runner::run_process() {
     if (!running || get_terminate_reason() != terminate_reason_not_terminated)
         return;
 
-    if (get_process_status() == process_spawner_crash
-     || get_process_status() & process_finished_normal) {
-        return;
+    if (!process_is_finished()) {
+        requisites();
+        if (!process_is_finished()) {
+            wait();
+        }
     }
-    requisites();
-    if (get_process_status() == process_spawner_crash
-     || get_process_status() & process_finished_normal) {
-        return;
-    }
-    wait();
+
     for (auto& stream : streams) {
         stream.second->finalize();
     }
@@ -497,21 +498,20 @@ void runner::run_process_async() {
     running_thread = CreateThread(NULL, 0, async_body, this, 0, NULL);
 }
 
-bool runner::wait_for(const unsigned long &interval) {
-    if (get_process_status() == process_spawner_crash
-     || get_process_status() & process_finished_normal) {
-        return true;
-    }
+void runner::wait_for(const unsigned long& interval) {
     if (!running_async) {
-        return false;
+        return;
     }
-    wait_for_init(interval);
-    if (WaitForSingleObject(process_info.hProcess, interval) != WAIT_OBJECT_0) {
-        return false;
+    if (!process_is_finished()) {
+        wait_for_init(interval);
     }
-    WaitForSingleObject(running_thread, interval);
-    CloseHandleSafe(running_thread);
-    return true;
+    if (running_thread != INVALID_HANDLE_VALUE) {
+        WaitForSingleObject(running_thread, interval);
+        CloseHandleSafe(running_thread);
+    }
+    if (WaitForSingleObject(process_info.hProcess, 1000) != WAIT_OBJECT_0) {
+        PANIC("Abnormal process exit");
+    }
 }
 
 bool runner::wait_for_init(const unsigned long &interval) {

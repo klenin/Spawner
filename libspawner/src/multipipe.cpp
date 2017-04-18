@@ -54,6 +54,7 @@ void multipipe::listen() {
 }
 
 bool multipipe::stop() {
+    stop_mutex.lock();
     if (listen_thread != nullptr) {
         // Close pipe to stop blocking read on Windows.
         // On Linux child pipe is already closed after fork before exec.
@@ -62,8 +63,10 @@ bool multipipe::stop() {
         listen_thread->join();
         delete listen_thread;
         listen_thread = nullptr;
+        stop_mutex.unlock();
         return true;
     }
+    stop_mutex.unlock();
     return false;
 }
 

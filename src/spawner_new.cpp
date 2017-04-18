@@ -15,6 +15,7 @@ spawner_new_c::spawner_new_c(settings_parser_c &parser)
 
 spawner_new_c::~spawner_new_c() {
     for (auto& i : runners) {
+        i->wait_for();
         delete i;
     }
 }
