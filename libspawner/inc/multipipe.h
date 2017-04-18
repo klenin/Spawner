@@ -30,7 +30,7 @@ class multipipe {
 
     system_pipe_ptr core_pipe;
     thread* listen_thread;
-    mutex write_mutex;
+    mutex write_mutex, stop_mutex;
 
     int buffer_size;
     char *read_buffer, *read_tail_buffer;
