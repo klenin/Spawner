@@ -17,6 +17,7 @@ multipipe::multipipe(system_pipe_ptr pipe, int bsize, pipe_mode mode, bool autos
     , read_tail_len(0)
     , write_tail_len(0)
     , mode(mode)
+    , parents_count(0)
     , process_message(nullptr) {
     read_buffer = new char[buffer_size];
     read_tail_buffer = new char[buffer_size];
@@ -133,7 +134,7 @@ void multipipe::start_read() {
 }
 
 void multipipe::check_parents() {
-    if (parents.size() == 0)
+    if (parents_count <= 0)
         close_and_notify();
 }
 
@@ -145,14 +146,14 @@ void multipipe::finalize() {
 void multipipe::connect(weak_ptr<multipipe> pipe) {
     if (auto p = pipe.lock()) {
         sinks[p->id] = pipe;
-        p->parents.insert(id);
+        p->parents_count++;
     }
 }
 
 void multipipe::disconnect(weak_ptr<multipipe> pipe) {
     if (auto p = pipe.lock()) {
         sinks.erase(p->id);
-        p->parents.erase(id);
+        p->parents_count--;
         p->check_parents();
     }
 }

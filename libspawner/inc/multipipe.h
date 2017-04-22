@@ -37,7 +37,7 @@ class multipipe {
     size_t read_tail_len, write_tail_len;
 
     pipe_mode mode;
-    set<int> parents;
+    volatile int parents_count;
     map<int, weak_ptr<multipipe>> sinks;
 
     multipipe(system_pipe_ptr pipe, int buffer_size, pipe_mode mode, bool autostart = true);
