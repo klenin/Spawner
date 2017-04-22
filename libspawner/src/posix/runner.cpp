@@ -358,7 +358,7 @@ void runner::create_process() {
     argv = create_argv_for_process();
     envp = create_envp_for_process();
 
-    std::string sem_name = "/sync-sem-" + proc_pid;
+    std::string sem_name = "/spawner-sync-ch-" + std::to_string(proc_pid);
     child_sync = sem_open(sem_name.c_str(), O_CREAT | O_EXCL, O_RDWR, 0);
 
     auto stdinput = streams[std_stream_input]->get_pipe();
