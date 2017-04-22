@@ -80,6 +80,14 @@ void secure_runner::requisites() {
     runner::requisites();
 }
 
+timeval secure_runner::get_user_time() {
+    timeval a;
+    a.tv_sec = (int)proc_consumed;
+    a.tv_usec = (int)(1000000 * (proc_consumed - (int)proc_consumed));
+
+    return a;
+}
+
 report_class secure_runner::get_report() {
     report.terminate_reason = get_terminate_reason();
     // non linux OSes will get ru_maxrss from getrusage
@@ -92,7 +100,9 @@ report_class secure_runner::get_report() {
 
 bool secure_runner::wait_for() {
     runner::wait_for();
-    monitor_thread.join();
+    if (monitor_thread.joinable()) {
+        monitor_thread.join();
+    }
 
     return true;
 }
@@ -177,7 +187,7 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
 
 #if defined(__linux__)
     unsigned long long current_time;
-    double proc_consumed, restriction; // TODO -- get rid of FPU calculations.
+    double restriction; // TODO -- get rid of FPU calculations.
 
     int tick_res = sysconf(_SC_CLK_TCK);
     long ticks_elapsed = 0;
@@ -237,7 +247,6 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
         ) {
             current_time = self->get_time_since_create() / 10;
             if (tick_detected = (current_time / tick_to_micros > ticks_elapsed)) {
-                proc_consumed = (double)self->proc.stat_utime / tick_res;
                 ticks_elapsed = current_time / tick_to_micros;
             }
         }
@@ -257,10 +266,12 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
         //    "./sp --out /dev/null /bin/yes"
 #define TICK_THRESHOLD 5
 
+        self->proc_consumed = (double)self->proc.stat_utime / tick_res;
         double wclk_elapsed = (double)current_time / 1000000;
-        double load_ratio = (proc_consumed - self->prev_consumed) / (wclk_elapsed - self->prev_elapsed);
+        double load_ratio = (self->proc_consumed - self->prev_consumed) / (wclk_elapsed - self->prev_elapsed);
+
         if (wclk_elapsed - self->prev_elapsed > 0.2) {
-            self->prev_consumed = proc_consumed;
+            self->prev_consumed = self->proc_consumed;
             self->prev_elapsed = wclk_elapsed;
         }
 
@@ -310,7 +321,7 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
             double restriction = (double)self->get_restriction(restriction_processor_time_limit) / 1000000;
             // printf("time limit: %g, utime: %lu, consumed: %g\n",
             //    (double)restriction, self->proc.stat_utime, proc_consumed);
-            if (proc_consumed >= restriction) {
+            if (self->proc_consumed >= restriction) {
                 // stopped process has no chance to handle SIGXCPU
                 //kill(proc_pid, SIGSTOP);
                 self->proc.fill_all();

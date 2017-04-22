@@ -209,8 +209,15 @@ void *runner::waitpid_body(void *waitpid_param) {
 
     // get wall_clock time
     self->report.user_time = self->get_time_since_create() / 10;
-    if (getrusage(RUSAGE_CHILDREN, &self->ru) != -1)
+
+    if (getrusage(RUSAGE_CHILDREN, &self->ru) != -1) // TODO: not working with multiple runs
         self->ru_success = true;
+
+#ifdef __linux__
+    timeval t = self->get_user_time();
+    self->ru.ru_utime.tv_sec = t.tv_sec;
+    self->ru.ru_utime.tv_usec = t.tv_usec;
+#endif
 
     for (auto& stream : self->streams) {
         stream.second->finalize();
@@ -226,7 +233,9 @@ void runner::run_process_async() {
 
 bool runner::wait_for()
 {
-    waitpid_thread.join();
+    if (waitpid_thread.joinable()) {
+        waitpid_thread.join();
+    }
     running = false;
     return true;
 }
@@ -240,6 +249,9 @@ void runner::requisites() {
     std::unique_lock<std::mutex> lock(waitpid_cond_mtx);
     while (!waitpid_ready)
         waitpid_cond.wait(lock);
+}
+
+timeval runner::get_user_time() {
 }
 
 void runner::report_login() {
@@ -346,7 +358,7 @@ void runner::create_process() {
     argv = create_argv_for_process();
     envp = create_envp_for_process();
 
-    std::string sem_name = "/sync-sem-" + proc_pid;
+    std::string sem_name = "/spawner-sync-ch-" + std::to_string(proc_pid);
     child_sync = sem_open(sem_name.c_str(), O_CREAT | O_EXCL, O_RDWR, 0);
 
     auto stdinput = streams[std_stream_input]->get_pipe();

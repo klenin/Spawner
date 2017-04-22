@@ -509,8 +509,9 @@ void runner::wait_for(const unsigned long& interval) {
         WaitForSingleObject(running_thread, interval);
         CloseHandleSafe(running_thread);
     }
-    if (WaitForSingleObject(process_info.hProcess, 1000) != WAIT_OBJECT_0) {
-        PANIC("Abnormal process exit");
+    // Process handle == 0 if CreateProcess failed
+    if (process_info.hProcess != nullptr && WaitForSingleObject(process_info.hProcess, 1000) != WAIT_OBJECT_0) {
+        PANIC("WaitForSingleObject(process_info.hProcess) failed");
     }
 }
 
