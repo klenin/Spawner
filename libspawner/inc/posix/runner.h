@@ -56,6 +56,8 @@ protected:
     virtual void init_process(const char *cmd, char **process_argv, char **process_envp);
     virtual void create_process();
     virtual void requisites();
+
+    virtual timeval get_user_time();
 public:
     pid_t get_proc_pid();
     void run_waitpid();

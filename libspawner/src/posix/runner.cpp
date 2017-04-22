@@ -209,8 +209,15 @@ void *runner::waitpid_body(void *waitpid_param) {
 
     // get wall_clock time
     self->report.user_time = self->get_time_since_create() / 10;
-    if (getrusage(RUSAGE_CHILDREN, &self->ru) != -1)
+
+    if (getrusage(RUSAGE_CHILDREN, &self->ru) != -1) // TODO: not working with multiple runs
         self->ru_success = true;
+
+#ifdef __linux__
+    timeval t = self->get_user_time();
+    self->ru.ru_utime.tv_sec = t.tv_sec;
+    self->ru.ru_utime.tv_usec = t.tv_usec;
+#endif
 
     for (auto& stream : self->streams) {
         stream.second->finalize();
@@ -240,6 +247,9 @@ void runner::requisites() {
     std::unique_lock<std::mutex> lock(waitpid_cond_mtx);
     while (!waitpid_ready)
         waitpid_cond.wait(lock);
+}
+
+timeval runner::get_user_time() {
 }
 
 void runner::report_login() {

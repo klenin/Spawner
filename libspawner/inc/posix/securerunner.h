@@ -18,6 +18,8 @@ private:
 #if defined(__linux__)
     procfs_class proc; // rough resource usage storage
 #endif
+    double proc_consumed;
+
     std::thread proc_thread, monitor_thread;
     void run_monitor();
 
@@ -43,6 +45,8 @@ protected:
 
     virtual void runner_free();
     virtual void requisites();
+
+    virtual timeval get_user_time() override;
 public:
     secure_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions);
     virtual ~secure_runner();
