@@ -233,7 +233,9 @@ void runner::run_process_async() {
 
 bool runner::wait_for()
 {
-    waitpid_thread.join();
+    if (waitpid_thread.joinable()) {
+        waitpid_thread.join();
+    }
     running = false;
     return true;
 }

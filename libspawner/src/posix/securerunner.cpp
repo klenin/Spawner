@@ -100,7 +100,9 @@ report_class secure_runner::get_report() {
 
 bool secure_runner::wait_for() {
     runner::wait_for();
-    monitor_thread.join();
+    if (monitor_thread.joinable()) {
+        monitor_thread.join();
+    }
 
     return true;
 }
