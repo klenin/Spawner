@@ -8,37 +8,39 @@
 
 #include "inc/error.h"
 
+// these aren't defined in Windows headers from mingw, so here it is
+
 #ifndef JOB_OBJECT_UILIMIT_ALL
-#define JOB_OBJECT_UILIMIT_ALL                      0x000000FF
-#endif//JOB_OBJECT_UILIMIT_ALL
+#define JOB_OBJECT_UILIMIT_ALL 0x000000FF
+#endif
 
 #ifndef JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
-#define JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE          0x00002000
-#endif//JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+#define JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE 0x00002000
+#endif
 
 const size_t MAX_RATE_COUNT = 20;
 
 bool secure_runner::try_handle_createproc_error() {
     const DWORD error_code = GetLastError();
-    bool segments_exceed_limit;
+    bool segments_exceed_limit = false;
+    const restriction_t proc_memory_limit = restrictions.get_restriction(restriction_memory_limit);
+    
+    if (proc_memory_limit != restriction_no_limit) {
+        LOADED_IMAGE exe_image;
+        char* exe_path_rw = _strdup(program.c_str());
 
-    LOADED_IMAGE exe_image;
-    char* exe_path_rw = _strdup(program.c_str());
+        if (MapAndLoad(exe_path_rw, nullptr, &exe_image, FALSE, TRUE)) {
+            const DWORD stack_segment_size = exe_image.FileHeader->OptionalHeader.SizeOfStackReserve;
+            const DWORD data_segment_size = exe_image.FileHeader->OptionalHeader.SizeOfUninitializedData;
+            segments_exceed_limit = proc_memory_limit < (stack_segment_size + data_segment_size);
+            UnMapAndLoad(&exe_image);
+        }
 
-    if (MapAndLoad(exe_path_rw, nullptr, &exe_image, FALSE, TRUE)) {
-        const DWORD stack_segment_size = exe_image.FileHeader->OptionalHeader.SizeOfStackReserve;
-        const DWORD data_segment_size = exe_image.FileHeader->OptionalHeader.SizeOfUninitializedData;
-        const restriction_t proc_memory_limit = restrictions.get_restriction(restriction_memory_limit);
-        segments_exceed_limit = proc_memory_limit < (stack_segment_size + data_segment_size);
-        UnMapAndLoad(&exe_image);
-    } else {
-        segments_exceed_limit = false;
+        std::free(exe_path_rw);
+
+        // MapAndLoad() / UnMapAndLoad() reset Windows last error, so we restore it
+        SetLastError(error_code);
     }
-
-    std::free(exe_path_rw);
-
-    // MapAndLoad() / UnMapAndLoad() reset Windows last error, so we restore it
-    SetLastError(error_code);
 
     const bool stackseg_related_error =
         (error_code == ERROR_NOT_ENOUGH_MEMORY) ||
