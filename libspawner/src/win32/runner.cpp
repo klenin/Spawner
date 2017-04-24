@@ -13,7 +13,7 @@
 const size_t MAX_USER_NAME = 1024;
 
 handle_t runner::main_job_object = INVALID_HANDLE_VALUE;
-handle_t runner::main_job_object_access_mutex = CreateMutex(NULL, 0, NULL);
+handle_t runner::main_job_object_access_mutex = CreateMutex(nullptr, 0, nullptr);
 bool runner::allow_breakaway = true;
 
 void runner::set_allow_breakaway(bool allow) {
@@ -21,7 +21,7 @@ void runner::set_allow_breakaway(bool allow) {
         return;
     }
     if (main_job_object == INVALID_HANDLE_VALUE) {
-        main_job_object = CreateJobObject(NULL, NULL);
+        main_job_object = CreateJobObject(nullptr, nullptr);
         AssignProcessToJobObject(main_job_object, GetCurrentProcess());
     }
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION extended_limit_information;
@@ -80,9 +80,9 @@ runner::env_vars_list_t runner::set_environment_for_process() const
 
     if (options.environmentMode == "user-default")
     {
-        LPVOID envBlock = NULL;
+        LPVOID envBlock = nullptr;
 
-        CreateEnvironmentBlock(&envBlock, NULL, FALSE);
+        CreateEnvironmentBlock(&envBlock, nullptr, FALSE);
 
         auto default_vars = read_environment((WCHAR*)envBlock);
 
@@ -97,7 +97,7 @@ runner::env_vars_list_t runner::set_environment_for_process() const
         {
             if (std::find(default_vars.cbegin(), default_vars.cend(), *i) == default_vars.cend())
             {
-                SetEnvironmentVariableA(i->first.c_str(), NULL);
+                SetEnvironmentVariableA(i->first.c_str(), nullptr);
             }
         }
     }
@@ -105,7 +105,7 @@ runner::env_vars_list_t runner::set_environment_for_process() const
     {
         for (auto i = curr_vars.cbegin(); i != curr_vars.cend(); ++i)
         {
-            SetEnvironmentVariableA(i->first.c_str(), NULL);
+            SetEnvironmentVariableA(i->first.c_str(), nullptr);
         }
     }
 
@@ -129,7 +129,7 @@ void runner::restore_original_environment(const runner::env_vars_list_t& origina
     {
         if (std::find(original.cbegin(), original.cend(), *i) == original.cend())
         {
-            SetEnvironmentVariableA(i->first.c_str(), NULL);
+            SetEnvironmentVariableA(i->first.c_str(), nullptr);
         }
     }
 }
@@ -152,8 +152,8 @@ bool runner::init_process(const std::string &cmd, const char *wd) {
 
     const char *app_name = options.use_cmd ? nullptr : program.c_str();
     const BOOL createproc = CreateProcess(
-        app_name, cmd_copy, NULL, NULL, /* inheritHandles */TRUE,
-        process_creation_flags, NULL, wd, &si, &process_info);
+        app_name, cmd_copy, nullptr, nullptr, /* inheritHandles */TRUE,
+        process_creation_flags, nullptr, wd, &si, &process_info);
 
     std::free(cmd_copy);
     ReleaseMutex(main_job_object_access_mutex);
@@ -167,7 +167,7 @@ bool runner::init_process(const std::string &cmd, const char *wd) {
         return false;
     }
 
-    get_times(&creation_time, NULL, NULL, NULL);
+    get_times(&creation_time, nullptr, nullptr, nullptr);
 
     return true;
 }
@@ -185,7 +185,7 @@ bool runner::init_process_with_logon(const std::string &cmd, const char *wd) {
     siw.hStdOutput = si.hStdOutput;
     siw.hStdError = si.hStdError;
     siw.wShowWindow = si.wShowWindow;
-    siw.lpDesktop = NULL;//L"";
+    siw.lpDesktop = nullptr;//L"";
     std::string run_program = program + " " + options.get_arguments();
 
     wchar_t *login = a2w(options.login.c_str());
@@ -196,13 +196,13 @@ bool runner::init_process_with_logon(const std::string &cmd, const char *wd) {
 
     DWORD creation_flags = CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW;
 
-    HANDLE token = NULL;
+    HANDLE token = nullptr;
 
     auto original = set_environment_for_process();
 
     const wchar_t *app_name = options.use_cmd ? nullptr : wprogram;
-    const BOOL createproc = CreateProcessWithLogonW(login, NULL, password, 0,
-        app_name, wcmd, creation_flags, NULL, wwd, &siw, &process_info);
+    const BOOL createproc = CreateProcessWithLogonW(login, nullptr, password, 0,
+        app_name, wcmd, creation_flags, nullptr, wwd, &siw, &process_info);
 
     delete[] login;
     delete[] password;
@@ -222,7 +222,7 @@ bool runner::init_process_with_logon(const std::string &cmd, const char *wd) {
     }
 
     set_allow_breakaway(true);
-    get_times(&creation_time, NULL, NULL, NULL);
+    get_times(&creation_time, nullptr, nullptr, nullptr);
 
     return true;
 }
@@ -235,13 +235,13 @@ void runner::create_process() {
     //WaitForSingleObject(init_semaphore, INFINITE);
 
     if (process_status == process_spawner_crash) {
-        ReleaseSemaphore(init_semaphore, 10, NULL);
+        ReleaseSemaphore(init_semaphore, 10, nullptr);
         return;
     }
     ZeroMemory(&si, sizeof(si));
 
     si.cb = sizeof(si);
-    {//if (!options.delegated) {//#TODO fix this
+    {//if (!options.delegated) { //TODO: fix this
         si.dwFlags = STARTF_USESTDHANDLES;
         auto end = streams.end();
         if (streams.find(std_stream_input) != end)
@@ -251,7 +251,10 @@ void runner::create_process() {
         if (streams.find(std_stream_error) != end)
             si.hStdError = streams[std_stream_error]->get_pipe()->get_output_handle();
     }
+
+    //FIXME: C++11 forbids implicit conversion of a string constant to 'char*'
     si.lpDesktop = "";
+
     process_creation_flags = PROCESS_CREATION_FLAGS;
 
     if (options.hide_gui)
@@ -272,7 +275,7 @@ void runner::create_process() {
     if (!wd)
     {
         char working_directory[MAX_PATH + 1];
-        if (GetCurrentDirectoryA(MAX_PATH, working_directory))//error here is not critical
+        if (GetCurrentDirectoryA(MAX_PATH, working_directory)) //error here is not critical
             report.working_directory = working_directory;
     }
 
@@ -295,13 +298,13 @@ void runner::create_process() {
         //IMPORTANT: if logon option selected & failed signalize it
         DWORD len = MAX_USER_NAME;
         wchar_t user_name[MAX_USER_NAME];
-        if (GetUserNameW(user_name, &len)) { // Error here is not critical.
+        if (GetUserNameW(user_name, &len)) { //error here is not critical
             report.login = user_name;
         }
         running = init_process(command_line, wd);
     }
 
-    ReleaseSemaphore(init_semaphore, 10, NULL);
+    ReleaseSemaphore(init_semaphore, 10, nullptr);
 }
 
 void runner::free() {
@@ -350,7 +353,7 @@ thread_return_t runner::async_body(thread_param_t param) {
 runner::runner(const std::string &program, const options_class &options)
     : base_runner(program, options)
     , running_thread(INVALID_HANDLE_VALUE)
-    , init_semaphore(CreateSemaphore(NULL, 0, 10, NULL))
+    , init_semaphore(CreateSemaphore(nullptr, 0, 10, nullptr))
     , process_info() {
 }
 
@@ -472,9 +475,9 @@ void runner::get_times(unsigned long long *_creation_time, unsigned long long *e
 void runner::run_process() {
     if (options.debug && !running_async) {
         run_process_async();
-        WaitForSingleObject(running_thread, 100);//may stuck here
-        WaitForSingleObject(init_semaphore, INFINITE);//may stuck here
-        WaitForSingleObject(process_info.hProcess, INFINITE);//may stuck here
+        WaitForSingleObject(running_thread, 100); //may stuck here
+        WaitForSingleObject(init_semaphore, INFINITE); //may stuck here
+        WaitForSingleObject(process_info.hProcess, INFINITE); //may stuck here
         return;
     }
     create_process();
@@ -495,7 +498,7 @@ void runner::run_process() {
 
 void runner::run_process_async() {
     running_async = true;
-    running_thread = CreateThread(NULL, 0, async_body, this, 0, NULL);
+    running_thread = CreateThread(nullptr, 0, async_body, this, 0, nullptr);
 }
 
 void runner::wait_for(const unsigned long& interval) {
@@ -516,15 +519,16 @@ void runner::wait_for(const unsigned long& interval) {
 }
 
 bool runner::wait_for_init(const unsigned long &interval) {
-    while (init_semaphore == INVALID_HANDLE_VALUE) {//not very good, made for synchro with async(mutex belongs to creator thread)
+    while (init_semaphore == INVALID_HANDLE_VALUE) {
+        //not very good, made for synchro with async (mutex belongs to the creator thread)
         Sleep(5);
     }
-    return WaitForSingleObject(init_semaphore, interval) == WAIT_OBJECT_0;// TODO: get rid of this
+    return WaitForSingleObject(init_semaphore, interval) == WAIT_OBJECT_0; //TODO: get rid of this
 }
 
 void runner::safe_release() {
     process_status = process_spawner_crash;
-    free();// make it safe!!!
+    free(); // make it safe!!!
 }
 
 void runner::enumerate_threads_(std::function<void(handle_t)> on_thread) {

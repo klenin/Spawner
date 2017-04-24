@@ -14,8 +14,8 @@ public:
             if (handle != INVALID_HANDLE_VALUE) {
                 // TODO: report invalid state
             }
-            handle = CreateMutex(NULL, FALSE, NULL);
-            if (handle == NULL) {
+            handle = CreateMutex(nullptr, FALSE, nullptr);
+            if (handle == nullptr) {
                 PANIC(get_win_last_error_string());
             }
         }

@@ -24,7 +24,7 @@ delegate_runner::delegate_runner(const std::string &program,
 }
 
 void delegate_runner::create_process() {
-    char *path = realpath(program_to_run.c_str(), NULL);
+    char *path = realpath(program_to_run.c_str(), nullptr);
     if (path != nullptr) {
         program_to_run = path;
     free(path);
@@ -89,7 +89,7 @@ void delegate_runner::create_process() {
     std::string working_directory = options.working_directory;
     char *cwd;
     if (working_directory.length() == 0) {
-    cwd = getcwd(NULL, 0);
+    cwd = getcwd(nullptr, 0);
     if (cwd != nullptr)
         working_directory = cwd;
     else

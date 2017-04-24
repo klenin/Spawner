@@ -44,7 +44,7 @@ public:
     operator std::vector<std::string>() const;
 };
 
-#define c_lst(...) compact_list_c(0, ##__VA_ARGS__, NULL)
+#define c_lst(...) compact_list_c(0, ##__VA_ARGS__, nullptr)
 
 class abstract_settings_parser_c {
 public:
@@ -113,7 +113,7 @@ public:
     virtual abstract_argument_parser_c *add_argument_parser(const std::vector<std::string> &params, abstract_argument_parser_c *argument_parser);
     virtual bool parse(abstract_settings_parser_c &parser_object) {return false;}
     virtual bool invoke(abstract_settings_parser_c &parser_object) {return false;}
-    virtual std::string help(abstract_settings_parser_c *parser) { return ""; }
+    virtual std::string help(const abstract_settings_parser_c &parser) { return ""; }
 };
 
 struct console_argument_parser_settings_t {
@@ -210,7 +210,7 @@ public:
     virtual parsing_state_e process_value(const char *argument);
     virtual bool invoke(abstract_settings_parser_c &parser_object);
     virtual bool invoke_initialization(abstract_settings_parser_c &parser_object);
-    virtual std::string help(abstract_settings_parser_c *parser);
+    virtual std::string help(const abstract_settings_parser_c &parser);
 };
 
 class environment_variable_parser_c : public abstract_parser_c {

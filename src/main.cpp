@@ -59,7 +59,7 @@ void command_handler_c::add_default_parser() {
 }
 
 command_handler_c::command_handler_c()
-    : spawner(NULL)
+    : spawner(nullptr)
     , show_help(false)
     , legacy_set(false) {
 
@@ -70,9 +70,7 @@ command_handler_c::command_handler_c()
 }
 
 command_handler_c::~command_handler_c() {
-    if (spawner) {
-        delete spawner;
-    }
+    delete spawner;
 }
 
 bool command_handler_c::set_legacy(const std::string &s) {
@@ -80,7 +78,7 @@ bool command_handler_c::set_legacy(const std::string &s) {
         return false;
     }
     legacy_set = true;
-    return create_spawner(s) != NULL;
+    return create_spawner(s) != nullptr;
 }
 
 void command_handler_c::reset() {

@@ -157,8 +157,7 @@ std::string convert(const value_t &from, const value_t &to, const long double &v
             osstream << unit_descriptions[to_unit_index].short_name;
             break;
         default:
-            osstream << format[i]; break;
-
+            osstream << format[i];
         }
     }
     return osstream.str();

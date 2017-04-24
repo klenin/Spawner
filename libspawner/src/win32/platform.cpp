@@ -20,7 +20,7 @@
 void CloseHandleSafe_debug(HANDLE &handle, char *file, unsigned int line)
 {
     try {
-        if (handle == INVALID_HANDLE_VALUE || handle == NULL)
+        if (handle == INVALID_HANDLE_VALUE || handle == nullptr)
             return;
         if (!CloseHandle(handle))
             PANIC(get_win_last_error_string());
@@ -33,7 +33,7 @@ void CloseHandleSafe_debug(HANDLE &handle, char *file, unsigned int line)
 
 void CloseHandleSafe_real(HANDLE &handle)
 {
-    if (handle == INVALID_HANDLE_VALUE || handle == NULL)
+    if (handle == INVALID_HANDLE_VALUE || handle == nullptr)
         return;
     if (!CloseHandle(handle))
         PANIC(get_win_last_error_string());
@@ -48,7 +48,13 @@ int get_spawner_pid()
 void push_shm_report(const char *shm_name, const std::string &report)
 {
     HANDLE hOut = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, shm_name);
-    LPCSTR pRep = (LPTSTR)MapViewOfFile(hOut, FILE_MAP_ALL_ACCESS, 0, 0, options_class::SHARED_MEMORY_BUF_SIZE);
+    LPCSTR pRep = (LPTSTR)MapViewOfFile(
+        hOut,
+        FILE_MAP_ALL_ACCESS,
+        0,
+        0,
+        options_class::SHARED_MEMORY_BUF_SIZE
+    );
 
     memcpy((PVOID)pRep, report.c_str(), sizeof(char) * report.length());
 
@@ -218,7 +224,7 @@ std::string get_win_last_error_string(PDWORD_PTR args) {
             FORMAT_MESSAGE_FROM_SYSTEM |
             FORMAT_MESSAGE_ALLOCATE_BUFFER |
             (args ? FORMAT_MESSAGE_ARGUMENT_ARRAY : FORMAT_MESSAGE_IGNORE_INSERTS),
-            NULL,
+            nullptr,
             error_code,
             lang_id,
             (LPSTR)&error_text,

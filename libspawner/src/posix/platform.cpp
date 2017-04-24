@@ -134,7 +134,7 @@ unsigned long long int clock_gettime(int id, struct timespec *ts) {
     struct timeval tv;
     int rv;
 
-    rv = gettimeofday(&tv, NULL);
+    rv = gettimeofday(&tv, nullptr);
 
     if (rv)
         return rv;

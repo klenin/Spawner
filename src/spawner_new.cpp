@@ -55,7 +55,7 @@ void spawner_new_c::json_report(runner *runner_instance,
         { "IOBytes", unit_memory_byte, degree_default, restriction_write_limit },
         { "IdlenessTime", unit_time_second, degree_micro, restriction_idle_time_limit },
         { "IdlenessProcessorLoad", unit_no_unit, degree_centi, restriction_load_ratio },
-        { NULL, unit_no_unit, degree_default, restriction_max },
+        { nullptr, unit_no_unit, degree_default, restriction_max },
     };
     for (int i = 0; restriction_items[i].field; ++i) {
         if (runner_restrictions[restriction_items[i].restriction] == restriction_no_limit) {
@@ -95,7 +95,7 @@ void spawner_new_c::json_report(runner *runner_instance,
         { "BytesWritten", runner_report.write_transfer_count, unit_memory_byte, degree_default },
         { "KernelTime", runner_report.kernel_time, unit_time_second, degree_micro },
         { "ProcessorLoad", (uint64_t)(runner_report.load_ratio * 100), unit_no_unit, degree_centi },
-        { NULL, 0, unit_no_unit, degree_default },
+        { nullptr, 0, unit_no_unit, degree_default },
     };
     for (int i = 0; result_items[i].field; ++i) {
         rapidjson_write(result_items[i].field);
@@ -383,7 +383,7 @@ bool spawner_new_c::init_runner() {
         //throw exception
     }
     runner *secure_runner_instance;
-    options.session << order++ << time(NULL) << runner::get_current_time();
+    options.session << order++ << time(nullptr) << runner::get_current_time();
     options.add_arguments(parser.get_program_arguments());
     if (options.login.length())
     {

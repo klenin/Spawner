@@ -58,7 +58,7 @@ const std::string& get_error_text() {
     return error_text_;
 }
 
-void set_on_panic_action(const std::function<void()> action) {
+void set_on_panic_action(const std::function<void()>& action) {
     on_panic_action_ = action;
 }
 

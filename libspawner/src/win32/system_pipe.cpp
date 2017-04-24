@@ -36,7 +36,7 @@ system_pipe_ptr system_pipe::open_pipe(pipe_mode mode) {
 
     auto pipe = new system_pipe(false);
 
-    if (!CreatePipe(&pipe->input_handle, &pipe->output_handle, &saAttr, NULL))
+    if (!CreatePipe(&pipe->input_handle, &pipe->output_handle, &saAttr, 0))
         PANIC(get_win_last_error_string());
 
     if (mode == write_mode && !SetHandleInformation(pipe->output_handle, HANDLE_FLAG_INHERIT, 0))
@@ -58,7 +58,7 @@ system_pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode) {
         access = GENERIC_WRITE;
         creationDisposition = CREATE_ALWAYS;
     } else
-        throw std::runtime_error("Both file open mode not supported");
+        PANIC("Bad pipe mode");
 
     auto file = CreateFile(filename.c_str(), access, FILE_SHARE_READ, nullptr, creationDisposition, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (file == INVALID_HANDLE_VALUE)
@@ -99,7 +99,7 @@ size_t system_pipe::read(char* bytes, size_t count) const {
         return 0;
 
     size_t bytes_read;
-    if (!ReadFile(input_handle, (LPVOID)bytes, (DWORD)count, (LPDWORD)&bytes_read, NULL)) {
+    if (!ReadFile(input_handle, (LPVOID)bytes, (DWORD)count, (LPDWORD)&bytes_read, nullptr)) {
         auto error = GetLastError();
         // We force closed write side of the pipe.
         if (error != ERROR_OPERATION_ABORTED && error != ERROR_BROKEN_PIPE)
@@ -114,7 +114,7 @@ size_t system_pipe::write(const char* bytes, size_t count) const {
         return 0;
 
     size_t bytes_written;
-    if (!WriteFile(output_handle, (LPCVOID)bytes, (DWORD)count, (LPDWORD)&bytes_written, NULL)) {
+    if (!WriteFile(output_handle, (LPCVOID)bytes, (DWORD)count, (LPDWORD)&bytes_written, nullptr)) {
         auto error = GetLastError();
         // Pipe may be already closed.
         if (error != ERROR_OPERATION_ABORTED && error != ERROR_BROKEN_PIPE)
