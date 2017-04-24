@@ -16,6 +16,7 @@ multipipe::multipipe(system_pipe_ptr pipe, int bsize, pipe_mode mode, bool autos
     , buffer_size(bsize)
     , read_tail_len(0)
     , write_tail_len(0)
+    , check_new_line(true)
     , mode(mode)
     , parents_count(0)
     , process_message(nullptr) {
@@ -24,6 +25,17 @@ multipipe::multipipe(system_pipe_ptr pipe, int bsize, pipe_mode mode, bool autos
 
     if (autostart && mode == read_mode)
         start_read();
+}
+
+void multipipe::set_new_line_checking() {
+    check_new_line = true;
+    for (auto &sink: sinks) {
+        if (auto p = sink.second.lock()) {
+            if (p->get_pipe()->is_file() || p->parents_count > 1) {
+                check_new_line = false;
+            }
+        }
+    }
 }
 
 void multipipe::listen() {
@@ -44,7 +56,7 @@ void multipipe::listen() {
         for (auto i = 0; i < bytes_read; i++, t++) {
             // TODO maybe increase buffer dynamic?
             read_tail_buffer[read_tail_len++] = *t;
-            if (*t == '\n' || read_tail_len >= buffer_size) {
+            if (check_new_line && *t == '\n' || read_tail_len >= buffer_size) {
                 process_message(read_tail_buffer, read_tail_len);
                 read_tail_len = 0;
             }
@@ -148,6 +160,7 @@ void multipipe::connect(weak_ptr<multipipe> pipe) {
         sinks[p->id] = pipe;
         p->parents_count++;
     }
+    set_new_line_checking();
 }
 
 void multipipe::disconnect(weak_ptr<multipipe> pipe) {
@@ -156,6 +169,7 @@ void multipipe::disconnect(weak_ptr<multipipe> pipe) {
         p->parents_count--;
         p->check_parents();
     }
+    set_new_line_checking();
 }
 
 void multipipe::write(const char* bytes, size_t count) {
