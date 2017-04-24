@@ -8,13 +8,15 @@
 
 #include "inc/error.h"
 
+// these aren't defined in Windows headers from mingw, so here it is
+
 #ifndef JOB_OBJECT_UILIMIT_ALL
-#define JOB_OBJECT_UILIMIT_ALL                      0x000000FF
-#endif//JOB_OBJECT_UILIMIT_ALL
+#define JOB_OBJECT_UILIMIT_ALL 0x000000FF
+#endif
 
 #ifndef JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
-#define JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE          0x00002000
-#endif//JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+#define JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE 0x00002000
+#endif
 
 const size_t MAX_RATE_COUNT = 20;
 
