@@ -58,3 +58,7 @@ restriction_kind_t restrictions_class::restriction_by_name(const std::string &na
     }
     return restriction_max;
 }
+
+bool restrictions_class::check_restriction(const restriction_kind_t &kind) const {
+    return get_restriction(kind) != restriction_no_limit;
+}

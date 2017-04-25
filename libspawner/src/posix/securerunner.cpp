@@ -158,7 +158,7 @@ restriction_t secure_runner::get_restriction(const restriction_kind_t &restricti
 }
 
 bool secure_runner::check_restriction(const restriction_kind_t &restriction) const {
-    return get_restriction(restriction) != restriction_no_limit;
+    return restrictions.check_restriction(restriction);
 }
 
 process_status_t secure_runner::get_process_status() {

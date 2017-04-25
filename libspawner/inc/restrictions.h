@@ -36,6 +36,7 @@ struct restrictions_class
     restriction_t &operator [](const restriction_kind_t &kind);
     restriction_t &operator [](int i);
     static restriction_kind_t restriction_by_name(const std::string &name);
+    bool check_restriction(const restriction_kind_t &kind) const;
 };
 
 #endif //_SPAWNER_RESTRICTIONS_H_
