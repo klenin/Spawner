@@ -23,13 +23,13 @@ const size_t MAX_RATE_COUNT = 20;
 bool secure_runner::try_handle_createproc_error() {
     const DWORD error_code = GetLastError();
     bool segments_exceed_limit = false;
-    const restriction_t proc_memory_limit = restrictions.get_restriction(restriction_memory_limit);
     
-    if (proc_memory_limit != restriction_no_limit) {
+    if (restrictions.check_restriction(restriction_memory_limit)) {
         LOADED_IMAGE exe_image;
         char* exe_path_rw = _strdup(program.c_str());
 
         if (MapAndLoad(exe_path_rw, nullptr, &exe_image, FALSE, TRUE)) {
+            const restriction_t proc_memory_limit = restrictions.get_restriction(restriction_memory_limit);
             const DWORD stack_segment_size = exe_image.FileHeader->OptionalHeader.SizeOfStackReserve;
             const DWORD data_segment_size = exe_image.FileHeader->OptionalHeader.SizeOfUninitializedData;
             segments_exceed_limit = proc_memory_limit < (stack_segment_size + data_segment_size);
@@ -78,7 +78,7 @@ bool secure_runner::create_restrictions() {
     memset(&joeli, 0, sizeof(joeli));
     joeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION | JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
 
-    if (restrictions.get_restriction(restriction_memory_limit) != restriction_no_limit)
+    if (restrictions.check_restriction(restriction_memory_limit))
     {
         joeli.JobMemoryLimit = restrictions.get_restriction(restriction_memory_limit);
         joeli.ProcessMemoryLimit = joeli.JobMemoryLimit;
@@ -90,7 +90,7 @@ bool secure_runner::create_restrictions() {
     le = GetLastError();
 
     // Security limit
-    if (restrictions.get_restriction(restriction_security_limit) != restriction_no_limit)
+    if (restrictions.check_restriction(restriction_security_limit))
     {
         JOBOBJECT_BASIC_UI_RESTRICTIONS buir;
         buir.UIRestrictionsClass = JOB_OBJECT_UILIMIT_ALL;
@@ -156,8 +156,9 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             break;
         }
 
-        if (restrictions.get_restriction(restriction_write_limit) != restriction_no_limit &&
-            bai.IoInfo.WriteTransferCount > restrictions.get_restriction(restriction_write_limit)) {
+        if (restrictions.check_restriction(restriction_write_limit) &&
+            bai.IoInfo.WriteTransferCount > restrictions.get_restriction(restriction_write_limit))
+        {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_WRITE_LIMIT, COMPLETION_KEY, nullptr);
             break;
         }
@@ -169,15 +170,17 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             self->prolong_time_limits_ = false;
         }
 
-        if (restrictions.get_restriction(restriction_processor_time_limit) != restriction_no_limit &&
+        if (restrictions.check_restriction(restriction_processor_time_limit) &&
             (DOUBLE)(bai.BasicInfo.TotalUserTime.QuadPart - self->base_time_processor_) >
-            10 * restrictions.get_restriction(restriction_processor_time_limit)) {
+            10 * restrictions.get_restriction(restriction_processor_time_limit))
+        {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_END_OF_PROCESS_TIME, COMPLETION_KEY, nullptr);
             break;
         }
-        if (restrictions.get_restriction(restriction_user_time_limit) != restriction_no_limit &&
+        if (restrictions.check_restriction(restriction_user_time_limit) &&
             (self->get_time_since_create() - self->base_time_user_) >
-            10 * restrictions.get_restriction(restriction_user_time_limit)) {
+            10 * restrictions.get_restriction(restriction_user_time_limit))
+        {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, nullptr);//freezed
             break;
         }
@@ -191,9 +194,9 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             self->report.load_ratio = self->report.load_ratio*0.95 + 0.05*load_ratio;
 
             last_quad_part = bai.BasicInfo.TotalUserTime.QuadPart;
-            if (restrictions.get_restriction(restriction_load_ratio) != restriction_no_limit) {
+            if (restrictions.check_restriction(restriction_load_ratio)) {
                 if (self->report.load_ratio < self->restrictions.get_restriction(restriction_load_ratio)) {
-                    if (!is_idle && restrictions.get_restriction(restriction_idle_time_limit) != restriction_no_limit) {
+                    if (!is_idle && restrictions.check_restriction(restriction_idle_time_limit)) {
                         is_idle = true;
                         idle_time = idle_dt;
                     }
@@ -206,10 +209,8 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
                 }
             }
         }
-        if (
-            restrictions.get_restriction(restriction_processes_count_limit) != restriction_no_limit
-            && bai.BasicInfo.TotalProcesses > restrictions.get_restriction(restriction_processes_count_limit)
-            )
+        if (restrictions.check_restriction(restriction_processes_count_limit) &&
+            bai.BasicInfo.TotalProcesses > restrictions.get_restriction(restriction_processes_count_limit))
         {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_COUNT_LIMIT, COMPLETION_KEY, nullptr);
             break;
