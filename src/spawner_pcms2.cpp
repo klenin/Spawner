@@ -50,13 +50,13 @@ void spawner_pcms2_c::print_report()
             break;
         }
         std::cout << "  time consumed: 0.03";
-        if (restrictions[restriction_processor_time_limit] != restriction_no_limit) {
+        if (restrictions.check_restriction(restriction_processor_time_limit)) {
             std::cout << " of " << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), (long double)restrictions[restriction_processor_time_limit]);
         }
         std::cout << " sec" << std::endl;
         std::cout << "  time passed:   " << rep.total_time << " sec" << std::endl;
         std::cout << "  peak memory:   " << rep.peak_memory_used;
-        if (restrictions[restriction_memory_limit] != restriction_no_limit) {
+        if (restrictions.check_restriction(restriction_memory_limit)) {
             std::cout << " of " << restrictions[restriction_memory_limit];
         }
         std::cout << " bytes" << std::endl;

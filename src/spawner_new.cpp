@@ -58,7 +58,7 @@ void spawner_new_c::json_report(runner *runner_instance,
         { nullptr, unit_no_unit, degree_default, restriction_max },
     };
     for (int i = 0; restriction_items[i].field; ++i) {
-        if (runner_restrictions[restriction_items[i].restriction] == restriction_no_limit) {
+        if (!runner_restrictions.check_restriction(restriction_items[i].restriction)) {
             continue;
         }
         rapidjson_write(restriction_items[i].field);
