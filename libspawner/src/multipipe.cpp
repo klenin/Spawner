@@ -28,11 +28,11 @@ multipipe::multipipe(system_pipe_ptr pipe, int bsize, pipe_mode mode, bool autos
 }
 
 void multipipe::set_new_line_checking() {
-    check_new_line = true;
+    check_new_line = false;
     for (auto &sink: sinks) {
         if (auto p = sink.second.lock()) {
-            if (p->get_pipe()->is_file() || p->parents_count > 1) {
-                check_new_line = false;
+            if (!p->get_pipe()->is_file() || p->parents_count > 1) {
+                check_new_line = true;
             }
         }
     }
