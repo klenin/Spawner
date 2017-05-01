@@ -1,19 +1,20 @@
-#include "inc/uconvert.h"
-#include "inc/error.h"
-#include "compatibility.h"
 #include "platform.h"
 
 #include <sstream>
 #include <fstream>
-#include <stdlib.h>
 #include <string>
 
+#include <cstdlib>
+
 #include <Windows.h>
-#if defined(_MSC_VER)
-#include <dbghelp.h>
+#ifdef _MSC_VER
+#include <DbgHelp.h>
 #endif
 
 #include "stack_walker.h"
+#include "inc/uconvert.h"
+#include "inc/error.h"
+#include "compatibility.h"
 
 void CloseHandleSafe_debug(HANDLE &handle, char *file, unsigned int line)
 {
@@ -245,3 +246,4 @@ std::string get_win_last_error_string(PDWORD_PTR args) {
 void platform_exit_failure() {
     ExitProcess(1);
 }
+
