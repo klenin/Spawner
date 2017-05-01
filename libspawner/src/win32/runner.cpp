@@ -1,5 +1,3 @@
-#include "inc/error.h"
-
 #include "runner.h"
 
 #include <iostream>
@@ -9,6 +7,8 @@
 
 #include <WinBase.h>
 #include <UserEnv.h>
+
+#include "inc/error.h"
 
 const size_t MAX_USER_NAME = 1024;
 
@@ -20,20 +20,24 @@ void runner::set_allow_breakaway(bool allow) {
     if (allow_breakaway == allow) {
         return;
     }
+
     if (main_job_object == INVALID_HANDLE_VALUE) {
         main_job_object = CreateJobObject(nullptr, nullptr);
         AssignProcessToJobObject(main_job_object, GetCurrentProcess());
     }
-    JOBOBJECT_EXTENDED_LIMIT_INFORMATION extended_limit_information;
-    memset(&extended_limit_information, 0, sizeof(extended_limit_information));
+
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION ex_limit_info;
+    memset(&ex_limit_info, 0, sizeof(ex_limit_info));
+
     if (allow) {
-        extended_limit_information.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_BREAKAWAY_OK | JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK;
+        ex_limit_info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_BREAKAWAY_OK | JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK;
     }
 
-    if (!SetInformationJobObject(main_job_object, JobObjectExtendedLimitInformation, &extended_limit_information, sizeof(extended_limit_information))) {
+    if (!SetInformationJobObject(main_job_object, JobObjectExtendedLimitInformation, &ex_limit_info, sizeof(ex_limit_info))) {
         DWORD le = GetLastError();
         return;
     }
+
     allow_breakaway = allow;
 }
 
@@ -44,11 +48,8 @@ runner::env_vars_list_t runner::read_environment(const WCHAR* source) const
     for (WCHAR* env = (WCHAR*)source; *env != '\0';)
     {
         std::string envStr(w2a((const WCHAR*)env));
-
         int pos = envStr.find('=');
-
         vars.push_back(make_pair(envStr.substr(0, pos), envStr.substr(pos + 1)));
-
         env += envStr.length() + 1;
     }
 
@@ -62,11 +63,8 @@ runner::env_vars_list_t runner::set_environment_for_process() const
     if (options.environmentMode == "user-default")
     {
         LPVOID envBlock = nullptr;
-
         CreateEnvironmentBlock(&envBlock, nullptr, FALSE);
-
         auto default_vars = read_environment((WCHAR*)envBlock);
-
         DestroyEnvironmentBlock(envBlock);
 
         for (const auto& i : default_vars)
@@ -129,7 +127,7 @@ bool runner::init_process(const std::string &cmd, const char *wd) {
 
     // LPVOID penv = createEnvironmentForProcess();
     env_vars_list_t original = set_environment_for_process();
-    char *cmd_copy = _strdup(cmd.c_str()); // CreateProcess requires write access to command line.
+    char *cmd_copy = _strdup(cmd.c_str()); // CreateProcess requires write access to command line
 
     const char *app_name = options.use_cmd ? nullptr : program.c_str();
     const BOOL createproc = CreateProcess(
@@ -158,7 +156,6 @@ bool runner::init_process_with_logon(const std::string &cmd, const char *wd) {
     set_allow_breakaway(false);
 
     STARTUPINFOW siw;
-    //USES_CONVERSION;
     ZeroMemory(&siw, sizeof(siw));
     siw.cb = sizeof(si);
     siw.dwFlags = si.dwFlags;
@@ -297,9 +294,7 @@ void runner::wait() {
 void runner::debug() {
     DEBUG_EVENT debug_event;
     while (WaitForDebugEvent(&debug_event, INFINITE)) {
-        ContinueDebugEvent(debug_event.dwProcessId,
-            debug_event.dwThreadId,
-            DBG_CONTINUE);
+        ContinueDebugEvent(debug_event.dwProcessId, debug_event.dwThreadId, DBG_CONTINUE);
         if (debug_event.dwDebugEventCode == EXCEPTION_DEBUG_EVENT)
         {
             debug_event.dwProcessId = 0;
