@@ -26,17 +26,17 @@ options_class::options_class(const options_class &options)
     , monitorInterval(options.monitorInterval)
     , report_file(options.report_file) {
 
-    for (auto i = options.stdinput.begin(); i != options.stdinput.end(); ++i) {
-        stdinput.push_back(*i);
+    for (const auto& i : options.stdinput) {
+        stdinput.push_back(i);
     }
-    for (auto i = options.stdoutput.begin(); i != options.stdoutput.end(); ++i) {
-        stdoutput.push_back(*i);
+    for (const auto& i : options.stdoutput) {
+        stdoutput.push_back(i);
     }
-    for (auto i = options.stderror.begin(); i != options.stderror.end(); ++i) {
-        stderror.push_back(*i);
+    for (const auto& i : options.stderror) {
+        stderror.push_back(i);
     }
-    for (auto i = options.arguments.begin(); i != options.arguments.end(); ++i) {
-        arguments.push_back(*i);
+    for (const auto& i : options.arguments) {
+        arguments.push_back(i);
     }
 
     environmentVars = options.environmentVars;
@@ -48,8 +48,8 @@ void options_class::add_argument(std::string argument) {
 }
 
 void options_class::add_arguments(const std::vector<std::string> &arguments_a) {
-    for (size_t i = 0; i < arguments_a.size(); ++i) {
-        arguments.push_back(arguments_a[i]);
+    for (const auto& i : arguments_a) {
+        arguments.push_back(i);
     }
 }
 

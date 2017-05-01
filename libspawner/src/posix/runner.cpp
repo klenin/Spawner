@@ -58,15 +58,15 @@ char **runner::create_envp_for_process() const
         PANIC("user-default mode is not supported");
         //setenv("SPAWNER_VERSION", "POSIX", 1);
         } else if (options.environmentMode == "clear")
-        for (auto i = curr_vars.cbegin(); i != curr_vars.cend(); ++i)
+        for (const auto& i : curr_vars)
             // use unsetenv() or leave environ pointer with nullptr
-            setenv(i->first.c_str(), "" , 1);
+            setenv(i.first.c_str(), "" , 1);
         else if (options.environmentMode == "inherit")
-        for (auto i = curr_vars.cbegin(); i != curr_vars.cend(); ++i)
-            setenv(i->first.c_str(), i->second.c_str(), 1);
+        for (const auto& i : curr_vars)
+            setenv(i.first.c_str(), i.second.c_str(), 1);
 
-        for (auto i = options.environmentVars.cbegin(); i != options.environmentVars.cend(); ++i)
-            setenv(i->first.c_str(), i->second.c_str(), 1);
+        for (const auto& i : options.environmentVars)
+            setenv(i.first.c_str(), i.second.c_str(), 1);
 
 
     // restore original environ pointer

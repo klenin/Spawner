@@ -116,20 +116,20 @@ void spawner_new_c::json_report(runner *runner_instance,
 
     rapidjson_write("StdOut");
     writer.StartArray();
-    for (uint i = 0; i < runner_options.stdoutput.size(); ++i) {
-        rapidjson_write(runner_options.stdoutput[i].c_str());
+    for (const auto& i : runner_options.stdoutput) {
+        rapidjson_write(i.c_str());
     }
     writer.EndArray();
     rapidjson_write("StdErr");
     writer.StartArray();
-    for (uint i = 0; i < runner_options.stderror.size(); ++i) {
-        rapidjson_write(runner_options.stderror[i].c_str());
+    for (const auto& i : runner_options.stderror) {
+        rapidjson_write(i.c_str());
     }
     writer.EndArray();
     rapidjson_write("StdIn");
     writer.StartArray();
-    for (uint i = 0; i < runner_options.stdinput.size(); ++i) {
-        rapidjson_write(runner_options.stdinput[i].c_str());
+    for (const auto& i : runner_options.stdinput) {
+        rapidjson_write(i.c_str());
     }
     writer.EndArray();
 
@@ -450,13 +450,13 @@ void spawner_new_c::print_report() {
     rapidjson::StringBuffer s;
     rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_writer(s);
     report_writer.StartArray();
-    for (auto i = runners.begin(); i != runners.end(); ++i) {
-        report_class rep = (*i)->get_report();
-        options_class options_item = (*i)->get_options();
+    for (auto i : runners) {
+        report_class rep = i->get_report();
+        options_class options_item = i->get_options();
         std::cout.flush();
         if (!options_item.hide_report || options_item.report_file.length()) {
             std::string report;
-            json_report(*i, report_writer);
+            json_report(i, report_writer);
 
             if (options_item.login.length() > 0)
             {
@@ -469,7 +469,7 @@ void spawner_new_c::print_report() {
                 {
                     report = GenerateSpawnerReport(
                         rep, options_item,
-                        (*i)->get_restrictions()
+                        i->get_restrictions()
                     );
                 }
                 else
@@ -477,7 +477,7 @@ void spawner_new_c::print_report() {
                     rapidjson::StringBuffer sub_report;
                     rapidjson::PrettyWriter<rapidjson::StringBuffer, rapidjson::UTF16<> > report_item_writer(sub_report);
                     report_item_writer.StartArray();
-                    json_report(*i, report_item_writer);
+                    json_report(i, report_item_writer);
                     report_item_writer.EndArray();
                     report = sub_report.GetString();
                 }

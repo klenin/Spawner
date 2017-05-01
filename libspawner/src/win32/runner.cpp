@@ -88,29 +88,29 @@ runner::env_vars_list_t runner::set_environment_for_process() const
 
         DestroyEnvironmentBlock(envBlock);
 
-        for (auto i = default_vars.cbegin(); i != default_vars.cend(); ++i)
+        for (const auto& i : default_vars)
         {
-            SetEnvironmentVariableA(i->first.c_str(), i->second.c_str());
+            SetEnvironmentVariableA(i.first.c_str(), i.second.c_str());
         }
 
-        for (auto i = curr_vars.cbegin(); i != curr_vars.cend(); ++i)
+        for (const auto& i : curr_vars)
         {
-            if (std::find(default_vars.cbegin(), default_vars.cend(), *i) == default_vars.cend())
+            if (std::find(default_vars.cbegin(), default_vars.cend(), i) == default_vars.cend())
             {
-                SetEnvironmentVariableA(i->first.c_str(), nullptr);
+                SetEnvironmentVariableA(i.first.c_str(), nullptr);
             }
         }
     }
     else if (options.environmentMode == "clear")
     {
-        for (auto i = curr_vars.cbegin(); i != curr_vars.cend(); ++i)
+        for (const auto& i : curr_vars)
         {
-            SetEnvironmentVariableA(i->first.c_str(), nullptr);
+            SetEnvironmentVariableA(i.first.c_str(), nullptr);
         }
     }
 
-    for (auto i = options.environmentVars.cbegin(); i != options.environmentVars.cend(); ++i) {
-        SetEnvironmentVariableA(i->first.c_str(), i->second.c_str());
+    for (const auto& i : options.environmentVars) {
+        SetEnvironmentVariableA(i.first.c_str(), i.second.c_str());
     }
 
     return curr_vars;
@@ -120,16 +120,16 @@ void runner::restore_original_environment(const runner::env_vars_list_t& origina
 {
     auto curr_vars = read_environment(GetEnvironmentStringsW());
 
-    for (auto i = original.cbegin(); i != original.cend(); ++i)
+    for (const auto& i : original)
     {
-        SetEnvironmentVariableA(i->first.c_str(), i->second.c_str());
+        SetEnvironmentVariableA(i.first.c_str(), i.second.c_str());
     }
 
-    for (auto i = curr_vars.cbegin(); i != curr_vars.cend(); ++i)
+    for (const auto& i : curr_vars)
     {
-        if (std::find(original.cbegin(), original.cend(), *i) == original.cend())
+        if (std::find(original.cbegin(), original.cend(), i) == original.cend())
         {
-            SetEnvironmentVariableA(i->first.c_str(), nullptr);
+            SetEnvironmentVariableA(i.first.c_str(), nullptr);
         }
     }
 }
@@ -286,8 +286,8 @@ void runner::create_process() {
     if (!options.string_arguments.empty()) {
         command_line += " " + options.string_arguments;
     }
-    for (auto arg = options.arguments.begin(); arg != options.arguments.end(); ++arg) {
-        command_line += " " + quote(*arg);
+    for (const auto& arg : options.arguments) {
+        command_line += " " + quote(arg);
     }
 
     if (!options.login.empty()) {
