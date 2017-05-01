@@ -75,7 +75,7 @@ bool secure_runner::create_restrictions() {
 
     // Memory and time limit
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION joeli;
-    memset(&joeli, 0, sizeof(joeli));
+    ZeroMemory(&joeli, sizeof(joeli));
     joeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION | JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
 
     if (restrictions.check_restriction(restriction_memory_limit))

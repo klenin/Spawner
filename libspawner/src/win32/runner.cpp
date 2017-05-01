@@ -27,7 +27,7 @@ void runner::set_allow_breakaway(bool allow) {
     }
 
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION ex_limit_info;
-    memset(&ex_limit_info, 0, sizeof(ex_limit_info));
+    ZeroMemory(&ex_limit_info, sizeof(ex_limit_info));
 
     if (allow) {
         ex_limit_info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_BREAKAWAY_OK | JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK;
