@@ -37,25 +37,6 @@ void runner::set_allow_breakaway(bool allow) {
     allow_breakaway = allow;
 }
 
-void runner::copy_environment(TCHAR* dest, const WCHAR* source) const {
-    int written = 0;
-
-    for (WCHAR* env = (WCHAR*)source; *env != '\0';)
-    {
-        TCHAR* ansi = w2a((const WCHAR*)env);
-
-        strcpy(dest, ansi);
-
-        int bytes = strlen(ansi) + 1;
-
-        written += bytes;
-        env += bytes;
-        dest += bytes;
-    }
-
-    *dest = '\0';
-}
-
 runner::env_vars_list_t runner::read_environment(const WCHAR* source) const
 {
     env_vars_list_t vars;
@@ -185,7 +166,6 @@ bool runner::init_process_with_logon(const std::string &cmd, const char *wd) {
     siw.hStdOutput = si.hStdOutput;
     siw.hStdError = si.hStdError;
     siw.wShowWindow = si.wShowWindow;
-    siw.lpDesktop = nullptr;//L"";
     std::string run_program = program + " " + options.get_arguments();
 
     wchar_t *login = a2w(options.login.c_str());
@@ -195,8 +175,6 @@ bool runner::init_process_with_logon(const std::string &cmd, const char *wd) {
     wchar_t *wwd = a2w(wd);
 
     DWORD creation_flags = CREATE_SUSPENDED | CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW;
-
-    HANDLE token = nullptr;
 
     auto original = set_environment_for_process();
 

@@ -15,9 +15,6 @@
 class runner : public base_runner {
     mutex_c suspend_mutex_;
 
-    void copy_environment(TCHAR* dest, const WCHAR* source) const;
-    void set_environment_var(TCHAR* dest, const std::string& varStr) const;
-
     env_vars_list_t read_environment(const WCHAR* source) const;
     env_vars_list_t set_environment_for_process() const;
     void restore_original_environment(const env_vars_list_t& original) const;
