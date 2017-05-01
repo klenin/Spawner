@@ -24,8 +24,8 @@ class runner : public base_runner {
     bool process_is_finished();
 protected:
     DWORD process_creation_flags;
-    startupinfo_t si;
-    process_info_t process_info;
+    STARTUPINFO si;
+    PROCESS_INFORMATION process_info;
     thread_t running_thread;
     volatile handle_t init_semaphore; //rename to mutex_init_signal
     static handle_t main_job_object;

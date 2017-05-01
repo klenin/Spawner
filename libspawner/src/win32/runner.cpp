@@ -124,7 +124,7 @@ bool runner::process_is_finished() {
 }
 
 bool runner::init_process(const std::string &cmd, const char *wd) {
-    WaitForSingleObject(main_job_object_access_mutex, infinite);
+    WaitForSingleObject(main_job_object_access_mutex, INFINITE);
     set_allow_breakaway(true);
 
     // LPVOID penv = createEnvironmentForProcess();
@@ -154,7 +154,7 @@ bool runner::init_process(const std::string &cmd, const char *wd) {
 }
 
 bool runner::init_process_with_logon(const std::string &cmd, const char *wd) {
-    WaitForSingleObject(main_job_object_access_mutex, infinite);
+    WaitForSingleObject(main_job_object_access_mutex, INFINITE);
     set_allow_breakaway(false);
 
     STARTUPINFOW siw;
@@ -233,7 +233,8 @@ void runner::create_process() {
     //FIXME: C++11 forbids implicit conversion of a string constant to 'char*'
     si.lpDesktop = "";
 
-    process_creation_flags = PROCESS_CREATION_FLAGS;
+    process_creation_flags = (CREATE_SUSPENDED | /*CREATE_PRESERVE_CODE_AUTHZ_LEVEL | */CREATE_SEPARATE_WOW_VDM |
+        CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB);
 
     if (options.hide_gui)
     {

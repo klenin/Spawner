@@ -312,7 +312,7 @@ void secure_runner::wait()
     {
         GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
     }
-    //WaitForSingleObject(process_info.hProcess, infinite);
+    //WaitForSingleObject(process_info.hProcess, INFINITE);
     report.user_time = get_time_since_create() / 10;
     running = false;
 }

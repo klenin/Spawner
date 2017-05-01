@@ -18,6 +18,7 @@
 //#include <winioctl.h>
 
 typedef HANDLE thread_t;
+typedef HANDLE pipe_handle;
 
 #define thread_return_t DWORD WINAPI
 #define thread_param_t LPVOID
@@ -55,18 +56,9 @@ typedef HANDLE thread_t;
 #define JOB_OBJECT_ASSIGN_PROCESS           (0x0001)
 #endif
 
-typedef PROCESS_INFORMATION process_info_t;
-typedef HANDLE pipe_handle;
-typedef STARTUPINFO startupinfo_t;
-typedef DWORD process_id;
-
-const DWORD PROCESS_CREATION_FLAGS = (CREATE_SUSPENDED | /*CREATE_PRESERVE_CODE_AUTHZ_LEVEL | */CREATE_SEPARATE_WOW_VDM | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB);
-
 #define CloseHandleSafe(handle) (CloseHandleSafe_real(handle))
 void CloseHandleSafe_debug(HANDLE &handle, const char *file, unsigned int line);
 void CloseHandleSafe_real(HANDLE &handle);
-
-const unsigned long infinite = INFINITE;
 
 #ifndef uint
 typedef unsigned int uint_32;
