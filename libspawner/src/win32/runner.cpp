@@ -252,8 +252,7 @@ void runner::create_process() {
             si.hStdError = streams[std_stream_error]->get_pipe()->get_output_handle();
     }
 
-    //FIXME: C++11 forbids implicit conversion of a string constant to 'char*'
-    si.lpDesktop = "";
+    si.lpDesktop = nullptr;
 
     process_creation_flags = PROCESS_CREATION_FLAGS;
 
