@@ -6,51 +6,12 @@
 // TODO: use c_list /dev/null || nul system dependent
 const std::string CLEAR_STRING = "nul";
 
-options_class::options_class(const options_class &options)
-    : session(options.session)
-    , hide_gui(options.hide_gui)
-    , hide_report(options.hide_report)
-    , hide_output(options.hide_output)
-    , debug(options.debug)
-    , json(options.json)
-    , controller(options.controller)
-    , delegated(options.delegated)
-    , secure_token(options.secure_token)
-    , silent_errors(options.silent_errors)
-    , use_cmd(options.use_cmd)
-    , string_arguments(options.string_arguments)
-    , working_directory(options.working_directory)
-    , login(options.login)
-    , password(options.password)
-    , shared_memory(options.shared_memory)
-    , monitorInterval(options.monitorInterval)
-    , report_file(options.report_file) {
-
-    for (const auto& i : options.stdinput) {
-        stdinput.push_back(i);
-    }
-    for (const auto& i : options.stdoutput) {
-        stdoutput.push_back(i);
-    }
-    for (const auto& i : options.stderror) {
-        stderror.push_back(i);
-    }
-    for (const auto& i : options.arguments) {
-        arguments.push_back(i);
-    }
-
-    environmentVars = options.environmentVars;
-    environmentMode = options.environmentMode;
-}
-
 void options_class::add_argument(std::string argument) {
     arguments.push_back(argument);
 }
 
 void options_class::add_arguments(const std::vector<std::string> &arguments_a) {
-    for (const auto& i : arguments_a) {
-        arguments.push_back(i);
-    }
+    arguments.insert(arguments.cend(), arguments_a.cbegin(), arguments_a.cend());
 }
 
 void options_class::push_argument_front(std::string argument) {

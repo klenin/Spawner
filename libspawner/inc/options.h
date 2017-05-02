@@ -8,28 +8,48 @@
 
 // hide_gui - creates process with hidden flag turned on
 // silent_errors - on windows, if error occurs program doesn't show "send report" dialog
-// #to do: make some options as map of variant
+
+// TODO: make some options as map of variant
+// TODO: rewrite as a class
 
 struct options_class
 {
     static const unsigned SHARED_MEMORY_BUF_SIZE = 4069;
 
     session_class session;
-    options_class(const options_class &options);
-    options_class(const session_class &session_param)
-        : hide_gui(true)
-        , silent_errors(true)
-        , debug(false)
-        , monitorInterval(1000) // 0.001s
-        , secure_token(false)
-        , use_cmd(false)
-        , session(session_param)
-        , delegated(false)
-        , hide_report(false)
-        , hide_output(false)
-        , json(false)
-        , controller(false)
-        , environmentMode("inherit") {}
+    std::string report_file;  /* bad, need many values
+                                 but this causes many outputs if environment
+                                 variable and command line argument both present */
+    std::string shared_memory;
+    
+    std::string string_arguments;
+    std::string working_directory;
+    
+    std::string login;
+    std::string password;
+    
+    std::vector<std::string> stdinput;
+    std::vector<std::string> stdoutput;
+    std::vector<std::string> stderror;
+    std::list<std::string> arguments;
+
+    std::list< std::pair< std::string, std::string > > environmentVars;
+    std::string environmentMode = "inherit";
+       
+    bool hide_gui = true;
+    bool hide_report = false;
+    bool hide_output = false;
+    bool debug = false;
+    bool json = false;
+    bool secure_token = false;
+    bool silent_errors = true;
+    bool use_cmd = false;
+    bool delegated = false;
+    bool controller = false;
+    unsigned long monitorInterval = 1000; // 0.001s
+ 
+    options_class(const session_class &session_param) : session(session_param) {}
+
     void add_argument(std::string argument);
     void add_arguments(const std::vector<std::string> &arguments_a);
     void push_argument_front(std::string argument);
@@ -44,30 +64,6 @@ struct options_class
     std::string get_argument(size_t index) const;
     size_t get_arguments_count() const;
     std::string format_arguments() const;
-    std::string string_arguments;
-    std::string working_directory;
-    std::string login;
-    std::string password;
-    std::vector<std::string> stdinput;
-    std::vector<std::string> stdoutput;
-    std::vector<std::string> stderror;
-    std::list< std::pair< std::string, std::string > > environmentVars;
-    std::list<std::string> arguments;
-    std::string report_file; //bad, need many values but this causes many outputs if environment variable and command line argument both present
-    std::string shared_memory;
-    std::string mutex;
-    bool hide_gui;
-    bool hide_report;
-    bool hide_output;
-    bool debug;
-    bool json;
-    bool secure_token;
-    bool silent_errors;
-    bool use_cmd;
-    bool delegated;
-    bool controller;
-    unsigned long monitorInterval;
-    std::string environmentMode;
 };
 
 #endif //_SPAWNER_OPTIONS_H_
