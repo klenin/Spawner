@@ -32,14 +32,14 @@ compact_list_c::operator std::vector<std::string>() const {
 }
 
 abstract_parser_c::~abstract_parser_c() {
-    for (auto i = parameters.begin(); i != parameters.end(); i++) {
-        i->second->dereference();
+    for (const auto& i : parameters) {
+        i.second->dereference();
     }
 }
 
 abstract_argument_parser_c *abstract_parser_c::add_argument_parser(const std::vector<std::string> &params, abstract_argument_parser_c *argument_parser) {
-    for (auto i = params.begin(); i != params.end(); ++i) {
-        parameters[*i] = argument_parser->reference();
+    for (const auto& i : params) {
+        parameters[i] = argument_parser->reference();
     }
     parsers[argument_parser] = params;
     return argument_parser;
@@ -103,8 +103,8 @@ abstract_parser_c *settings_parser_c::pop_saved_parser() {
     return value.second;
 }
 void settings_parser_c::clear_parsers() {
-    for (auto i = parsers.begin(); i != parsers.end(); ++i) {
-        delete (*i);
+    for (auto p : parsers) {
+        delete p;
     }
     parsers.clear();
 }
@@ -130,15 +130,15 @@ bool settings_parser_c::parse(int argc, char *argv[]) {
     arg_c = argc;
     arg_v = argv;
     position = 1;
-    for (size_t i = 0; i < parsers.size(); ++i) {
-        parsers[i]->invoke_initialization(*this);
+    for (auto p : parsers) {
+        p->invoke_initialization(*this);
     }
 
     while (current_position() < argc && !stopped) {
-        for (auto parser = parsers.begin(); parser != parsers.end(); ++parser) {
+        for (auto parser : parsers) {
             int fetched_position = position;
-            if ((*parser)->parse(*this)) {
-                save_current_position(*parser);
+            if (parser->parse(*this)) {
+                save_current_position(parser);
             }
             position = fetched_position;
         }
@@ -180,8 +180,8 @@ void settings_parser_c::pop_back() {
 
 std::string settings_parser_c::help() {
     std::string result;
-    for (auto parser = parsers.begin(); parser != parsers.end(); ++parser) {
-        result += (*parser)->help(*this);
+    for (auto parser : parsers) {
+        result += parser->help(*this);
     }
     return result;
 }
@@ -203,8 +203,8 @@ bool console_argument_parser_c::parse(abstract_settings_parser_c &parser_object)
     return last_state == argument_ok_state;
 }
 abstract_argument_parser_c *console_argument_parser_c::add_flag_parser(const std::vector<std::string> &params, abstract_argument_parser_c *argument_parser) {
-    for (auto i = params.begin(); i != params.end(); ++i) {
-        is_flag[*i] = true;
+    for (const auto& i : params) {
+        is_flag[i] = true;
     }
     return add_argument_parser(params, argument_parser);
 }
@@ -223,11 +223,11 @@ console_argument_parser_c::parsing_state_e console_argument_parser_c::process_ar
     }
     size_t length = s.length();
     size_t divider_length = 0;
-    for (auto i = parser_object->dividers.begin(); i != parser_object->dividers.end(); ++i) {
-        size_t pos = s.find(*i);
+    for (const auto& i : parser_object->dividers) {
+        size_t pos = s.find(i);
         length = min_def(length, pos);
         if (length == pos) {
-            divider_length = max_def(divider_length, (*i).length());
+            divider_length = max_def(divider_length, i.length());
         }
     }
     left = s.substr(0, length);
@@ -271,10 +271,10 @@ std::string console_argument_parser_c::help(const abstract_settings_parser_c &pa
     if (parser.dividers.size()) {
         dividers = parser.dividers[0];
     }
-    for (auto i = parsers.begin(); i != parsers.end(); i++) {
+    for (auto i : parsers) {
         //iterating over all arguments
-        for (auto j = i->second.begin(); j != i->second.end(); j++) {
-            if (j != i->second.begin()) {
+        for (auto j = i.second.cbegin(); j != i.second.cend(); ++j) {
+            if (j != i.second.cbegin()) {
                 res << ", ";
             }
             if (*j == SEPARATOR_ARGUMENT) {
@@ -283,10 +283,10 @@ std::string console_argument_parser_c::help(const abstract_settings_parser_c &pa
                 res << *j;
             }
             if (!is_flag[*j]) {
-                res << dividers << i->first->value_description();
+                res << dividers << i.first->value_description();
             }
         }
-        res << std::endl << "\t" << i->first->description() << std::endl;
+        res << std::endl << "\t" << i.first->description() << std::endl;
     }
     return res.str();
 }
@@ -300,16 +300,16 @@ bool environment_variable_parser_c::invoke_initialization(abstract_settings_pars
         return true;
     }
 
-    for (auto i = parameters.begin(); i != parameters.end(); i++) {
-        auto result = get_env_var(i->first.c_str(), buffer, sizeof(buffer));
+    for (const auto& i : parameters) {
+        auto result = get_env_var(i.first.c_str(), buffer, sizeof(buffer));
 
         if (result > sizeof(buffer)) {
-            std::cerr << "Invalid parameter value for \"" << i->first << "\" with error: Buffer overflow" << std::endl;
+            std::cerr << "Invalid parameter value for \"" << i.first << "\" with error: Buffer overflow" << std::endl;
         } else if (result > 0) {
             try {
-                i->second->apply(std::string(buffer, result));
+                i.second->apply(std::string(buffer, result));
             } catch (std::string &error) {
-                std::cerr << "Invalid parameter value for \"" << i->first << "\" with error: " << error << std::endl;
+                std::cerr << "Invalid parameter value for \"" << i.first << "\" with error: " << error << std::endl;
             }
         }
     }
@@ -319,15 +319,15 @@ bool environment_variable_parser_c::invoke_initialization(abstract_settings_pars
 
 std::string environment_variable_parser_c::help(abstract_settings_parser_c *parser) {
     std::ostringstream res;
-    for (auto i = parsers.begin(); i != parsers.end(); i++) {
+    for (auto i : parsers) {
         //iterating over all arguments
-        for (auto j = i->second.begin(); j != i->second.end(); j++) {
-            if (j != i->second.begin()) {
+        for (auto j = i.second.cbegin(); j != i.second.cend(); ++j) {
+            if (j != i.second.cbegin()) {
                 res << ", ";
             }
-            res << *j << "=" << i->first->value_description();
+            res << *j << "=" << i.first->value_description();
         }
-        res << std::endl << "\t" << i->first->description() << std::endl;
+        res << std::endl << "\t" << i.first->description() << std::endl;
     }
     return res.str();
 }

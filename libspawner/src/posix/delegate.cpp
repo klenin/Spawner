@@ -76,9 +76,9 @@ void delegate_runner::create_process() {
     }
 
     auto process_pipes = [](options_class& options, const std::vector<std::string>& vals, const std::string& prefix) {
-        for (auto i = vals.cbegin(); i != vals.cend(); ++i)
+        for (const auto& i : vals)
         {
-            options.push_argument_front(prefix + *i);
+            options.push_argument_front(prefix + i);
         }
     };
 
@@ -104,9 +104,9 @@ void delegate_runner::create_process() {
         options.push_argument_front("-hr=1");
     }
 
-    for (auto i = options.environmentVars.cbegin(); i != options.environmentVars.cend(); ++i)
+    for (const auto& i : options.environmentVars)
     {
-        options.push_argument_front("-D " + i->first + "=" + i->second);
+        options.push_argument_front("-D " + i.first + "=" + i.second);
     }
 
     if (options.json)
