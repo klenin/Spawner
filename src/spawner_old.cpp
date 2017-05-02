@@ -53,15 +53,15 @@ bool spawner_old_c::init()
             auto stdoutput = runner_instance->get_pipe(std_stream_output);
             auto stderror = runner_instance->get_pipe(std_stream_error);
 
-            for (auto& input : options.stdinput)
+            for (const auto& input : options.stdinput)
                 if (input[0] != '*')
                     get_or_create_file_pipe(input, read_mode)->connect(stdinput);
 
-            for (auto& output : options.stdoutput)
+            for (const auto& output : options.stdoutput)
                 if (output[0] != '*')
                     stdoutput->connect(get_or_create_file_pipe(output, write_mode));
 
-            for (auto& error : options.stderror)
+            for (const auto& error : options.stderror)
                 if (error[0] != '*')
                     stderror->connect(get_or_create_file_pipe(error, write_mode));
         }
@@ -71,7 +71,7 @@ bool spawner_old_c::init()
 void spawner_old_c::run() {
     begin_report();
     runner_instance->run_process_async();
-    for (auto& file_pipe : file_pipes) {
+    for (const auto& file_pipe : file_pipes) {
         file_pipe.second->start_read();
     }
     runner_instance->get_pipe(std_stream_input)->check_parents();

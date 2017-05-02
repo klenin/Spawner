@@ -147,7 +147,7 @@ void spawner_new_c::json_report(runner *runner_instance,
     writer.StartArray();
     std::vector<std::string> errors;
     errors.push_back(get_error_text());
-    for (auto& error : errors) {
+    for (const auto& error : errors) {
         rapidjson_write(error.c_str());
     }
     writer.EndArray();
@@ -350,7 +350,7 @@ bool spawner_new_c::init() {
 
     for (auto runner : runners) {
         options_class runner_options = runner->get_options();
-        struct {
+        const struct {
             std::vector<std::string> &streams;
             std_stream_type type;
         } streams[] = {
@@ -358,8 +358,8 @@ bool spawner_new_c::init() {
             { runner_options.stdoutput, std_stream_output },
             { runner_options.stderror, std_stream_error },
         };
-        for (auto& stream_item : streams) {
-            for (auto& stream_str : stream_item.streams) {
+        for (const auto& stream_item : streams) {
+            for (const auto& stream_str : stream_item.streams) {
                 PANIC_IF(stream_str.size() == 0);
                 if (stream_str[0] != '*') {
                     continue;
@@ -421,7 +421,7 @@ void spawner_new_c::run() {
     for (auto i : runners) {
         i->run_process_async();
     }
-    for (auto& file_pipe : file_pipes) {
+    for (const auto& file_pipe : file_pipes) {
         file_pipe.second->start_read();
     }
     for (auto i : runners) {

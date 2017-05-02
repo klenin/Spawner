@@ -29,7 +29,7 @@ multipipe::multipipe(system_pipe_ptr pipe, int bsize, pipe_mode mode, bool autos
 
 void multipipe::set_new_line_checking() {
     check_new_line = false;
-    for (auto &sink: sinks) {
+    for (const auto& sink : sinks) {
         if (auto p = sink.second.lock()) {
             if (!p->get_pipe()->is_file() || p->parents_count > 1) {
                 check_new_line = true;
@@ -87,7 +87,7 @@ void multipipe::write(const char* bytes, size_t count, set<int>& src) {
     write_mutex.lock();
 
     src.insert(id);
-    for (auto& pipe : sinks) {
+    for (const auto& pipe : sinks) {
         PANIC_IF(src.find(pipe.first) != src.end());
         if (auto p = pipe.second.lock()) {
             p->write(bytes, count, src);
@@ -104,7 +104,7 @@ void multipipe::close_and_notify() {
     flush();
 
     auto childs = this->sinks;
-    for (auto& pipe : childs)
+    for (const auto& pipe : childs)
         disconnect(pipe.second);
 
     core_pipe->close();

@@ -491,7 +491,7 @@ void runner::run_process() {
         }
     }
 
-    for (auto& stream : streams) {
+    for (const auto& stream : streams) {
         stream.second->finalize();
     }
 }

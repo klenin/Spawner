@@ -273,8 +273,8 @@ std::string console_argument_parser_c::help(const abstract_settings_parser_c &pa
     }
     for (auto i : parsers) {
         //iterating over all arguments
-        for (auto j = i.second.begin(); j != i.second.end(); ++j) {
-            if (j != i.second.begin()) {
+        for (auto j = i.second.cbegin(); j != i.second.cend(); ++j) {
+            if (j != i.second.cbegin()) {
                 res << ", ";
             }
             if (*j == SEPARATOR_ARGUMENT) {
@@ -321,8 +321,8 @@ std::string environment_variable_parser_c::help(abstract_settings_parser_c *pars
     std::ostringstream res;
     for (auto i : parsers) {
         //iterating over all arguments
-        for (auto j = i.second.begin(); j != i.second.end(); ++j) {
-            if (j != i.second.begin()) {
+        for (auto j = i.second.cbegin(); j != i.second.cend(); ++j) {
+            if (j != i.second.cbegin()) {
                 res << ", ";
             }
             res << *j << "=" << i.first->value_description();
