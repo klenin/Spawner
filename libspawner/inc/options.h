@@ -55,7 +55,6 @@ struct options_class
     std::list<std::string> arguments;
     std::string report_file; //bad, need many values but this causes many outputs if environment variable and command line argument both present
     std::string shared_memory;
-    std::string mutex;
     bool hide_gui;
     bool hide_report;
     bool hide_output;
