@@ -34,35 +34,22 @@ struct options_class
     std::list<std::string> arguments;
 
     std::list< std::pair< std::string, std::string > > environmentVars;
-    std::string environmentMode;
+    std::string environmentMode = "inherit";
        
-    bool hide_gui;
-    bool hide_report;
-    bool hide_output;
-    bool debug;
-    bool json;
-    bool secure_token;
-    bool silent_errors;
-    bool use_cmd;
-    bool delegated;
-    bool controller;
-    unsigned long monitorInterval;
+    bool hide_gui = true;
+    bool hide_report = false;
+    bool hide_output = false;
+    bool debug = false;
+    bool json = false;
+    bool secure_token = false;
+    bool silent_errors = true;
+    bool use_cmd = false;
+    bool delegated = false;
+    bool controller = false;
+    unsigned long monitorInterval = 1000; // 0.001s
  
     options_class(const options_class &options);
-    options_class(const session_class &session_param)
-        : hide_gui(true)
-        , silent_errors(true)
-        , debug(false)
-        , monitorInterval(1000) // 0.001s
-        , secure_token(false)
-        , use_cmd(false)
-        , session(session_param)
-        , delegated(false)
-        , hide_report(false)
-        , hide_output(false)
-        , json(false)
-        , controller(false)
-        , environmentMode("inherit") {}
+    options_class(const session_class &session_param) : session(session_param) {}
 
     void add_argument(std::string argument);
     void add_arguments(const std::vector<std::string> &arguments_a);
