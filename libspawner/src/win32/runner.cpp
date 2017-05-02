@@ -62,6 +62,7 @@ runner::env_vars_list_t runner::set_environment_for_process() const
 
     if (options.environmentMode == "user-default")
     {
+        //retrieve system environment variables
         LPVOID envBlock = nullptr;
         CreateEnvironmentBlock(&envBlock, nullptr, FALSE);
         auto default_vars = read_environment((WCHAR*)envBlock);
@@ -72,6 +73,7 @@ runner::env_vars_list_t runner::set_environment_for_process() const
             SetEnvironmentVariableA(i.first.c_str(), i.second.c_str());
         }
 
+        //remove environment variables defined for Spawner itself
         for (const auto& i : curr_vars)
         {
             if (std::find(default_vars.cbegin(), default_vars.cend(), i) == default_vars.cend())
