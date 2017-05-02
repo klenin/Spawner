@@ -48,7 +48,6 @@ struct options_class
     bool controller = false;
     unsigned long monitorInterval = 1000; // 0.001s
  
-    options_class(const options_class &options);
     options_class(const session_class &session_param) : session(session_param) {}
 
     void add_argument(std::string argument);
