@@ -60,11 +60,6 @@ typedef HANDLE pipe_handle;
 void CloseHandleSafe_debug(HANDLE &handle, const char *file, unsigned int line);
 void CloseHandleSafe_real(HANDLE &handle);
 
-#ifndef uint
-typedef unsigned int uint_32;
-typedef uint_32 uint;
-#endif//uint
-
 int get_spawner_pid();
 
 void push_shm_report(const char *, const std::string &);
