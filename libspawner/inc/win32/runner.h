@@ -15,9 +15,6 @@
 class runner : public base_runner {
     mutex_c suspend_mutex_;
 
-    void copy_environment(TCHAR* dest, const WCHAR* source) const;
-    void set_environment_var(TCHAR* dest, const std::string& varStr) const;
-
     env_vars_list_t read_environment(const WCHAR* source) const;
     env_vars_list_t set_environment_for_process() const;
     void restore_original_environment(const env_vars_list_t& original) const;
@@ -27,8 +24,8 @@ class runner : public base_runner {
     bool process_is_finished();
 protected:
     DWORD process_creation_flags;
-    startupinfo_t si;
-    process_info_t process_info;
+    STARTUPINFO si;
+    PROCESS_INFORMATION process_info;
     thread_t running_thread;
     volatile handle_t init_semaphore; //rename to mutex_init_signal
     static handle_t main_job_object;
