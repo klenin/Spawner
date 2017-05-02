@@ -11,9 +11,7 @@ void options_class::add_argument(std::string argument) {
 }
 
 void options_class::add_arguments(const std::vector<std::string> &arguments_a) {
-    for (const auto& i : arguments_a) {
-        arguments.push_back(i);
-    }
+    arguments.insert(arguments.cend(), arguments_a.cbegin(), arguments_a.cend());
 }
 
 void options_class::push_argument_front(std::string argument) {
