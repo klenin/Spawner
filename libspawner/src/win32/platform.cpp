@@ -8,8 +8,6 @@
 #include <stdlib.h>
 #include <string>
 
-// windows8 requires Processenv.h for GetEnvironmentVariableA()
-#include <WinBase.h>
 #include <Windows.h>
 #if defined(_MSC_VER)
 #include <dbghelp.h>
