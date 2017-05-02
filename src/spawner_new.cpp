@@ -14,7 +14,7 @@ spawner_new_c::spawner_new_c(settings_parser_c &parser)
 }
 
 spawner_new_c::~spawner_new_c() {
-    for (auto& i : runners) {
+    for (auto i : runners) {
         i->wait_for();
         delete i;
     }
@@ -348,7 +348,7 @@ bool spawner_new_c::init() {
         }
     }
 
-    for (auto& runner : runners) {
+    for (auto runner : runners) {
         options_class runner_options = runner->get_options();
         struct {
             std::vector<std::string> &streams;
@@ -418,16 +418,16 @@ bool spawner_new_c::init_runner() {
 
 void spawner_new_c::run() {
     begin_report();
-    for (auto& i : runners) {
+    for (auto i : runners) {
         i->run_process_async();
     }
     for (auto& file_pipe : file_pipes) {
         file_pipe.second->start_read();
     }
-    for (auto& i : runners) {
+    for (auto i : runners) {
         i->get_pipe(std_stream_input)->check_parents();
     }
-    for (auto& i : runners) {
+    for (auto i : runners) {
         i->wait_for();
     }
     print_report();
