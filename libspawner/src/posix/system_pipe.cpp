@@ -1,9 +1,11 @@
-#include <error.h>
-#include <string.h>
+#include "system_pipe.h"
+
+#include <cstring>
+
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "system_pipe.h"
+#include "error.h"
 
 system_pipe::system_pipe(bool is_file) {
     file_flag = is_file;
