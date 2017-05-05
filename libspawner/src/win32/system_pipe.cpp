@@ -119,8 +119,9 @@ size_t system_pipe::write(const char* bytes, size_t count) const {
     if (!WriteFile(output_handle, (LPCVOID)bytes, (DWORD)count, (LPDWORD)&bytes_written, nullptr)) {
         auto error = GetLastError();
         // Pipe may be already closed.
-        if (error != ERROR_OPERATION_ABORTED && error != ERROR_BROKEN_PIPE)
+        if (error != ERROR_BROKEN_PIPE && error != ERROR_PIPE_NOT_CONNECTED && error != ERROR_NO_DATA && error != ERROR_INVALID_HANDLE) {
             PANIC(get_win_last_error_string());
+        }
     }
 
     if (bytes_written > 0)
@@ -133,6 +134,8 @@ void system_pipe::flush() const {
     if (!is_writable())
         return;
 
+    // If the child process exits before reading all data from  the pipe, FlushFileBuffers will hang.
+    // To work around this, we close the pipe handle and ignore errors in write() function.
     FlushFileBuffers(output_handle);
 }
 
