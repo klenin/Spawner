@@ -124,7 +124,7 @@ size_t system_pipe::write(const char* bytes, size_t count) const {
         }
     }
 
-    if (bytes_written > 0)
+    if (bytes_written > 0 && !is_file())
         flush();
 
     return bytes_written;
@@ -146,6 +146,7 @@ void system_pipe::close(pipe_mode mode) {
     }
 
     if (mode == write_mode && is_writable()) {
+        flush();
         CloseHandle(output_handle);
         output_handle = INVALID_HANDLE_VALUE;
     }
