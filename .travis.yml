@@ -1,0 +1,47 @@
+language: cpp
+compiler: gcc
+dist: trusty
+
+branches:
+  only:
+    - /^v(\d+\.)+\d+$/
+
+env:
+  global:
+    - BUILD_DIR=build
+    - BUILD_32_DIR=build32
+
+install:
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90
+  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 90
+
+script:
+  - chmod +x ./travis_build.sh
+  - ./travis_build.sh
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-6
+      - g++-6
+      - libc6-dev
+      - libc6-dev-i386
+      - linux-libc-dev:i386
+      - gcc-6-multilib
+      - g++-6-multilib
+      - p7zip-full
+
+deploy:
+  provider: releases
+  api_key: $GITHUB_AUTH_TOKEN
+  file:
+    - $TRAVIS_BUILD_DIR/linux-amd64.zip
+    - $TRAVIS_BUILD_DIR/linux-i386.zip
+  skip_cleanup: true
+  on:
+    tags: true
+
+notifications:
+  email: false

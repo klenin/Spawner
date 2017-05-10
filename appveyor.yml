@@ -1,0 +1,38 @@
+branches:
+  only:
+    - /^v(\d+\.)+\d+$/
+    - master
+
+skip_non_tags: true
+
+install:
+  - git submodule update --init --recursive
+
+image: Visual Studio 2017
+platform: Win32
+configuration: Release
+
+environment:
+  build_dir: build
+
+before_build:
+  - ps: .\appveyor_before_build.ps1
+
+build:
+  project: $(build_dir)\sp.sln
+  verbosity: minimal
+
+after_build:
+  - 7z a win32.zip .\%build_dir%\Release\sp.exe
+
+artifacts:
+  - path: win32.zip
+    name: sp
+
+deploy:
+  provider: GitHub
+  auth_token: $(GITHUB_AUTH_TOKEN)
+  artifact: win32.zip
+  force_update: true
+  on:
+    appveyor_repo_tag: true

@@ -1,0 +1,14 @@
+#!/bin/bash
+cd $TRAVIS_BUILD_DIR
+rm -rf $BUILD_DIR $BUILD_32_DIR
+mkdir $BUILD_DIR $BUILD_32_DIR
+
+cd $TRAVIS_BUILD_DIR/$BUILD_DIR
+cmake $TRAVIS_BUILD_DIR
+make
+7z a $TRAVIS_BUILD_DIR/linux-amd64.zip sp
+
+cd $TRAVIS_BUILD_DIR/$BUILD_32_DIR
+cmake -DBIT32=True $TRAVIS_BUILD_DIR
+make
+7z a $TRAVIS_BUILD_DIR/linux-i386.zip sp
