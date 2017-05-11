@@ -108,7 +108,7 @@ size_t system_pipe::write(const char* bytes, size_t count) const {
     ssize_t bytes_written = ::write(output_handle, bytes, count);
     if (bytes_written < 0)
         PANIC(strerror(errno));
-    if (bytes_written > 0)
+    if (bytes_written > 0 && !is_file())
         flush();
 
     return (size_t)bytes_written;
@@ -128,6 +128,7 @@ void system_pipe::close(pipe_mode mode) {
     }
 
     if (mode == write_mode && is_writable()) {
+        flush();
         ::close(output_handle);
         output_handle = -1;
     }
