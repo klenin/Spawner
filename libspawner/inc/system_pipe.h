@@ -25,12 +25,18 @@ enum pipe_mode
 };
 
 class system_pipe {
-    bool file_flag;
+    enum pipe_type
+    {
+        def  = 0,
+        file = 1,
+        con  = 2,
+    };
+    pipe_type type;
 
     pipe_handle input_handle;
     pipe_handle output_handle;
 
-    explicit system_pipe(bool is_file);
+    explicit system_pipe(pipe_type t = pipe_type::def);
 
 public:
     static system_pipe_ptr open_std(std_stream_type type);
@@ -51,6 +57,7 @@ public:
     void close();
 
     bool is_file() const;
+    bool is_console() const;
 
     static void cancel_sync_io(thread_t thread);
 };

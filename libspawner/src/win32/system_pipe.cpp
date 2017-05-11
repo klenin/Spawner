@@ -4,14 +4,14 @@
 
 #include "error.h"
 
-system_pipe::system_pipe(bool is_file) {
-    file_flag = is_file;
+system_pipe::system_pipe(pipe_type t) {
+    type = t;
     input_handle = INVALID_HANDLE_VALUE;
     output_handle = INVALID_HANDLE_VALUE;
 }
 
 system_pipe_ptr system_pipe::open_std(std_stream_type type) {
-    auto pipe = new system_pipe(true); // true -> fix for Ctrl+Z(win)|Ctrl+D(posix)
+    auto pipe = new system_pipe(pipe_type::con);
 
     switch (type) {
         case std_stream_input:
@@ -36,7 +36,7 @@ system_pipe_ptr system_pipe::open_pipe(pipe_mode mode) {
     saAttr.bInheritHandle = TRUE;
     saAttr.lpSecurityDescriptor = nullptr;
 
-    auto pipe = new system_pipe(false);
+    auto pipe = new system_pipe();
 
     if (!CreatePipe(&pipe->input_handle, &pipe->output_handle, &saAttr, 0))
         PANIC(get_win_last_error_string());
@@ -66,7 +66,7 @@ system_pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode) {
     if (file == INVALID_HANDLE_VALUE)
         PANIC(filename + ": " + get_win_last_error_string());
 
-    auto pipe = new system_pipe(true);
+    auto pipe = new system_pipe(pipe_type::file);
 
     if (mode == read_mode)
         pipe->input_handle = file;
@@ -158,7 +158,11 @@ void system_pipe::close() {
 }
 
 bool system_pipe::is_file() const {
-    return file_flag;
+    return type == file;
+}
+
+bool system_pipe::is_console() const {
+    return type == con;
 }
 
 void system_pipe::cancel_sync_io(thread_t thread) {
