@@ -69,10 +69,10 @@ void delegate_runner::create_process() {
         }
     }
 
-    auto process_pipes = [](options_class& options, const std::vector<std::string>& vals, const std::string& prefix) {
+    auto process_pipes = [](options_class& options, const std::vector<options_class::redirect>& vals, const std::string& prefix) {
         for (const auto& i : vals)
         {
-            options.push_argument_front(prefix + i);
+            options.push_argument_front(prefix + i.original);
         }
     };
 

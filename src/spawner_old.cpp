@@ -53,17 +53,17 @@ bool spawner_old_c::init()
             auto stdoutput = runner_instance->get_pipe(std_stream_output);
             auto stderror = runner_instance->get_pipe(std_stream_error);
 
-            for (const auto& input : options.stdinput)
-                if (input[0] != '*')
-                    get_or_create_file_pipe(input, read_mode)->connect(stdinput);
+            for (auto& input : options.stdinput)
+                if (input.type == options_class::file)
+                    get_or_create_file_pipe(input.name, read_mode)->connect(stdinput);
 
-            for (const auto& output : options.stdoutput)
-                if (output[0] != '*')
-                    stdoutput->connect(get_or_create_file_pipe(output, write_mode));
+            for (auto& output : options.stdoutput)
+                if (output.type == options_class::file)
+                    stdoutput->connect(get_or_create_file_pipe(output.name, write_mode));
 
-            for (const auto& error : options.stderror)
-                if (error[0] != '*')
-                    stderror->connect(get_or_create_file_pipe(error, write_mode));
+            for (auto& error : options.stderror)
+                if (error.type == options_class::file)
+                    stderror->connect(get_or_create_file_pipe(error.name, write_mode));
         }
     return true;
 }
