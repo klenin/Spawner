@@ -4,14 +4,15 @@
 
 #include "error.h"
 
-system_pipe::system_pipe(pipe_type t) {
+system_pipe::system_pipe(bool flush, pipe_type t) {
+    autoflush = flush;
     type = t;
     input_handle = INVALID_HANDLE_VALUE;
     output_handle = INVALID_HANDLE_VALUE;
 }
 
-system_pipe_ptr system_pipe::open_std(std_stream_type type) {
-    auto pipe = new system_pipe(pipe_type::con);
+system_pipe_ptr system_pipe::open_std(std_stream_type type, bool flush) {
+    auto pipe = new system_pipe(flush, pipe_type::con);
 
     switch (type) {
         case std_stream_input:
@@ -30,13 +31,13 @@ system_pipe_ptr system_pipe::open_std(std_stream_type type) {
     return system_pipe_ptr(pipe);
 }
 
-system_pipe_ptr system_pipe::open_pipe(pipe_mode mode) {
+system_pipe_ptr system_pipe::open_pipe(pipe_mode mode, bool flush) {
     SECURITY_ATTRIBUTES saAttr;
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
     saAttr.bInheritHandle = TRUE;
     saAttr.lpSecurityDescriptor = nullptr;
 
-    auto pipe = new system_pipe();
+    auto pipe = new system_pipe(flush);
 
     if (!CreatePipe(&pipe->input_handle, &pipe->output_handle, &saAttr, 0))
         PANIC(get_win_last_error_string());
@@ -50,7 +51,7 @@ system_pipe_ptr system_pipe::open_pipe(pipe_mode mode) {
     return system_pipe_ptr(pipe);
 }
 
-system_pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode) {
+system_pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode, bool flush, bool excl) {
     DWORD access;
     DWORD creationDisposition;
     if (mode == read_mode) {
@@ -62,11 +63,11 @@ system_pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode) {
     } else
         PANIC("Bad pipe mode");
 
-    auto file = CreateFile(filename.c_str(), access, FILE_SHARE_READ, nullptr, creationDisposition, FILE_ATTRIBUTE_NORMAL, nullptr);
+    auto file = CreateFile(filename.c_str(), access, excl ? 0 : FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, creationDisposition, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (file == INVALID_HANDLE_VALUE)
         PANIC(filename + ": " + get_win_last_error_string());
 
-    auto pipe = new system_pipe(pipe_type::file);
+    auto pipe = new system_pipe(flush, pipe_type::file);
 
     if (mode == read_mode)
         pipe->input_handle = file;
@@ -124,7 +125,7 @@ size_t system_pipe::write(const char* bytes, size_t count) const {
         }
     }
 
-    if (bytes_written > 0 && !is_file())
+    if (bytes_written > 0 && autoflush)
         flush();
 
     return bytes_written;

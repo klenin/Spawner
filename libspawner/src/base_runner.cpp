@@ -2,12 +2,12 @@
 
 #include "error.h"
 
-multipipe_ptr base_runner::get_pipe(const std_stream_type& stream_type) {
+multipipe_ptr base_runner::get_pipe(const std_stream_type& stream_type, options_class::redirect_flags flags) {
     auto stream = streams.find(stream_type);
     if (stream == streams.end()) {
         switch (stream_type) {
         case std_stream_input:
-            streams[std_stream_input] = multipipe::create_pipe(write_mode);
+            streams[std_stream_input] = multipipe::create_pipe(write_mode, flags.flush);
             break;
         case std_stream_output:
         case std_stream_error:

@@ -36,12 +36,14 @@ class system_pipe {
     pipe_handle input_handle;
     pipe_handle output_handle;
 
-    explicit system_pipe(pipe_type t = pipe_type::def);
+    bool autoflush;
+
+    explicit system_pipe(bool flush, pipe_type t = pipe_type::def);
 
 public:
-    static system_pipe_ptr open_std(std_stream_type type);
-    static system_pipe_ptr open_pipe(pipe_mode mode);
-    static system_pipe_ptr open_file(const string& filename, pipe_mode mode);
+    static system_pipe_ptr open_std(std_stream_type type, bool flush = true);
+    static system_pipe_ptr open_pipe(pipe_mode mode, bool flush = true);
+    static system_pipe_ptr open_file(const string& filename, pipe_mode mode, bool flush = false, bool excl = false);
 
     pipe_handle get_input_handle() const;
     pipe_handle get_output_handle() const;

@@ -55,15 +55,15 @@ bool spawner_old_c::init()
 
             for (auto& input : options.stdinput)
                 if (input.type == options_class::file)
-                    get_or_create_file_pipe(input.name, read_mode)->connect(stdinput);
+                    get_or_create_file_pipe(input.name, read_mode, input.flags)->connect(stdinput);
 
             for (auto& output : options.stdoutput)
                 if (output.type == options_class::file)
-                    stdoutput->connect(get_or_create_file_pipe(output.name, write_mode));
+                    stdoutput->connect(get_or_create_file_pipe(output.name, write_mode, output.flags));
 
             for (auto& error : options.stderror)
                 if (error.type == options_class::file)
-                    stderror->connect(get_or_create_file_pipe(error.name, write_mode));
+                    stderror->connect(get_or_create_file_pipe(error.name, write_mode, error.flags));
         }
     return true;
 }

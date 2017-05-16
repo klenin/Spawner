@@ -19,8 +19,8 @@ protected:
     std::map<std::string, runner*> runner_alias;
     std::map<std::string, multipipe_ptr> file_pipes;
 
-    multipipe_ptr get_or_create_file_pipe(const std::string& path, pipe_mode mode);
-    multipipe_ptr get_std(std_stream_type type);
+    multipipe_ptr get_or_create_file_pipe(const std::string& path, pipe_mode mode, options_class::redirect_flags flags);
+    multipipe_ptr get_std(std_stream_type type, options_class::redirect_flags flags);
 
 public:
     spawner_base_c();

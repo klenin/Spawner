@@ -258,10 +258,10 @@ void spawner_new_c::setup_stream_(const options_class::redirect redirect, std_st
 
     if (redirect.type == options_class::std) {
         if (source_type == std_stream_input) {
-            get_std(std_stream_input)->connect(source_pipe);
+            get_std(std_stream_input, redirect.flags)->connect(source_pipe);
         }
         else {
-            source_pipe->connect(get_std(source_type));
+            source_pipe->connect(get_std(source_type, redirect.flags));
         }
         return;
     }
@@ -276,17 +276,17 @@ void spawner_new_c::setup_stream_(const options_class::redirect redirect, std_st
     multipipe_ptr target_pipe;
     if (stream == "stdin") {
         PANIC_IF(source_type == std_stream_input);
-        target_pipe = target_runner->get_pipe(std_stream_input);
+        target_pipe = target_runner->get_pipe(std_stream_input, redirect.flags);
         source_pipe->connect(target_pipe);
     }
     else if (stream == "stdout") {
         PANIC_IF(source_type != std_stream_input);
-        target_pipe = target_runner->get_pipe(std_stream_output);
+        target_pipe = target_runner->get_pipe(std_stream_output, redirect.flags);
         target_pipe->connect(source_pipe);
     }
     else if (stream == "stderr") {
         PANIC_IF(source_type != std_stream_input);
-        target_pipe = target_runner->get_pipe(std_stream_error);
+        target_pipe = target_runner->get_pipe(std_stream_error, redirect.flags);
         target_pipe->connect(source_pipe);
     }
     else {
@@ -399,15 +399,15 @@ bool spawner_new_c::init_runner() {
 
         for (auto& input : options.stdinput)
             if (input.type == options_class::file)
-                get_or_create_file_pipe(input.name, read_mode)->connect(stdinput);
+                get_or_create_file_pipe(input.name, read_mode, input.flags)->connect(stdinput);
 
         for (auto& output : options.stdoutput)
             if (output.type == options_class::file)
-                stdoutput->connect(get_or_create_file_pipe(output.name, write_mode));
+                stdoutput->connect(get_or_create_file_pipe(output.name, write_mode, output.flags));
 
         for (auto& error : options.stderror)
             if (error.type == options_class::file)
-                stderror->connect(get_or_create_file_pipe(error.name, write_mode));
+                stderror->connect(get_or_create_file_pipe(error.name, write_mode, error.flags));
     }
 
     runners.push_back(secure_runner_instance);
