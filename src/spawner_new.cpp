@@ -117,19 +117,19 @@ void spawner_new_c::json_report(runner *runner_instance,
     rapidjson_write("StdOut");
     writer.StartArray();
     for (const auto& i : runner_options.stdoutput) {
-        rapidjson_write(i.c_str());
+        rapidjson_write(i.original.c_str());
     }
     writer.EndArray();
     rapidjson_write("StdErr");
     writer.StartArray();
     for (const auto& i : runner_options.stderror) {
-        rapidjson_write(i.c_str());
+        rapidjson_write(i.original.c_str());
     }
     writer.EndArray();
     rapidjson_write("StdIn");
     writer.StartArray();
     for (const auto& i : runner_options.stdinput) {
-        rapidjson_write(i.c_str());
+        rapidjson_write(i.original.c_str());
     }
     writer.EndArray();
 
@@ -253,49 +253,47 @@ void spawner_new_c::process_agent_message_(const std::string& message, int agent
     wait_agent_mutex_.unlock();
 }
 
-void spawner_new_c::setup_stream_(const std::string& stream_str, std_stream_type source_type, runner* this_runner) {
+void spawner_new_c::setup_stream_(const options_class::redirect redirect, std_stream_type source_type, runner* this_runner) {
     auto source_pipe = this_runner->get_pipe(source_type);
 
-    if (stream_str == "*std") {
+    if (redirect.type == options_class::std) {
         if (source_type == std_stream_input) {
-            get_std(std_stream_input)->connect(source_pipe);
+            get_std(std_stream_input, redirect.flags)->connect(source_pipe);
         }
         else {
-            source_pipe->connect(get_std(source_type));
+            source_pipe->connect(get_std(source_type, redirect.flags));
         }
         return;
     }
 
-    const auto max_stream_str_size = 20;
-    PANIC_IF(stream_str.size() > max_stream_str_size);
-    int index;
-    char stream[max_stream_str_size];
-    sscanf(stream_str.c_str(), "*%d.%s", &index, stream);
+    PANIC_IF(redirect.type != options_class::pipe);
+    auto index = redirect.pipe_index;
+    auto stream = redirect.name;
     PANIC_IF(index < 0 || index >= runners.size());
 
     auto target_runner = runners[index];
 
     multipipe_ptr target_pipe;
-    if (strcmp(stream, "stdin") == 0) {
+    if (stream == "stdin") {
         PANIC_IF(source_type == std_stream_input);
-        target_pipe = target_runner->get_pipe(std_stream_input);
+        target_pipe = target_runner->get_pipe(std_stream_input, redirect.flags);
         source_pipe->connect(target_pipe);
     }
-    else if (strcmp(stream, "stdout") == 0) {
+    else if (stream == "stdout") {
         PANIC_IF(source_type != std_stream_input);
-        target_pipe = target_runner->get_pipe(std_stream_output);
+        target_pipe = target_runner->get_pipe(std_stream_output, redirect.flags);
         target_pipe->connect(source_pipe);
     }
-    else if (strcmp(stream, "stderr") == 0) {
+    else if (stream == "stderr") {
         PANIC_IF(source_type != std_stream_input);
-        target_pipe = target_runner->get_pipe(std_stream_error);
+        target_pipe = target_runner->get_pipe(std_stream_error, redirect.flags);
         target_pipe->connect(source_pipe);
     }
     else {
         PANIC("invalid stream name");
     }
 
-    if (control_mode_enabled && strcmp(stream, "stdout") == 0 && target_pipe->process_message == nullptr) {
+    if (control_mode_enabled && stream == "stdout" && target_pipe->process_message == nullptr) {
         if (target_runner->get_options().controller) {
             target_pipe->process_message = [=](const char* buffer, size_t count) {
                 string message(buffer, count);
@@ -351,20 +349,20 @@ bool spawner_new_c::init() {
     for (auto runner : runners) {
         options_class runner_options = runner->get_options();
         const struct {
-            std::vector<std::string> &streams;
+            std::vector<options_class::redirect> &streams;
             std_stream_type type;
-        } streams[] = {
+        } redirects_all[] = {
             { runner_options.stdinput, std_stream_input },
             { runner_options.stdoutput, std_stream_output },
             { runner_options.stderror, std_stream_error },
         };
-        for (const auto& stream_item : streams) {
-            for (const auto& stream_str : stream_item.streams) {
-                PANIC_IF(stream_str.size() == 0);
-                if (stream_str[0] != '*') {
+        for (const auto& redirects : redirects_all) {
+            for (const auto& redirect : redirects.streams) {
+                PANIC_IF(redirect.original.size() == 0);
+                if (redirect.type == options_class::file) {
                     continue;
                 }
-                setup_stream_(stream_str, stream_item.type, runner);
+                setup_stream_(redirect, redirects.type, runner);
             }
         }
     }
@@ -400,16 +398,16 @@ bool spawner_new_c::init_runner() {
         auto stderror = secure_runner_instance->get_pipe(std_stream_error);
 
         for (auto& input : options.stdinput)
-            if (input[0] != '*')
-                get_or_create_file_pipe(input, read_mode)->connect(stdinput);
+            if (input.type == options_class::file)
+                get_or_create_file_pipe(input.name, read_mode, input.flags)->connect(stdinput);
 
         for (auto& output : options.stdoutput)
-            if (output[0] != '*')
-                stdoutput->connect(get_or_create_file_pipe(output, write_mode));
+            if (output.type == options_class::file)
+                stdoutput->connect(get_or_create_file_pipe(output.name, write_mode, output.flags));
 
         for (auto& error : options.stderror)
-            if (error[0] != '*')
-                stderror->connect(get_or_create_file_pipe(error, write_mode));
+            if (error.type == options_class::file)
+                stderror->connect(get_or_create_file_pipe(error.name, write_mode, error.flags));
     }
 
     runners.push_back(secure_runner_instance);
@@ -572,18 +570,22 @@ void spawner_new_c::init_arguments() {
         new options_callback_argument_parser_c(&options, &options_class::add_environment_variable)
     )->set_description("Define additional environment variable for <executable>");
 
+    console_default_parser->add_argument_parser(c_lst(short_arg("ff"), long_arg("file-flags")),
+        new options_callback_argument_parser_c(&options, &options_class::add_stdoutput)
+    )->set_description("Define default file opening flags (f - force flush, e - exclusively open)");
+
     console_default_parser->add_argument_parser(c_lst(short_arg("so"), long_arg("out")),
         environment_default_parser->add_argument_parser(c_lst("SP_OUTPUT_FILE"),
             new options_callback_argument_parser_c(&options, &options_class::add_stdoutput))
-    )->set_description("Redirect standard output stream to (<filename>|std|*index.stdin)");
+    )->set_description("Redirect standard output stream to ([*[<file-flags>]:]<filename>|*[[<pipe-flags>]:]null|std|<index>.stdin)");
     console_default_parser->add_argument_parser(c_lst(short_arg("i"), long_arg("in")),
         environment_default_parser->add_argument_parser(c_lst("SP_INPUT_FILE"),
             new options_callback_argument_parser_c(&options, &options_class::add_stdinput))
-    )->set_description("Redirect standard input stream from (<filename>|std|*index.stdout|*index.stderr)");
+    )->set_description("Redirect standard input stream from ([*[<file-flags>]:]<filename>|*[[<pipe-flags>]:]null|std|<index>.stdout)");
     console_default_parser->add_argument_parser(c_lst(short_arg("e"), short_arg("se"), long_arg("err")),
         environment_default_parser->add_argument_parser(c_lst("SP_ERROR_FILE"),
             new options_callback_argument_parser_c(&options, &options_class::add_stderror))
-    )->set_description("Redirect standard error stream to (<filename>|std|*index.stdin)");
+    )->set_description("Redirect standard error stream to ([*[<file-flags>]:]<filename>|*[[<pipe-flags>]:]null|std|<index>.stderr)");
 
     console_default_parser->add_argument_parser(c_lst(short_arg("runas"), long_arg("delegated")),
         environment_default_parser->add_argument_parser(c_lst("SP_RUNAS"), new boolean_argument_parser_c(options.delegated))
@@ -644,8 +646,19 @@ void spawner_new_c::init_arguments() {
 }
 
 std::string spawner_new_c::help() {
+    string redirect_example =
+        "\nRedirect examples:\n"
+        "\tfile.txt      basic redirect to file\n"
+        "\t*:file.txt    use default file flags\n"
+        "\t*-f:std       disable flush on std stream. IMPORTANT! first std redirect hide all next flags\n"
+        "\t*-f:0.stdin   disable flush on stdin redirect\n"
+        "\t*f:file.txt   enable file flush\n"
+        "\t*e:file.txt   open file exclusively\n"
+        "\t*fe:file.txt  many flags\n"
+        "\t*fe:          set defaults for files\n"
+        "\t*:            reset defaults for files\n";
     return
         "Spawner: cross-platform sandboxing utility\n"
         "Usage: sp <options> <executable> <executable arguments>\n\n"
-        "Options:\n" + parser.help();
+        "Options:\n" + parser.help() + redirect_example;
 }

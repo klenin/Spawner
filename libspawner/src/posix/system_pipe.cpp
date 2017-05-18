@@ -4,17 +4,19 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/file.h>
 
 #include "error.h"
 
-system_pipe::system_pipe(bool is_file) {
-    file_flag = is_file;
+system_pipe::system_pipe(bool flush, pipe_type t) {
+    autoflush = flush;
+    type = t;
     input_handle = -1;
     output_handle = -1;
 }
 
-system_pipe_ptr system_pipe::open_std(std_stream_type type) {
-    auto pipe = new system_pipe(true); // true -> fix for Ctrl+Z(win)|Ctrl+D(posix)
+system_pipe_ptr system_pipe::open_std(std_stream_type type, bool flush) {
+    auto pipe = new system_pipe(flush, pipe_type::con);
 
     switch (type) {
         case std_stream_input:
@@ -33,19 +35,19 @@ system_pipe_ptr system_pipe::open_std(std_stream_type type) {
     return system_pipe_ptr(pipe);
 }
 
-system_pipe_ptr system_pipe::open_pipe(pipe_mode mode) {
+system_pipe_ptr system_pipe::open_pipe(pipe_mode mode, bool flush) {
     int pipefd[2];
     if (pipe(pipefd) < 0) {
         PANIC(strerror(errno));
     }
 
-    auto pipe = new system_pipe(false);
+    auto pipe = new system_pipe(flush);
     pipe->input_handle = pipefd[0];
     pipe->output_handle = pipefd[1];
     return system_pipe_ptr(pipe);
 }
 
-system_pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode) {
+system_pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode, bool flush, bool excl) {
     auto oflag = 0;
     if (mode == read_mode) {
         oflag |= O_RDONLY | O_NOFOLLOW;
@@ -59,8 +61,11 @@ system_pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode) {
     if ((fd = open(filename.c_str(), oflag)) < 0) {
         PANIC(filename + ": " + strerror(errno));
     }
+    if (excl) {
+        flock(fd, LOCK_EX);
+    }
 
-    auto pipe = new system_pipe(true);
+    auto pipe = new system_pipe(flush, pipe_type::file);
 
     if (mode == read_mode)
         pipe->input_handle = fd;
@@ -108,7 +113,7 @@ size_t system_pipe::write(const char* bytes, size_t count) const {
     ssize_t bytes_written = ::write(output_handle, bytes, count);
     if (bytes_written < 0)
         PANIC(strerror(errno));
-    if (bytes_written > 0)
+    if (bytes_written > 0 && autoflush)
         flush();
 
     return (size_t)bytes_written;
@@ -123,11 +128,18 @@ void system_pipe::flush() const {
 
 void system_pipe::close(pipe_mode mode) {
     if (mode == read_mode && is_readable()) {
+        if (is_file()) {
+            flock(input_handle, LOCK_UN);
+        }
         ::close(input_handle);
         input_handle = -1;
     }
 
     if (mode == write_mode && is_writable()) {
+        flush();
+        if (is_file()) {
+            flock(output_handle, LOCK_UN);
+        }
         ::close(output_handle);
         output_handle = -1;
     }
@@ -139,7 +151,11 @@ void system_pipe::close() {
 }
 
 bool system_pipe::is_file() const {
-    return file_flag;
+    return type == file;
+}
+
+bool system_pipe::is_console() const {
+    return type == con;
 }
 
 void system_pipe::cancel_sync_io(thread_t thread) {

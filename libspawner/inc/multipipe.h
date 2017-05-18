@@ -53,10 +53,10 @@ class multipipe {
     void flush();
 
 public:
-    static multipipe_ptr open_std(std_stream_type type, int buffer_size = DEFAULT_BUFFER_SIZE);
-    static multipipe_ptr create_pipe(pipe_mode mode, int buffer_size = DEFAULT_BUFFER_SIZE);
-    static multipipe_ptr open_file(const string& filename, int buffer_size = DEFAULT_BUFFER_SIZE);
-    static multipipe_ptr create_file(const string& filename, int buffer_size = DEFAULT_BUFFER_SIZE);
+    static multipipe_ptr open_std(std_stream_type type, bool flush = true, int buffer_size = DEFAULT_BUFFER_SIZE);
+    static multipipe_ptr create_pipe(pipe_mode mode, bool flush = true, int buffer_size = DEFAULT_BUFFER_SIZE);
+    static multipipe_ptr open_file(const string& filename, bool excl = false, int buffer_size = DEFAULT_BUFFER_SIZE);
+    static multipipe_ptr create_file(const string& filename, bool flush = false, bool excl = false, int buffer_size = DEFAULT_BUFFER_SIZE);
     ~multipipe();
 
     void start_read();

@@ -1,7 +1,9 @@
-#include <inc/compatibility.h>
-#include <inc/uconvert.h>
-#include <inc/error.h>
 #include <sstream>
+
+#include "inc/error.h"
+#include "inc/compatibility.h"
+#include "inc/uconvert.h"
+#include "platform.h"
 
 void SetRestriction(restrictions_class &restrictions, const restriction_kind_t &restriction_kind, const std::string &value) {
     unsigned long restriction_value = restriction_no_limit;

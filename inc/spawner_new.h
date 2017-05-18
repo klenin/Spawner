@@ -30,7 +30,7 @@ protected:
     mutex_c wait_agent_mutex_;
     mutex_c on_terminate_mutex_;
     std::vector<bool> awaited_agents_;
-    void setup_stream_(const std::string& stream_str, std_stream_type source_type, runner* this_runner);
+    void setup_stream_(const options_class::redirect redirect, std_stream_type source_type, runner* this_runner);
     void process_controller_message_(const std::string& message);
     void process_agent_message_(const std::string& message, int runner_index);
     int get_agent_index_(const std::string& message);

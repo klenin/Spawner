@@ -24,7 +24,7 @@ protected:
     unsigned long long int creation_time = 0;
     std::string program;
 public:
-    multipipe_ptr get_pipe(const std_stream_type &stream_type);
+    multipipe_ptr get_pipe(const std_stream_type &stream_type, options_class::redirect_flags flags = options_class::pipe_default);
     virtual restrictions_class get_restrictions() const {return restrictions_class(); }
     base_runner(const std::string &program, const options_class &options);
 };

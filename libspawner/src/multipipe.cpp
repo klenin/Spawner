@@ -118,20 +118,20 @@ void multipipe::flush() {
     }
 }
 
-multipipe_ptr multipipe::open_std(std_stream_type type, int buffer_size) {
-    return multipipe_ptr(new multipipe(system_pipe::open_std(type), buffer_size, type == std_stream_input ? read_mode : write_mode));
+multipipe_ptr multipipe::open_std(std_stream_type type, bool flush, int buffer_size) {
+    return multipipe_ptr(new multipipe(system_pipe::open_std(type, flush), buffer_size, type == std_stream_input ? read_mode : write_mode));
 }
 
-multipipe_ptr multipipe::create_pipe(pipe_mode mode, int buffer_size) {
-    return multipipe_ptr(new multipipe(system_pipe::open_pipe(mode), buffer_size, mode));
+multipipe_ptr multipipe::create_pipe(pipe_mode mode, bool flush, int buffer_size) {
+    return multipipe_ptr(new multipipe(system_pipe::open_pipe(mode, flush), buffer_size, mode));
 }
 
-multipipe_ptr multipipe::open_file(const string& filename, int buffer_size) {
-    return multipipe_ptr(new multipipe(system_pipe::open_file(filename, read_mode), buffer_size, read_mode, false));
+multipipe_ptr multipipe::open_file(const string& filename, bool excl, int buffer_size) {
+    return multipipe_ptr(new multipipe(system_pipe::open_file(filename, read_mode, false, excl), buffer_size, read_mode, false));
 }
 
-multipipe_ptr multipipe::create_file(const string& filename, int buffer_size) {
-    return multipipe_ptr(new multipipe(system_pipe::open_file(filename, write_mode), buffer_size, write_mode));
+multipipe_ptr multipipe::create_file(const string& filename, bool flush, bool excl, int buffer_size) {
+    return multipipe_ptr(new multipipe(system_pipe::open_file(filename, write_mode, flush, excl), buffer_size, write_mode));
 }
 
 multipipe::~multipipe() {

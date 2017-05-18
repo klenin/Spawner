@@ -75,10 +75,10 @@ void delegate_runner::create_process() {
         }
     }
 
-    auto process_pipes = [](options_class& options, const std::vector<std::string>& vals, const std::string& prefix) {
+    auto process_pipes = [](options_class& options, const std::vector<options_class::redirect>& vals, const std::string& prefix) {
         for (const auto& i : vals)
         {
-            options.push_argument_front(prefix + i);
+            options.push_argument_front(prefix + i.original);
         }
     };
 
@@ -117,7 +117,7 @@ void delegate_runner::create_process() {
     options.push_argument_front("-env=" + options.environmentMode);
     std::string shared_memory_name = "/" + options.session.hash();
     options.push_argument_front("--shared-memory=" + shared_memory_name);
-    
+
     // XXX set umask to all-zero to allow creating a file with 0666 permissions
     // (defaults are to disallow o+w).
     // Access rights to shmem file shall be limited to group+rw (0660) in
@@ -134,6 +134,6 @@ void delegate_runner::create_process() {
     umask(old);
     options.shared_memory = shared_memory_name;
     options.push_argument_front("--delegated=1");
-    
+
     runner::create_process();
 }
