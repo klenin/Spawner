@@ -18,7 +18,7 @@ struct procfs_class {
     size_t read_bytes, write_bytes; // io file: i/o from block-backed storages 
     size_t stat_utime, stat_stime;
     size_t stat_vsize, stat_rss;
-    size_t vss_max;
+    size_t vss_max = 0;
 
     std::string io_path, stat_path;
 
