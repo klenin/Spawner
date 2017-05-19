@@ -25,7 +25,7 @@ std::string session_class::hash() const {
     md5_finish(&md5_state_tmp, digest);
 
     for (int i = 0; i < 16; ++i) {
-        result << std::setfill('0') << std::setw(2) << std::hex << (int)digest[i];
+        result << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(digest[i]);
     }
     return result.str();
 }

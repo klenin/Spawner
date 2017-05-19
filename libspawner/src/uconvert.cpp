@@ -77,7 +77,7 @@ unsigned int get_degree_index(const degrees_enum &degree)
 
 unsigned long convert(const value_t &from, const value_t &to, const unsigned long &val)
 {
-    return (unsigned long)convert(from, to, (long double)val);
+    return convert(from, to, static_cast<long double>(val));
 }
 
 long double convert(const value_t &from, const value_t &to, const long double &val)
@@ -91,15 +91,15 @@ long double convert(const value_t &from, const value_t &to, const long double &v
         return 0.0;// fail
 
     double base = 10;
-    double p = (int)from.degree_type - (int)to.degree_type;
+    double p = static_cast<int>(from.degree_type) - static_cast<int>(to.degree_type);
     double coeff = unit_descriptions[from_unit_index].convert_rate/unit_descriptions[to_unit_index].convert_rate;
     double v = val;
 
     if (to.unit_type & unit_memory)
     {
-        if (to.degree_type != degree_default && ((int)to.degree_type) < ((int)degree_kilo))
+        if (to.degree_type != degree_default && static_cast<int>(to.degree_type) < static_cast<int>(degree_kilo))
             return 0;// fail
-        if (from.degree_type != degree_default && ((int)from.degree_type) < ((int)degree_kilo))
+        if (from.degree_type != degree_default && static_cast<int>(from.degree_type) < static_cast<int>(degree_kilo))
             return 0;// fail
         p /= 3.0;
         base = 1024.0;
@@ -184,7 +184,7 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
     std::streamoff current_index = iss.tellg();
 
     if (current_index >= 0) {
-        v = v.substr((size_t)(current_index), v.length() - (size_t)current_index);
+        v = v.substr(current_index, v.length() - current_index);
     } else {
         v.clear();
     }
@@ -240,8 +240,7 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
         }
     }
 
-    unsigned long result = labs((long)convert(from, to, value));
+    unsigned long result = labs(convert(from, to, value));
 
     return result;
 }
-

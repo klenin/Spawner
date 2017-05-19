@@ -15,7 +15,7 @@
 
 struct options_class
 {
-    static const unsigned SHARED_MEMORY_BUF_SIZE = 4069;
+    static const size_t SHARED_MEMORY_BUF_SIZE = 4069;
 
     enum redirect_type {
         file,

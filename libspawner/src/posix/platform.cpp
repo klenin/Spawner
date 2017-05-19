@@ -13,7 +13,7 @@
 #include "options.h"
 
 int get_spawner_pid() {
-    return (int)getpid();
+    return static_cast<int>(getpid());
 }
 
 void push_shm_report(const char *shm_name, const std::string &report)
@@ -54,7 +54,7 @@ default: break;
         PANIC("Failed to mmap() while pushing the report");
     }
     memcpy(report_addr, report.c_str(), sizeof(char) * report.length());
-    munmap(report_addr, (size_t)options_class::SHARED_MEMORY_BUF_SIZE);
+    munmap(report_addr, options_class::SHARED_MEMORY_BUF_SIZE);
 }
 
 void pull_shm_report(const char *shm_name, std::string &report) {
@@ -93,8 +93,8 @@ default: break;
         */
         PANIC("Panic: failed to mmap() while pulling report");
     } else
-        report = (const char *)report_addr;
-    munmap(report_addr, (size_t)options_class::SHARED_MEMORY_BUF_SIZE);
+        report = reinterpret_cast<const char*>(report_addr);
+    munmap(report_addr, options_class::SHARED_MEMORY_BUF_SIZE);
     shm_unlink(shm_name);
 }
 

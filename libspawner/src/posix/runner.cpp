@@ -95,9 +95,9 @@ char **runner::create_argv_for_process() const
 
     // Array of pointers [argv_count + final terminating nullptr]
     // Plus ptr to progname
-    result = (char **)malloc((argv_count + 2) * sizeof(char *));
+    result = reinterpret_cast<char**>(malloc((argv_count + 2) * sizeof(char*)));
 
-    argv_buff = (char *)malloc(argv_len);
+    argv_buff = reinterpret_cast<char*>(malloc(argv_len));
 
     // First element of argv is progname.
     // Copy progname and all arguments with terminating nulls to buffer.
@@ -151,7 +151,7 @@ unsigned long long runner::get_current_time()
     }
 
     // 100ns resolution
-    return (unsigned long long)((ts.tv_sec * 10000000) + (ts.tv_nsec / 100));
+    return static_cast<unsigned long long>((ts.tv_sec * 10000000) + (ts.tv_nsec / 100));
 }
 
 void runner::init_process(const char *cmd_toexec, char **process_argv, char **process_envp) {
@@ -175,7 +175,7 @@ signal_t runner::get_signal() {
 
 void *runner::waitpid_body(void *waitpid_param) {
     int status;
-    runner *self = (runner *)waitpid_param;
+    runner *self = reinterpret_cast<runner*>(waitpid_param);
 
     // report back to main thread
     {
@@ -197,7 +197,7 @@ void *runner::waitpid_body(void *waitpid_param) {
             self->process_status = process_finished_terminated;
 #endif
 
-            self->signal = (signal_t)WTERMSIG(status);
+            self->signal = static_cast<signal_t>(WTERMSIG(status));
         } else if (WIFEXITED(status)) {
             self->process_status = process_finished_normal;
             self->exit_code = WEXITSTATUS(status);
@@ -245,7 +245,7 @@ void runner::requisites() {
     affinity.set(proc_pid);
 #endif
     // wait till waitpid body completely starts
-    waitpid_thread = std::thread(waitpid_body, (void *)this);
+    waitpid_thread = std::thread(waitpid_body, this);
     std::unique_lock<std::mutex> lock(waitpid_cond_mtx);
     while (!waitpid_ready)
         waitpid_cond.wait(lock);
@@ -441,7 +441,9 @@ report_class runner::get_report() {
     if (ru_success) {
         report.kernel_time = (10000000 * ru.ru_stime.tv_sec) / 10 + ru.ru_stime.tv_usec;
         report.processor_time = (10000000 * ru.ru_utime.tv_sec) / 10 + ru.ru_utime.tv_usec;
-        report.load_ratio = report.user_time ? (double)report.processor_time / report.user_time : 1.0;
+        report.load_ratio = report.user_time
+            ? (static_cast<double>(report.processor_time) / report.user_time)
+            : 1.0;
         // "WallClock" (named "user_time") is filled in waitpid thread
 #if !defined(__linux__)
         report.peak_memory_used = ru.ru_maxrss * 1024;

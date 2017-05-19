@@ -65,10 +65,8 @@ std::string get_event_info(event_t event, std::string format)
 {
     std::string res = format;
     unsigned int index = get_event_index(event);
-
-    const char *name_p;
-    name_p = get_event_name(index);
-    std::string name = (name_p==nullptr)?std::to_string((int)event):name_p;
+    const char *name_p = get_event_name(index);
+    std::string name = name_p ? name_p : std::to_string(static_cast<int>(event));
 
     size_t pos = 0;
     while ((pos = res.find("%n")) != std::string::npos)

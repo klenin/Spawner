@@ -45,7 +45,7 @@ restriction_t &restrictions_class::operator[](const restriction_kind_t &kind) {
 
 restriction_t &restrictions_class::operator[](int kind)
 {
-    return restrictions[(restriction_kind_t)kind];
+    return restrictions[kind];
 }
 
 restriction_kind_t restrictions_class::restriction_by_name(const std::string &name) {

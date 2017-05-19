@@ -45,9 +45,9 @@ runner::env_vars_list_t runner::read_environment(const WCHAR* source) const
 {
     env_vars_list_t vars;
 
-    for (WCHAR* env = (WCHAR*)source; *env != '\0';)
+    for (const WCHAR* env = source; *env != '\0';)
     {
-        std::string envStr(w2a((const WCHAR*)env));
+        std::string envStr(w2a(env));
         int pos = envStr.find('=');
         vars.push_back(make_pair(envStr.substr(0, pos), envStr.substr(pos + 1)));
         env += envStr.length() + 1;
@@ -65,7 +65,7 @@ runner::env_vars_list_t runner::set_environment_for_process() const
         //retrieve system environment variables
         LPVOID envBlock = nullptr;
         CreateEnvironmentBlock(&envBlock, nullptr, FALSE);
-        auto default_vars = read_environment((WCHAR*)envBlock);
+        auto default_vars = read_environment(reinterpret_cast<WCHAR*>(envBlock));
         DestroyEnvironmentBlock(envBlock);
 
         for (const auto& i : default_vars)
@@ -142,8 +142,8 @@ bool runner::init_process(const std::string &cmd, const char *wd) {
 
     if (!createproc) {
         if (!try_handle_createproc_error()) {
-            DWORD_PTR args[] = { (DWORD_PTR)program.c_str(), (DWORD_PTR)"", (DWORD_PTR)"", };
-            PANIC("CreateProcess \"" + program + "\": " + get_win_last_error_string(args));
+            const char* args[] = { program.c_str(), "", "" };
+            PANIC("CreateProcess \"" + program + "\": " + get_win_last_error_string(reinterpret_cast<PDWORD_PTR>(args)));
         }
         return false;
     }
@@ -192,8 +192,8 @@ bool runner::init_process_with_logon(const std::string &cmd, const char *wd) {
 
     if (!createproc) {
         if (!try_handle_createproc_error()) {
-            DWORD_PTR args[] = { (DWORD_PTR)program.c_str(), (DWORD_PTR)"", (DWORD_PTR)"", };
-            PANIC("CreateProcess \"" + run_program + "\": " + get_win_last_error_string(args));
+            const char* args[] = { program.c_str(), "", "" };
+            PANIC("CreateProcess \"" + run_program + "\": " + get_win_last_error_string(reinterpret_cast<PDWORD_PTR>(args)));
         }
         return false;
     }
@@ -307,7 +307,7 @@ void runner::debug() {
 
 void runner::requisites() {
     if (!start_suspended) {
-        if (ResumeThread(process_info.hThread) == (DWORD)-1) {
+        if (ResumeThread(process_info.hThread) == -1) {
             PANIC(get_win_last_error_string());
         }
         process_status = process_still_active;
@@ -320,7 +320,7 @@ void runner::requisites() {
 }
 
 thread_return_t runner::async_body(thread_param_t param) {
-    runner *self = (runner*)param;
+    runner *self = reinterpret_cast<runner*>(param);
     self->run_process();
     return 0;
 }
@@ -381,7 +381,7 @@ terminate_reason_t runner::get_terminate_reason() {
 
 exception_t runner::get_exception() {
     if (get_process_status() == process_finished_abnormally) {
-        return (exception_t)get_exit_code();
+        return static_cast<exception_t>(get_exit_code());
     }
     else return exception_exception_no;
 }

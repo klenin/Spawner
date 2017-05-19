@@ -36,14 +36,15 @@ void spawner_pcms2_c::print_report()
             std::cout << "Program tried to allocate more than " << restrictions[restriction_memory_limit] << " bytes" << std::endl;
             break;
         case terminate_reason_load_ratio_limit:
-            std::cout << "Program utilized less than " << convert(value_t(unit_no_unit, degree_m4), value_t(unit_no_unit, degree_centi), (long double)restrictions[restriction_load_ratio]) << "% of processor time for more than "
-              << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), (long double)restrictions[restriction_idle_time_limit]) << " sec" << std::endl;
+            std::cout << "Program utilized less than "
+              << convert(value_t(unit_no_unit, degree_m4), value_t(unit_no_unit, degree_centi), static_cast<long double>(restrictions[restriction_load_ratio])) << "% of processor time for more than "
+              << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), static_cast<long double>(restrictions[restriction_idle_time_limit])) << " sec" << std::endl;
             std::cout << "Idleness limit exceeded" << std::endl;
             break;
         case terminate_reason_time_limit:
             std::cout << "Time limit exceeded" << std::endl;
             std::cout << "Program failed to terminate within " <<
-              convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), (long double)restrictions[restriction_processor_time_limit]) << " sec" << std::endl;
+              convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), static_cast<long double>(restrictions[restriction_processor_time_limit])) << " sec" << std::endl;
             break;
         default:
             std::cout << "Program successfully terminated" << std::endl;
@@ -51,7 +52,7 @@ void spawner_pcms2_c::print_report()
         }
         std::cout << "  time consumed: 0.03";
         if (restrictions.check_restriction(restriction_processor_time_limit)) {
-            std::cout << " of " << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), (long double)restrictions[restriction_processor_time_limit]);
+            std::cout << " of " << convert(value_t(unit_time_second, degree_milli), value_t(unit_time_second), static_cast<long double>(restrictions[restriction_processor_time_limit]));
         }
         std::cout << " sec" << std::endl;
         std::cout << "  time passed:   " << rep.total_time << " sec" << std::endl;

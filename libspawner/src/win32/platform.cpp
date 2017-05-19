@@ -41,13 +41,13 @@ void CloseHandleSafe_real(HANDLE &handle)
 
 int get_spawner_pid()
 {
-    return (int) GetCurrentProcessId();
+    return static_cast<int>(GetCurrentProcessId());
 }
 
 void push_shm_report(const char *shm_name, const std::string &report)
 {
     HANDLE hOut = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, shm_name);
-    LPCSTR pRep = (LPTSTR)MapViewOfFile(
+    LPVOID pRep = MapViewOfFile(
         hOut,
         FILE_MAP_ALL_ACCESS,
         0,
@@ -55,7 +55,7 @@ void push_shm_report(const char *shm_name, const std::string &report)
         options_class::SHARED_MEMORY_BUF_SIZE
     );
 
-    memcpy((PVOID)pRep, report.c_str(), sizeof(char) * report.length());
+    memcpy(pRep, report.c_str(), sizeof(char) * report.length());
 
     UnmapViewOfFile(pRep);
 
@@ -70,13 +70,13 @@ void pull_shm_report(const char *shm_name, std::string &report)
         shm_name
     );
 
-    LPTSTR pRep = (LPTSTR)MapViewOfFile(
+    LPTSTR pRep = reinterpret_cast<LPTSTR>(MapViewOfFile(
         hIn,
         FILE_MAP_ALL_ACCESS,
         0,
         0,
         options_class::SHARED_MEMORY_BUF_SIZE
-    );
+    ));
 
     report = pRep;
 
@@ -226,8 +226,10 @@ std::string get_win_last_error_string(PDWORD_PTR args) {
             nullptr,
             error_code,
             lang_id,
-            (LPSTR)&error_text,
-            0, (va_list*)args);
+            reinterpret_cast<LPSTR>(&error_text),
+            0,
+            reinterpret_cast<va_list*>(args)
+        );
     };
 
     if (format_message(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)) == 0) {
