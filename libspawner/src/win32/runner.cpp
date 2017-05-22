@@ -456,8 +456,12 @@ void runner::run_process() {
         return;
     }
     create_process();
-    if (!running || get_terminate_reason() != terminate_reason_not_terminated)
+    if (!running || get_terminate_reason() != terminate_reason_not_terminated) {
+        for (const auto& stream : streams) {
+            stream.second->finalize();
+        }
         return;
+    }
 
     if (!process_is_finished()) {
         requisites();
