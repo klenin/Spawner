@@ -19,6 +19,7 @@ multipipe::multipipe(system_pipe_ptr pipe, int bsize, pipe_mode mode, bool autos
     , read_tail_len(0)
     , write_tail_len(0)
     , check_new_line(true)
+    , stop_flag(false)
     , mode(mode)
     , parents_count(0)
     , process_message(nullptr) {
@@ -48,7 +49,7 @@ void multipipe::listen() {
         process_message = [=](const char* buf, size_t count) { write(buf, count); };
     }
 
-    while (true) {
+    while (!stop_flag) {
         auto bytes_read = core_pipe->read(read_buffer, buffer_size);
         if (bytes_read == 0) {
             break;
@@ -71,10 +72,8 @@ void multipipe::listen() {
 bool multipipe::stop() {
     stop_mutex.lock();
     if (listen_thread != nullptr) {
-        // Close pipe to stop blocking read on Windows.
-        // On Linux child pipe is already closed after fork before exec.
-        core_pipe->close(write_mode);
-        system_pipe::cancel_sync_io(listen_thread->native_handle());
+        // If necessary, the stop_flag will be set.
+        system_pipe::cancel_sync_io(listen_thread->native_handle(), stop_flag);
         listen_thread->join();
         delete listen_thread;
         listen_thread = nullptr;

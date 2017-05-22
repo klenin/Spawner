@@ -428,6 +428,9 @@ void spawner_new_c::run() {
     for (auto i : runners) {
         i->wait_for();
     }
+    for (const auto& file_pipe : file_pipes) {
+        file_pipe.second->finalize();
+    }
     print_report();
 }
 

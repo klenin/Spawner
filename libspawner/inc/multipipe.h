@@ -35,7 +35,7 @@ class multipipe {
     int buffer_size;
     char *read_buffer, *read_tail_buffer;
     size_t read_tail_len, write_tail_len;
-    bool check_new_line;
+    bool check_new_line, stop_flag;
 
     pipe_mode mode;
     volatile int parents_count;

@@ -2,9 +2,11 @@
 #define SYSTEM_PIPE
 
 #include <memory>
+#include <mutex>
 
 #include "platform.h"
 
+using std::mutex;
 using std::shared_ptr;
 using std::string;
 
@@ -36,6 +38,8 @@ class system_pipe {
     pipe_handle input_handle;
     pipe_handle output_handle;
 
+    mutex read_mutex, write_mutex;
+
     bool autoflush;
 
     explicit system_pipe(bool flush, pipe_type t = pipe_type::def);
@@ -52,16 +56,16 @@ public:
 
     bool is_readable() const;
     bool is_writable() const;
-    size_t read(char* bytes, size_t count) const;
-    size_t write(const char* bytes, size_t count) const;
-    void flush() const;
+    size_t read(char* bytes, size_t count);
+    size_t write(const char* bytes, size_t count);
+    void flush();
     void close(pipe_mode mode);
     void close();
 
     bool is_file() const;
     bool is_console() const;
 
-    static void cancel_sync_io(thread_t thread);
+    static void cancel_sync_io(thread_t thread, bool &stop);
 };
 
 #endif // SYSTEM_PIPE

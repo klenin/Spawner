@@ -97,33 +97,37 @@ bool system_pipe::is_writable() const {
     return output_handle != INVALID_HANDLE_VALUE;
 }
 
-size_t system_pipe::read(char* bytes, size_t count) const {
-    if (!is_readable())
-        return 0;
+size_t system_pipe::read(char* bytes, size_t count) {
+    size_t bytes_read = 0;
 
-    size_t bytes_read;
-    if (!ReadFile(input_handle, (LPVOID)bytes, (DWORD)count, (LPDWORD)&bytes_read, nullptr)) {
+    read_mutex.lock();
+    if (is_readable() && !ReadFile(input_handle, (LPVOID)bytes, (DWORD)count, (LPDWORD)&bytes_read, nullptr)) {
         auto error = GetLastError();
-        // We force closed write side of the pipe.
-        if (error != ERROR_OPERATION_ABORTED && error != ERROR_BROKEN_PIPE)
+        // ReadFile may be canceled by CancelSynchronousIo.
+        // Pipe may be already closed by application.
+        if (error != ERROR_OPERATION_ABORTED && error != ERROR_BROKEN_PIPE) {
+            read_mutex.unlock();
             PANIC(get_win_last_error_string());
+        }
     }
+    read_mutex.unlock();
 
     return bytes_read;
 }
 
-size_t system_pipe::write(const char* bytes, size_t count) const {
-    if (!is_writable())
-        return 0;
+size_t system_pipe::write(const char* bytes, size_t count) {
+    size_t bytes_written = 0;
 
-    size_t bytes_written;
-    if (!WriteFile(output_handle, (LPCVOID)bytes, (DWORD)count, (LPDWORD)&bytes_written, nullptr)) {
+    write_mutex.lock();
+    if (is_writable() && !WriteFile(output_handle, (LPCVOID)bytes, (DWORD)count, (LPDWORD)&bytes_written, nullptr)) {
         auto error = GetLastError();
-        // Pipe may be already closed.
-        if (error != ERROR_BROKEN_PIPE && error != ERROR_PIPE_NOT_CONNECTED && error != ERROR_NO_DATA && error != ERROR_INVALID_HANDLE) {
+        // Pipe may be already closed by application.
+        if (error != ERROR_BROKEN_PIPE) {
+            write_mutex.unlock();
             PANIC(get_win_last_error_string());
         }
     }
+    write_mutex.unlock();
 
     if (bytes_written > 0 && autoflush)
         flush();
@@ -131,25 +135,30 @@ size_t system_pipe::write(const char* bytes, size_t count) const {
     return bytes_written;
 }
 
-void system_pipe::flush() const {
-    if (!is_writable())
-        return;
-
-    // If the child process exits before reading all data from  the pipe, FlushFileBuffers will hang.
-    // To work around this, we close the pipe handle and ignore errors in write() function.
-    FlushFileBuffers(output_handle);
+void system_pipe::flush() {
+    write_mutex.lock();
+    if (is_writable()) {
+        // If the child process exits before reading all data from  the pipe, FlushFileBuffers will hang.
+        // To work around this, we close the pipe handle and ignore errors in write() function.
+        FlushFileBuffers(output_handle);
+    }
+    write_mutex.unlock();
 }
 
 void system_pipe::close(pipe_mode mode) {
     if (mode == read_mode && is_readable()) {
+        read_mutex.lock();
         CloseHandle(input_handle);
         input_handle = INVALID_HANDLE_VALUE;
+        read_mutex.unlock();
     }
 
     if (mode == write_mode && is_writable()) {
         flush();
+        write_mutex.lock();
         CloseHandle(output_handle);
         output_handle = INVALID_HANDLE_VALUE;
+        write_mutex.unlock();
     }
 }
 
@@ -166,8 +175,9 @@ bool system_pipe::is_console() const {
     return type == con;
 }
 
-void system_pipe::cancel_sync_io(thread_t thread) {
-    if(!CancelSynchronousIo(thread) && GetLastError() != ERROR_NOT_FOUND) {
+void system_pipe::cancel_sync_io(thread_t thread, bool &stop) {
+    stop = true;
+    if (!CancelSynchronousIo(thread) && GetLastError() != ERROR_NOT_FOUND) {
         PANIC(get_win_last_error_string());
     }
 }
