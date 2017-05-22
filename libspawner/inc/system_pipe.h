@@ -65,7 +65,7 @@ public:
     bool is_file() const;
     bool is_console() const;
 
-    static void cancel_sync_io(thread_t thread);
+    static void cancel_sync_io(thread_t thread, bool &stop);
 };
 
 #endif // SYSTEM_PIPE

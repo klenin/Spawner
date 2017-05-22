@@ -173,6 +173,6 @@ bool system_pipe::is_console() const {
     return type == con;
 }
 
-void system_pipe::cancel_sync_io(thread_t thread) {
-    // TODO research how to (phtread_sigmask)
+void system_pipe::cancel_sync_io(thread_t thread, bool &stop) {
+    // Do nothing, because read() is unlocked when the pipe closes.
 }

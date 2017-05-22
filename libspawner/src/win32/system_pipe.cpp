@@ -175,8 +175,9 @@ bool system_pipe::is_console() const {
     return type == con;
 }
 
-void system_pipe::cancel_sync_io(thread_t thread) {
-    if(!CancelSynchronousIo(thread) && GetLastError() != ERROR_NOT_FOUND) {
+void system_pipe::cancel_sync_io(thread_t thread, bool &stop) {
+    stop = true;
+    if (!CancelSynchronousIo(thread) && GetLastError() != ERROR_NOT_FOUND) {
         PANIC(get_win_last_error_string());
     }
 }
