@@ -95,53 +95,68 @@ bool system_pipe::is_writable() const {
     return output_handle >= 0;
 }
 
-size_t system_pipe::read(char* bytes, size_t count) const {
-    if (!is_readable())
-        return 0;
+size_t system_pipe::read(char* bytes, size_t count) {
+    ssize_t bytes_read = 0;
 
-    ssize_t bytes_read = ::read(input_handle, bytes, count);
-    if (bytes_read < 0)
-        PANIC(strerror(errno));
+    if (is_readable()) {
+        read_mutex.lock();
+        bytes_read = ::read(input_handle, bytes, count);
+        if (bytes_read < 0) {
+            read_mutex.unlock();
+            PANIC(strerror(errno));
+        }
+        read_mutex.unlock();
+    }
 
     return (size_t)bytes_read;
 }
 
-size_t system_pipe::write(const char* bytes, size_t count) const {
-    if (!is_writable())
-        return 0;
+size_t system_pipe::write(const char* bytes, size_t count) {
+    ssize_t bytes_written = 0;
 
-    ssize_t bytes_written = ::write(output_handle, bytes, count);
-    if (bytes_written < 0)
-        PANIC(strerror(errno));
+    if (is_writable()) {
+        write_mutex.lock();
+        bytes_written = ::write(output_handle, bytes, count);
+        if (bytes_written < 0) {
+            write_mutex.unlock();
+            PANIC(strerror(errno));
+        }
+        write_mutex.unlock();
+    }
+
     if (bytes_written > 0 && autoflush)
         flush();
 
     return (size_t)bytes_written;
 }
 
-void system_pipe::flush() const {
-    if (!is_writable())
-        return;
-
-    fsync(output_handle);
+void system_pipe::flush() {
+    write_mutex.lock();
+    if (is_writable())
+        fsync(output_handle);
+    write_mutex.unlock();
 }
 
 void system_pipe::close(pipe_mode mode) {
     if (mode == read_mode && is_readable()) {
+        read_mutex.lock();
         if (is_file()) {
             flock(input_handle, LOCK_UN);
         }
         ::close(input_handle);
         input_handle = -1;
+        read_mutex.unlock();
     }
 
     if (mode == write_mode && is_writable()) {
         flush();
+        write_mutex.lock();
         if (is_file()) {
             flock(output_handle, LOCK_UN);
         }
         ::close(output_handle);
         output_handle = -1;
+        write_mutex.unlock();
     }
 }
 
