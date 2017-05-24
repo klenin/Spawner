@@ -419,6 +419,11 @@ void spawner_new_c::run() {
     for (auto i : runners) {
         i->run_process_async();
     }
+    for (auto i : runners) {
+        if (!i->wait_for_init(1000)) {
+            PANIC("Failed to init process");
+        }
+    }
     for (const auto& file_pipe : file_pipes) {
         file_pipe.second->start_read();
     }

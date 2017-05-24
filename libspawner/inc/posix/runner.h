@@ -71,8 +71,9 @@ public:
     options_class get_options() const;
     std::string get_program() const;
     virtual bool wait_for();
-    void suspend() { };
-    void resume() { };
+    bool wait_for_init(const unsigned long& interval);
+    void suspend() {}
+    void resume() {}
     bool start_suspended = true;
     virtual process_status_t get_process_status();
     signal_t get_signal();

@@ -487,9 +487,6 @@ void runner::wait_for(const unsigned long& interval) {
     if (!running_async) {
         return;
     }
-    if (!process_is_finished()) {
-        wait_for_init(interval);
-    }
     if (running_thread != INVALID_HANDLE_VALUE) {
         WaitForSingleObject(running_thread, interval);
         CloseHandleSafe(running_thread);

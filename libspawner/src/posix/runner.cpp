@@ -240,6 +240,10 @@ bool runner::wait_for()
     return true;
 }
 
+bool runner::wait_for_init(const unsigned long& interval) {
+    return true;
+}
+
 void runner::requisites() {
 #if defined(__linux__)
     affinity.set(proc_pid);
