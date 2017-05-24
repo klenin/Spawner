@@ -457,9 +457,7 @@ void runner::run_process() {
     }
     create_process();
     if (!running || get_terminate_reason() != terminate_reason_not_terminated) {
-        for (const auto& stream : streams) {
-            stream.second->finalize();
-        }
+        finalize_streams();
         return;
     }
 
@@ -469,10 +467,15 @@ void runner::run_process() {
             wait();
         }
     }
+    finalize_streams();
+}
 
-    for (const auto& stream : streams) {
-        stream.second->finalize();
-    }
+void runner::finalize_streams() {
+    finalize_thread = new thread([&]() {
+        for (const auto& stream : streams) {
+            stream.second->finalize();
+        }
+    });
 }
 
 void runner::run_process_async() {

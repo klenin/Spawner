@@ -3,6 +3,7 @@
 
 #include <map>
 #include <string>
+#include <thread>
 
 #include "inc/options.h"
 #include "inc/status.h"
@@ -23,10 +24,14 @@ protected:
     terminate_reason_t terminate_reason = terminate_reason_not_terminated;
     unsigned long long int creation_time = 0;
     std::string program;
+
+    std::thread *finalize_thread;
 public:
+    virtual ~base_runner();
     multipipe_ptr get_pipe(const std_stream_type &stream_type, options_class::redirect_flags flags = options_class::pipe_default);
     virtual restrictions_class get_restrictions() const {return restrictions_class(); }
     base_runner(const std::string &program, const options_class &options);
+    void finalize();
 };
 
 #endif // _BASE_RUNNER_H_
