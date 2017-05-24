@@ -6,9 +6,25 @@
 
 system_pipe::system_pipe(bool flush, pipe_type t) {
     autoflush = flush;
+    stop_flush = false;
     type = t;
     input_handle = INVALID_HANDLE_VALUE;
     output_handle = INVALID_HANDLE_VALUE;
+}
+
+void system_pipe::start_flush_thread() {
+    flush_thread = new thread([&]() {
+        do {
+            flush_sem.wait();
+            write_mutex.lock();
+            if (is_writable()) {
+                // If the child process exits before reading all data from  the pipe, FlushFileBuffers will hang.
+                // To work around this, we call CancelSynchronousIo from main thread.
+                FlushFileBuffers(output_handle);
+            }
+            write_mutex.unlock();
+        } while (!stop_flush);
+    });
 }
 
 system_pipe_ptr system_pipe::open_std(std_stream_type type, bool flush) {
@@ -20,9 +36,11 @@ system_pipe_ptr system_pipe::open_std(std_stream_type type, bool flush) {
             break;
         case std_stream_output:
             pipe->output_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+            pipe->start_flush_thread();
             break;
         case std_stream_error:
             pipe->output_handle = GetStdHandle(STD_ERROR_HANDLE);
+            pipe->start_flush_thread();
             break;
         default:
             PANIC("Bad pipe mode");
@@ -48,6 +66,9 @@ system_pipe_ptr system_pipe::open_pipe(pipe_mode mode, bool flush) {
     if (mode == read_mode && !SetHandleInformation(pipe->input_handle, HANDLE_FLAG_INHERIT, 0))
         PANIC(get_win_last_error_string());
 
+    if (mode == write_mode)
+        pipe->start_flush_thread();
+
     return system_pipe_ptr(pipe);
 }
 
@@ -71,8 +92,10 @@ system_pipe_ptr system_pipe::open_file(const string& filename, pipe_mode mode, b
 
     if (mode == read_mode)
         pipe->input_handle = file;
-    if (mode == write_mode)
+    if (mode == write_mode) {
         pipe->output_handle = file;
+        pipe->start_flush_thread();
+    }
 
     return system_pipe_ptr(pipe);
 }
@@ -136,16 +159,11 @@ size_t system_pipe::write(const char* bytes, size_t count) {
 }
 
 void system_pipe::flush() {
-    write_mutex.lock();
-    if (is_writable()) {
-        // If the child process exits before reading all data from  the pipe, FlushFileBuffers will hang.
-        // To work around this, we close the pipe handle and ignore errors in write() function.
-        FlushFileBuffers(output_handle);
-    }
-    write_mutex.unlock();
+    flush_sem.notify();
 }
 
 void system_pipe::close(pipe_mode mode) {
+    close_mutex.lock();
     if (mode == read_mode && is_readable()) {
         read_mutex.lock();
         CloseHandle(input_handle);
@@ -154,12 +172,20 @@ void system_pipe::close(pipe_mode mode) {
     }
 
     if (mode == write_mode && is_writable()) {
-        flush();
+        if (flush_thread != nullptr) {
+            stop_flush = true;
+            flush_sem.notify();
+            CancelSynchronousIo(flush_thread->native_handle());
+            flush_thread->join();
+            delete flush_thread;
+            flush_thread = nullptr;
+        }
         write_mutex.lock();
         CloseHandle(output_handle);
         output_handle = INVALID_HANDLE_VALUE;
         write_mutex.unlock();
     }
+    close_mutex.unlock();
 }
 
 void system_pipe::close() {

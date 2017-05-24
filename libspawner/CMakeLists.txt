@@ -32,6 +32,7 @@ set(HEADERS
     inc/report.h
     inc/restrictions.h
     inc/session.h
+    inc/std_semaphore.h
     inc/uconvert.h
 
     # Headers for platform-specific implementations
