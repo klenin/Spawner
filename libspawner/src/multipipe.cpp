@@ -114,6 +114,7 @@ void multipipe::close_and_notify() {
 void multipipe::flush() {
     if (read_tail_len > 0) {
         write(read_tail_buffer, read_tail_len);
+        read_tail_len = 0;
     }
 }
 
