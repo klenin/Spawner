@@ -249,12 +249,14 @@ void runner::waitpid_body() {
     self->ru.ru_utime.tv_sec = t.tv_sec;
     self->ru.ru_utime.tv_usec = t.tv_usec;
 #endif
+}
 
-    for (auto& stream : self->streams) {
-        stream.second->finalize();
+void runner::wait() {
+    LOG("wait", get_index());
+    if (waitpid_thread.joinable()) {
+        waitpid_thread.join();
     }
-
-    return nullptr;
+    running = false;
 }
 
 void runner::run_process_async() {
@@ -262,12 +264,12 @@ void runner::run_process_async() {
     create_process();
 }
 
-bool runner::wait_for()
-{
-    if (waitpid_thread.joinable()) {
-        waitpid_thread.join();
+bool runner::wait_for() {
+    LOG("wait_for", get_index());
+    wait();
+    for (auto& stream : streams) {
+        stream.second->finalize();
     }
-    running = false;
     return true;
 }
 

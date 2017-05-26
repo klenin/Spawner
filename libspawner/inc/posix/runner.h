@@ -60,6 +60,8 @@ protected:
     virtual void create_process();
     virtual void requisites();
 
+    virtual void wait();
+
     virtual timeval get_user_time();
 public:
     pid_t get_proc_pid();
@@ -73,7 +75,7 @@ public:
     virtual void run_process_async();
     options_class get_options() const;
     std::string get_program() const;
-    virtual bool wait_for();
+    bool wait_for();
     bool wait_for_init(const unsigned long& interval);
     void suspend();
     void resume();

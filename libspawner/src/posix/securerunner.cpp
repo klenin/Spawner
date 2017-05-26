@@ -98,13 +98,11 @@ report_class secure_runner::get_report() {
     return runner::get_report();
 }
 
-bool secure_runner::wait_for() {
-    runner::wait_for();
+void secure_runner::wait() {
+    runner::wait();
     if (monitor_thread.joinable()) {
         monitor_thread.join();
     }
-
-    return true;
 }
 
 terminate_reason_t secure_runner::get_terminate_reason() {

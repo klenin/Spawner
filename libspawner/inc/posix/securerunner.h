@@ -46,6 +46,8 @@ protected:
     virtual void runner_free();
     virtual void requisites();
 
+    virtual void wait() override;
+
     virtual timeval get_user_time() override;
 public:
     secure_runner(const std::string &program, const options_class &options, const restrictions_class &restrictions);
@@ -61,6 +63,5 @@ public:
     void prolong_time_limits();
     bool force_stop = false;
     std::function<void()> on_terminate;
-    virtual bool wait_for();
 };
 #endif // _SECURE_RUNNER_H_
