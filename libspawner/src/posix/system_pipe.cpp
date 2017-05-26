@@ -117,7 +117,7 @@ size_t system_pipe::write(const char* bytes, size_t count) {
     if (is_writable()) {
         write_mutex.lock();
         bytes_written = ::write(output_handle, bytes, count);
-        if (bytes_written < 0) {
+        if (bytes_written < 0 && errno != EPIPE && errno != EBADF) {
             write_mutex.unlock();
             PANIC(strerror(errno));
         }

@@ -1,8 +1,11 @@
 #ifndef _RUNNER_H_
 #define _RUNNER_H_
 
-#include <sys/resource.h>
+#include <condition_variable>
+#include <mutex>
 #include <semaphore.h>
+#include <sys/resource.h>
+#include <thread>
 
 #include "inc/base_runner.h"
 
@@ -12,16 +15,16 @@
 #include "linux_procfd.h"
 #endif
 
-#include <thread>
-#include <condition_variable>
-
 class runner: public base_runner {
 private:
+    mutex suspend_mutex;
+
     std::thread waitpid_thread;
     pid_t proc_pid;
 
     struct rusage ru;  // precise resource usage storage
     bool ru_success = false;
+    bool resume_requested = false;
 
     //sync semaphore
     sem_t *child_sync = nullptr;
@@ -72,9 +75,10 @@ public:
     std::string get_program() const;
     virtual bool wait_for();
     bool wait_for_init(const unsigned long& interval);
-    void suspend() {}
-    void resume() {}
-    bool start_suspended = true;
+    void suspend();
+    void resume();
+    bool is_running();
+    bool start_suspended = false;
     virtual process_status_t get_process_status();
     signal_t get_signal();
     virtual unsigned long long get_time_since_create();

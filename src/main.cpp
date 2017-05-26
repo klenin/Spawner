@@ -156,6 +156,9 @@ int main(int argc, char *argv[]) {
 #if defined(_WIN32)
     SetConsoleCtrlHandler(CtrlHandlerRoutine, TRUE);
 #endif
+#if defined(__unix__)
+    signal(SIGPIPE, SIG_IGN);
+#endif
     set_on_panic_action([&]() {
         if (handler != nullptr) {
             handler->spawner->print_report();

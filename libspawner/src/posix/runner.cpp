@@ -162,6 +162,9 @@ void runner::init_process(const char *cmd_toexec, char **process_argv, char **pr
             exit(EXIT_FAILURE);
     }
     sem_wait(child_sync); //syncronize with parent
+    if (start_suspended) {
+        kill(getpid(), SIGSTOP);
+    }
     execve(cmd_toexec, process_argv, process_envp);
 }
 
@@ -173,9 +176,34 @@ signal_t runner::get_signal() {
         return signal_signal_no;
 }
 
-void *runner::waitpid_body(void *waitpid_param) {
+static bool wait_for_stopped(int pid) {
     int status;
-    runner *self = (runner *)waitpid_param;
+    struct timespec req;
+    req.tv_sec = 0;
+    req.tv_nsec = 1000000;
+    // Synchronize with SIGSTOP sent by init_process in child.
+    for (int i = 0; i < 1000; i++) {
+        pid_t w = waitpid(pid, &status, WUNTRACED | WCONTINUED | WNOHANG);
+        if (!WIFSTOPPED(status))
+            return true;
+        nanosleep(&req, nullptr);
+    }
+    return false;
+}
+
+void runner::waitpid_body() {
+    int status;
+    runner *self = this;
+
+    self->signal = signal_signal_no;
+    self->exit_code = 0;
+    if (self->start_suspended) {
+        if (!wait_for_stopped(self->proc_pid)) {
+            PANIC(std::string("Failed to stop child process: ") + std::to_string(self->get_index()));
+        }
+        self->process_status = process_suspended;
+        self->signal = signal_signal_no;
+    }
 
     // report back to main thread
     {
@@ -184,9 +212,8 @@ void *runner::waitpid_body(void *waitpid_param) {
     }
     self->waitpid_cond.notify_one();
 
-    self->signal = signal_signal_no;
-    self->exit_code = 0;
     do {
+        status = 0;
         pid_t w = waitpid(self->proc_pid, &status,
             WUNTRACED | WCONTINUED);
         if (WIFSIGNALED(status)) {
@@ -201,12 +228,16 @@ void *runner::waitpid_body(void *waitpid_param) {
         } else if (WIFEXITED(status)) {
             self->process_status = process_finished_normal;
             self->exit_code = WEXITSTATUS(status);
-        } else if (WIFSTOPPED(status))
+        } else if (WIFSTOPPED(status)) {
+            if (resume_requested) {
+                resume();
+            }
             self->process_status = process_suspended;
-        else if (WIFCONTINUED(status))
+        } else if (WIFCONTINUED(status)) {
+            resume_requested = false;
             self->process_status = process_still_active;
+        }
     } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-
     // get wall_clock time
     self->report.user_time = self->get_time_since_create() / 10;
 
@@ -242,6 +273,27 @@ bool runner::wait_for()
 
 bool runner::wait_for_init(const unsigned long& interval) {
     return true;
+}
+
+void runner::suspend() {
+    suspend_mutex.lock();
+    if (get_process_status() == process_still_active) {
+        int err = kill(proc_pid, SIGSTOP);
+    }
+    suspend_mutex.unlock();
+}
+
+void runner::resume() {
+    suspend_mutex.lock();
+    if (get_process_status() == process_suspended) {
+        resume_requested = true;
+        int err = kill(proc_pid, SIGCONT);
+    }
+    suspend_mutex.unlock();
+}
+
+bool runner::is_running() {
+    return running || ((get_process_status() & process_still_active) != 0);
 }
 
 void runner::requisites() {
@@ -393,9 +445,6 @@ void runner::create_process() {
 
         init_process(cmd_toexec, argv, envp);
     } else if (proc_pid > 0) { // parent
-        process_status = process_suspended;
-        running = true;
-
         stdinput->close(read_mode);
         stdoutput->close(write_mode);
         stderror->close(write_mode);
@@ -414,6 +463,8 @@ void runner::create_process() {
     if (cwd != nullptr)
         free(cwd);
 
+    process_status = process_still_active;
+    running = true;
     requisites();
     sem_post(child_sync); //unlock child
     sem_close(child_sync);
