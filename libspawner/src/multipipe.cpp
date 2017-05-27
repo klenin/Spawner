@@ -62,8 +62,10 @@ void multipipe::listen() {
             // TODO maybe increase buffer dynamic?
             read_tail_buffer[read_tail_len++] = *t;
             if (check_new_line && *t == '\n' || read_tail_len >= buffer_size) {
-                process_message(read_tail_buffer, read_tail_len);
+                // Clear read buffer in case process_message calls flush.
+                auto len = read_tail_len;
                 read_tail_len = 0;
+                process_message(read_tail_buffer, len);
             }
         }
     }
