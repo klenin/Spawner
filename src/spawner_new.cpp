@@ -413,6 +413,7 @@ bool spawner_new_c::init_runner() {
                 stderror->connect(get_or_create_file_pipe(error.name, write_mode, error.flags));
     }
 
+    secure_runner_instance->set_index(runners.size());
     runners.push_back(secure_runner_instance);
     return true;
 }

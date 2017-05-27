@@ -13,6 +13,8 @@
 #include "platform_report.h"
 
 class base_runner {
+    int index;
+
 protected:
     typedef std::list<std::pair<std::string, std::string>> env_vars_list_t;
     std::map<std_stream_type, multipipe_ptr> streams;
@@ -32,6 +34,8 @@ public:
     virtual restrictions_class get_restrictions() const {return restrictions_class(); }
     base_runner(const std::string &program, const options_class &options);
     void finalize();
+    void set_index(int i);
+    int get_index() const;
 };
 
 #endif // _BASE_RUNNER_H_

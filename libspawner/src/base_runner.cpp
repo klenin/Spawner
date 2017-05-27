@@ -27,7 +27,8 @@ multipipe_ptr base_runner::get_pipe(const std_stream_type& stream_type, options_
 }
 
 base_runner::base_runner(const std::string& program, const options_class& options)
-    : options(options)
+    : index(0)
+    , options(options)
     , program(program)
     , finalize_thread(nullptr) {
 }
@@ -38,4 +39,12 @@ void base_runner::finalize() {
         delete finalize_thread;
         finalize_thread = nullptr;
     }
+}
+
+void base_runner::set_index(int i) {
+    index = i;
+}
+
+int base_runner::get_index() const {
+    return index;
 }
