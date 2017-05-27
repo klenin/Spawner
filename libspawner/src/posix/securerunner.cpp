@@ -281,7 +281,8 @@ void secure_runner::check_limits_proc() {
             prev_elapsed = wclk_elapsed;
         }
 
-        if (check_restriction(restriction_load_ratio) && tick_detected &&
+        if (process_status != process_suspended &&
+            check_restriction(restriction_load_ratio) && tick_detected &&
             check_restriction(restriction_idle_time_limit) &&
             ticks_elapsed >= TICK_THRESHOLD
         ) {
