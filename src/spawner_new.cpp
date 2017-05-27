@@ -346,8 +346,8 @@ bool spawner_new_c::init() {
         awaited_agents_.resize(runners.size() - 1);
         for (size_t i = 0; i < runners.size(); i++) {
             secure_runner* sr = static_cast<secure_runner*>(runners[i]);
+            sr->start_suspended = true;
             if (i != controller_index_) {
-                sr->start_suspended = true;
                 sr->on_terminate = [=]() {
                     LOG("runner", i, "terminated");
                     on_terminate_mutex_.lock();
@@ -375,8 +375,8 @@ bool spawner_new_c::init() {
                     LOG("controller terminated");
                     on_terminate_mutex_.lock();
                     for (size_t j = 0; j < runners.size(); j++) {
-                        if (j != controller_index_ && runners[i]->get_process_status() == process_suspended) {
-                            runners[i]->resume();
+                        if (j != controller_index_) {
+                            runners[j]->resume();
                         }
                     }
                     on_terminate_mutex_.unlock();
@@ -470,6 +470,9 @@ void spawner_new_c::run() {
     }
     for (auto i : runners) {
         i->get_pipe(std_stream_input)->check_parents();
+    }
+    if (control_mode_enabled) {
+        runners[controller_index_]->resume();
     }
     LOG("initialized");
     for (auto i : runners) {
