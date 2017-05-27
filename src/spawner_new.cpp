@@ -343,19 +343,27 @@ bool spawner_new_c::init() {
             secure_runner* sr = static_cast<secure_runner*>(runners[i]);
             if (i != controller_index_) {
                 sr->start_suspended = true;
+                sr->on_terminate = [=]() {
+                    on_terminate_mutex_.lock();
+                    if (i > 0) {
+                        wait_agent_mutex_.lock();
+                        awaited_agents_[i - 1] = false;
+                        std::string message = std::to_string(i) + "T#\n";
+                        // Send message to controller only.
+                        controller_input_->write(message.c_str(), message.size());
+                        wait_agent_mutex_.unlock();
+                    }
+                    on_terminate_mutex_.unlock();
+                };
+            } else {
+                sr->on_terminate = [=]() {
+                    for (size_t j = 0; j < runners.size(); j++) {
+                        if (j != controller_index_ && runners[i]->get_process_status() == process_suspended) {
+                            runners[i]->resume();
+                        }
+                    }
+                };
             }
-            sr->on_terminate = [=]() {
-                on_terminate_mutex_.lock();
-                if (i > 0 && awaited_agents_[i - 1]) {
-                    wait_agent_mutex_.lock();
-                    awaited_agents_[i - 1] = false;
-                    std::string message = std::to_string(i) + "I#\n";
-                    // Send message to controller only.
-                    controller_input_->write(message.c_str(), message.size());
-                    wait_agent_mutex_.unlock();
-                }
-                on_terminate_mutex_.unlock();
-            };
         }
     }
 
