@@ -171,7 +171,7 @@ void runner::init_process(const char *cmd_toexec, char **process_argv, char **pr
 signal_t runner::get_signal() {
     if ((get_process_status() == process_finished_abnormally)
         || (get_process_status() == process_finished_terminated)) {
-        return (signal);
+        return (runner_signal);
     } else
         return signal_signal_no;
 }
@@ -193,61 +193,60 @@ static bool wait_for_stopped(int pid) {
 
 void runner::waitpid_body() {
     int status;
-    runner *self = this;
 
-    self->signal = signal_signal_no;
-    self->exit_code = 0;
-    if (self->start_suspended) {
-        if (!wait_for_stopped(self->proc_pid)) {
-            PANIC(std::string("Failed to stop child process: ") + std::to_string(self->get_index()));
+    runner_signal = signal_signal_no;
+    exit_code = 0;
+    if (start_suspended) {
+        if (!wait_for_stopped(proc_pid)) {
+            PANIC(std::string("Failed to stop child process: ") + std::to_string(get_index()));
         }
-        self->process_status = process_suspended;
-        self->signal = signal_signal_no;
+        process_status = process_suspended;
+        runner_signal = signal_signal_no;
     }
 
     // report back to main thread
     {
-      std::lock_guard<std::mutex> lock(self->waitpid_cond_mtx);
-      self->waitpid_ready = true;
+      std::lock_guard<std::mutex> lock(waitpid_cond_mtx);
+      waitpid_ready = true;
     }
-    self->waitpid_cond.notify_one();
+    waitpid_cond.notify_one();
 
     do {
         status = 0;
-        pid_t w = waitpid(self->proc_pid, &status,
+        pid_t w = waitpid(proc_pid, &status,
             WUNTRACED | WCONTINUED);
         if (WIFSIGNALED(status)) {
             // "signalled" means abnormal/terminate
 #ifdef WCOREDUMP
-            self->process_status = process_finished_abnormally;
+            process_status = process_finished_abnormally;
 #else
-            self->process_status = process_finished_terminated;
+            process_status = process_finished_terminated;
 #endif
 
-            self->signal = (signal_t)WTERMSIG(status);
+            runner_signal = (signal_t)WTERMSIG(status);
         } else if (WIFEXITED(status)) {
-            self->process_status = process_finished_normal;
-            self->exit_code = WEXITSTATUS(status);
+            process_status = process_finished_normal;
+            exit_code = WEXITSTATUS(status);
         } else if (WIFSTOPPED(status)) {
             if (resume_requested) {
                 resume();
             }
-            self->process_status = process_suspended;
+            process_status = process_suspended;
         } else if (WIFCONTINUED(status)) {
             resume_requested = false;
-            self->process_status = process_still_active;
+            process_status = process_still_active;
         }
     } while (!WIFEXITED(status) && !WIFSIGNALED(status));
     // get wall_clock time
-    self->report.user_time = self->get_time_since_create() / 10;
+    report.user_time = get_time_since_create() / 10;
 
-    if (getrusage(RUSAGE_CHILDREN, &self->ru) != -1) // TODO: not working with multiple runs
-        self->ru_success = true;
+    if (getrusage(RUSAGE_CHILDREN, &ru) != -1) // TODO: not working with multiple runs
+        ru_success = true;
 
 #ifdef __linux__
-    timeval t = self->get_user_time();
-    self->ru.ru_utime.tv_sec = t.tv_sec;
-    self->ru.ru_utime.tv_usec = t.tv_usec;
+    timeval t = get_user_time();
+    ru.ru_utime.tv_sec = t.tv_sec;
+    ru.ru_utime.tv_usec = t.tv_usec;
 #endif
 }
 
@@ -303,7 +302,7 @@ void runner::requisites() {
     affinity.set(proc_pid);
 #endif
     // wait till waitpid body completely starts
-    waitpid_thread = std::thread(waitpid_body, (void *)this);
+    waitpid_thread = std::thread(&runner::waitpid_body, this);
     std::unique_lock<std::mutex> lock(waitpid_cond_mtx);
     while (!waitpid_ready)
         waitpid_cond.wait(lock);

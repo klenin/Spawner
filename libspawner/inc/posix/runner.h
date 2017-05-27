@@ -47,7 +47,7 @@ private:
     std::condition_variable waitpid_cond;
     bool waitpid_ready = false;
 
-    signal_t signal;
+    signal_t runner_signal;
     int exit_code;
 protected:
     void report_login();
@@ -67,7 +67,7 @@ public:
     pid_t get_proc_pid();
     void run_waitpid();
     void run_monitor();
-    static void *waitpid_body(void *);
+    void waitpid_body();
 
     runner(const std::string &program, const options_class &options);
     virtual ~runner();

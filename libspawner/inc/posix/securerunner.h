@@ -41,7 +41,7 @@ protected:
     virtual void init_process(const char *cmd_toexec, char **process_argv, char **process_envp);
     virtual void create_process();
 
-    static void *check_limits_proc(void *);
+    void check_limits_proc();
 
     virtual void runner_free();
     virtual void requisites();
