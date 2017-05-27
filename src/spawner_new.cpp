@@ -168,7 +168,8 @@ int spawner_new_c::get_agent_index_(const std::string& message) {
 
     if (agent_index == 0) {
         return 0;
-    } else if (agent_index < 1 || agent_index > int(runners.size() - 1)) {
+    }
+    if (agent_index < 1 || agent_index > int(runners.size() - 1)) {
         agent_index = -1;
     }
 
@@ -203,10 +204,8 @@ void spawner_new_c::process_controller_message_(const std::string& message) {
         PANIC("missing header in controller message");
     }
     auto control_letter = message[hash_pos - 1];
-    auto send_to_agent = false;
 
     const auto agent_index = get_agent_index_(message);
-    auto runner_index = -1;
     if (agent_index == -1) {
         const auto error_message = message.substr(0, hash_pos) + "I#\n";
         controller_broadcaster_->write(error_message.c_str(), error_message.size());
@@ -215,7 +214,7 @@ void spawner_new_c::process_controller_message_(const std::string& message) {
         // this is a message to spawner
     }
     else {
-        runner_index = agent_to_runner_index_(agent_index);
+        auto runner_index = agent_to_runner_index_(agent_index);
         switch (control_letter) {
         case 'W': {
             wait_agent_mutex_.lock();
@@ -229,22 +228,18 @@ void spawner_new_c::process_controller_message_(const std::string& message) {
             break;
         }
         default:
-            send_to_agent = true;
+            auto pipe = runners[runner_index]->get_pipe(std_stream_input);
+            pipe->write(message.c_str() + hash_pos + 1, message.size() - hash_pos - 1);
             break;
         }
     }
 
-    //TODO: what if agent_index == -1?
-    if (runner_index != -1) {
-        auto pipe = runners[runner_index]->get_pipe(std_stream_input);
-        pipe->write(message.c_str() + hash_pos + 1, message.size() - hash_pos - 1);
-    }
 }
 
 void spawner_new_c::process_agent_message_(const std::string& message, int agent_index) {
     std::string mod_message = std::to_string(agent_index) + "#" + message;
     auto runner = runners[agent_to_runner_index_(agent_index)];
-    runner->get_pipe(std_stream_input)->write(mod_message.c_str(), mod_message.size());
+    runner->get_pipe(std_stream_output)->write(mod_message.c_str(), mod_message.size());
     wait_agent_mutex_.lock();
     if (awaited_agents_[agent_index - 1]) {
         awaited_agents_[agent_index - 1] = false;
@@ -338,7 +333,8 @@ bool spawner_new_c::init() {
             PANIC_IF(controller_index_ != -1);
             controller_index_ = i;
             control_mode_enabled = true;
-            controller_broadcaster_ = runners[i]->get_pipe(std_stream_input);
+            controller_input_ = runners[i]->get_pipe(std_stream_input)->get_pipe();
+            controller_output_ = runners[i]->get_pipe(std_stream_output);
         }
     }
     if (controller_index_ != -1) {
@@ -354,8 +350,8 @@ bool spawner_new_c::init() {
                     wait_agent_mutex_.lock();
                     awaited_agents_[i - 1] = false;
                     std::string message = std::to_string(i) + "I#\n";
-                    //TODO: broadcast?
-                    controller_broadcaster_->write(message.c_str(), message.size());
+                    // Send message to controller only.
+                    controller_input_->write(message.c_str(), message.size());
                     wait_agent_mutex_.unlock();
                 }
                 on_terminate_mutex_.unlock();
