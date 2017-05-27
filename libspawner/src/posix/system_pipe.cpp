@@ -7,6 +7,7 @@
 #include <sys/file.h>
 
 #include "error.h"
+#include "logger.h"
 
 system_pipe::system_pipe(bool flush, pipe_type t) {
     autoflush = flush;
@@ -105,6 +106,7 @@ size_t system_pipe::read(char* bytes, size_t count) {
             read_mutex.unlock();
             PANIC(strerror(errno));
         }
+        LOG("read", bytes_read);
         read_mutex.unlock();
     }
 
@@ -117,10 +119,11 @@ size_t system_pipe::write(const char* bytes, size_t count) {
     if (is_writable()) {
         write_mutex.lock();
         bytes_written = ::write(output_handle, bytes, count);
-        if (bytes_written < 0) {
+        if (bytes_written < 0 && errno != EPIPE && errno != EBADF) {
             write_mutex.unlock();
             PANIC(strerror(errno));
         }
+        LOG("written", bytes_written);
         write_mutex.unlock();
     }
 
@@ -132,12 +135,15 @@ size_t system_pipe::write(const char* bytes, size_t count) {
 
 void system_pipe::flush() {
     write_mutex.lock();
-    if (is_writable())
+    if (is_writable()) {
         fsync(output_handle);
+        LOG("flushed");
+    }
     write_mutex.unlock();
 }
 
 void system_pipe::close(pipe_mode mode) {
+    LOG("close");
     if (mode == read_mode && is_readable()) {
         read_mutex.lock();
         if (is_file()) {

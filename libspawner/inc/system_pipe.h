@@ -3,12 +3,15 @@
 
 #include <memory>
 #include <mutex>
+#include <thread>
 
 #include "platform.h"
+#include "std_semaphore.h"
 
 using std::mutex;
 using std::shared_ptr;
 using std::string;
+using std::thread;
 
 class system_pipe;
 typedef shared_ptr<system_pipe> system_pipe_ptr;
@@ -38,11 +41,15 @@ class system_pipe {
     pipe_handle input_handle;
     pipe_handle output_handle;
 
-    mutex read_mutex, write_mutex;
+    mutex read_mutex, write_mutex, close_mutex;
 
-    bool autoflush;
+    std_semaphore flush_sem;
+    thread *flush_thread = nullptr;
+
+    bool autoflush, stop_flush;
 
     explicit system_pipe(bool flush, pipe_type t = pipe_type::def);
+    void start_flush_thread();
 
 public:
     static system_pipe_ptr open_std(std_stream_type type, bool flush = true);

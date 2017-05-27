@@ -22,7 +22,7 @@ public:
         user_time(0),
         kernel_time(0) {}
     process_status_t process_status;
-    
+
     terminate_reason_t terminate_reason;
     //may be move this to different structure
     unsigned long peak_memory_used;
@@ -87,6 +87,7 @@ const terminate_reason_description terminate_reason_descriptions[] = {
     {terminate_reason_load_ratio_limit,         "IdleTimeLimitExceeded"},//"TERMINATE_REASON_LOAD_RATIO_LIMIT"},
     {terminate_reason_debug_event,              "DebugEvent"},//"TERMINATE_REASON_DEBUG_EVENT"},
     {terminate_reason_created_process,          "ProcessesCountLimitExceeded"},
+    {terminate_reason_by_controller,            "TerminatedByController"},
     {terminate_reason_not_terminated,           nullptr}
 };
 

@@ -3,6 +3,7 @@
 #include <chrono>
 
 #include "error.h"
+#include "logger.h"
 
 using std::chrono::milliseconds;
 using std::this_thread::sleep_for;
@@ -19,6 +20,7 @@ multipipe::multipipe(system_pipe_ptr pipe, int bsize, pipe_mode mode, bool autos
     , read_tail_len(0)
     , write_tail_len(0)
     , check_new_line(true)
+    , custom_process_message(false)
     , stop_flag(false)
     , mode(mode)
     , parents_count(0)
@@ -42,6 +44,7 @@ void multipipe::set_new_line_checking() {
 }
 
 void multipipe::listen() {
+    LOG("listen", id);
     if (mode != read_mode && core_pipe->is_readable())
         return;
 
@@ -60,8 +63,10 @@ void multipipe::listen() {
             // TODO maybe increase buffer dynamic?
             read_tail_buffer[read_tail_len++] = *t;
             if (check_new_line && *t == '\n' || read_tail_len >= buffer_size) {
-                process_message(read_tail_buffer, read_tail_len);
+                // Clear read buffer in case process_message calls flush.
+                auto len = read_tail_len;
                 read_tail_len = 0;
+                process_message(read_tail_buffer, len);
             }
         }
     }
@@ -102,6 +107,7 @@ void multipipe::write(const char* bytes, size_t count, set<int>& src) {
 }
 
 void multipipe::close_and_notify() {
+    LOG("close and notify", id);
     flush();
 
     auto childs = this->sinks;
@@ -114,6 +120,7 @@ void multipipe::close_and_notify() {
 void multipipe::flush() {
     if (read_tail_len > 0) {
         write(read_tail_buffer, read_tail_len);
+        read_tail_len = 0;
     }
 }
 
@@ -173,9 +180,26 @@ void multipipe::disconnect(weak_ptr<multipipe> pipe) {
     set_new_line_checking();
 }
 
+void multipipe::for_each_sink(std::function<void(multipipe_ptr& sink)> func) {
+    for (const auto& sink : sinks) {
+        if (auto p = sink.second.lock()) {
+            func(p);
+        }
+    }
+}
+
 void multipipe::write(const char* bytes, size_t count) {
     auto src = set<int>();
     write(bytes, count, src);
+}
+
+void multipipe::set_custom_process_message(std::function<void(const char* buffer, size_t count)> func) {
+    process_message = func;
+    custom_process_message = true;
+}
+
+bool multipipe::process_message_is_custom() const {
+    return custom_process_message;
 }
 
 system_pipe_ptr multipipe::get_pipe() const {

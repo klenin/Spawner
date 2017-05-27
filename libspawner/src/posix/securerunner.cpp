@@ -71,7 +71,7 @@ bool secure_runner::create_restrictions() {
 void secure_runner::requisites() {
     creation_time = get_current_time();
 
-    monitor_thread = std::thread(check_limits_proc, (void *)this);
+    monitor_thread = std::thread(&secure_runner::check_limits_proc, this);
     // wait for monitor thread
     std::unique_lock<std::mutex> lock(monitor_cond_mtx);
     while (!monitor_ready)
@@ -98,13 +98,11 @@ report_class secure_runner::get_report() {
     return runner::get_report();
 }
 
-bool secure_runner::wait_for() {
-    runner::wait_for();
+void secure_runner::wait() {
+    runner::wait();
     if (monitor_thread.joinable()) {
         monitor_thread.join();
     }
-
-    return true;
 }
 
 terminate_reason_t secure_runner::get_terminate_reason() {
@@ -132,7 +130,8 @@ terminate_reason_t secure_runner::get_terminate_reason() {
             || terminate_reason == terminate_reason_write_limit
             || terminate_reason == terminate_reason_load_ratio_limit
             || terminate_reason == terminate_reason_time_limit
-            || terminate_reason == terminate_reason_memory_limit)
+            || terminate_reason == terminate_reason_memory_limit
+            || terminate_reason == terminate_reason_by_controller)
             break;
         else { // manually killed by a human or hard rlimit
             terminate_reason = terminate_reason_abnormal_exit_process;
@@ -175,15 +174,13 @@ void secure_runner::runner_free() {
     runner::runner_free();
 }
 
-void *secure_runner::check_limits_proc(void *monitor_param) {
+void secure_runner::check_limits_proc() {
     // add SIGSTOP and getitimer() support
     pid_t proc_pid;
 
     struct timespec req;
 
-    secure_runner *self = (secure_runner *)monitor_param;
-
-    proc_pid = self->get_proc_pid();
+    proc_pid = get_proc_pid();
 
 #if defined(__linux__)
     unsigned long long current_time;
@@ -194,45 +191,54 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
     bool tick_detected = false;
     long tick_to_micros = 1000000 / tick_res;
 
-    if(!self->proc.probe_pid(proc_pid)) {
+    if(!proc.probe_pid(proc_pid)) {
         kill(proc_pid, SIGKILL);
         PANIC("procfs entry not created");
     }
-    self->proc.fill_all();
+    proc.fill_all();
 #endif
 
     req.tv_sec=0;
     req.tv_nsec=0;
 
     // tv_sec computation may be useless
-    if (self->options.monitorInterval >= 1000000)
-        req.tv_sec = (self->options.monitorInterval / 1000000);
+    if (options.monitorInterval >= 1000000)
+        req.tv_sec = (options.monitorInterval / 1000000);
     // convert ms to ns
-    if (self->options.monitorInterval % 1000000)
-        req.tv_nsec = (self->options.monitorInterval % 1000000) * 1000;
+    if (options.monitorInterval % 1000000)
+        req.tv_nsec = (options.monitorInterval % 1000000) * 1000;
 
     // report back to main thread
     {
-        std::lock_guard<std::mutex> lock(self->monitor_cond_mtx);
-        self->monitor_ready = true;
+        std::lock_guard<std::mutex> lock(monitor_cond_mtx);
+        monitor_ready = true;
     }
-    self->monitor_cond.notify_one();
+    monitor_cond.notify_one();
 
     // Main loop..
-    while (self->running) {
+    while (running) {
 #if defined(__linux__)
-        if(!self->proc.fill_all())
+        if(!proc.fill_all())
             break;
 
-        if (self->check_restriction(restriction_write_limit) &&
-            (self->proc.write_bytes > self->get_restriction(restriction_write_limit))) {
+        if (force_stop) {
+            kill(proc_pid, SIGSTOP);
+            proc.fill_all();
+            kill(proc_pid, SIGKILL);
+            terminate_reason = terminate_reason_by_controller;
+            process_status = process_finished_terminated;
+            break;
+        }
+
+        if (check_restriction(restriction_write_limit) &&
+            (proc.write_bytes > get_restriction(restriction_write_limit))) {
             // stop process and take a death mask
             kill(proc_pid, SIGSTOP);
-            self->proc.fill_all();
+            proc.fill_all();
             // terminate
             kill(proc_pid, SIGKILL);
-            self->terminate_reason = terminate_reason_write_limit;
-            self->process_status = process_finished_terminated;
+            terminate_reason = terminate_reason_write_limit;
+            process_status = process_finished_terminated;
             break;
         }
 
@@ -241,21 +247,21 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
         //    (The Linux kernel can be idle-tickless or even fully tickless,
         //    so it provides virtual ticks for user space) "tick" ticks.
         // -- Do not perform calculations too often (only after "tick" ticks).
-        if (self->check_restriction(restriction_idle_time_limit) ||
-            self->check_restriction(restriction_load_ratio) ||
-            self->check_restriction(restriction_processor_time_limit)
+        if (check_restriction(restriction_idle_time_limit) ||
+            check_restriction(restriction_load_ratio) ||
+            check_restriction(restriction_processor_time_limit)
         ) {
-            current_time = self->get_time_since_create() / 10;
+            current_time = get_time_since_create() / 10;
             if (tick_detected = (current_time / tick_to_micros > ticks_elapsed)) {
                 ticks_elapsed = current_time / tick_to_micros;
             }
         }
 
-        if (self->check_restriction(restriction_memory_limit) &&
-            self->proc.vss_max > self->get_restriction(restriction_memory_limit)
+        if (check_restriction(restriction_memory_limit) &&
+            proc.vss_max > get_restriction(restriction_memory_limit)
         ) {
-            self->terminate_reason = terminate_reason_memory_limit;
-            self->process_status = process_finished_terminated;
+            terminate_reason = terminate_reason_memory_limit;
+            process_status = process_finished_terminated;
             break;
         }
 
@@ -266,80 +272,81 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
         //    "./sp --out /dev/null /bin/yes"
 #define TICK_THRESHOLD 5
 
-        self->proc_consumed = (double)self->proc.stat_utime / tick_res;
+        proc_consumed = (double)proc.stat_utime / tick_res;
         double wclk_elapsed = (double)current_time / 1000000;
-        double load_ratio = (self->proc_consumed - self->prev_consumed) / (wclk_elapsed - self->prev_elapsed);
+        double load_ratio = (proc_consumed - prev_consumed) / (wclk_elapsed - prev_elapsed);
 
-        if (wclk_elapsed - self->prev_elapsed > 0.2) {
-            self->prev_consumed = self->proc_consumed;
-            self->prev_elapsed = wclk_elapsed;
+        if (wclk_elapsed - prev_elapsed > 0.2) {
+            prev_consumed = proc_consumed;
+            prev_elapsed = wclk_elapsed;
         }
 
-        if (self->check_restriction(restriction_load_ratio) && tick_detected &&
-            self->check_restriction(restriction_idle_time_limit) &&
+        if (process_status != process_suspended &&
+            check_restriction(restriction_load_ratio) && tick_detected &&
+            check_restriction(restriction_idle_time_limit) &&
             ticks_elapsed >= TICK_THRESHOLD
         ) {
-            int idle_limit = self->get_restriction(restriction_idle_time_limit) / 1000000;
-            int step = idle_limit * self->options.monitorInterval / 10 / load_ratios_max_size;
-            if (ticks_elapsed % step == 0 && self->last_tick != ticks_elapsed) {
-                // printf("consumed: %g (procfs value %lu) ", proc_consumed, self->proc.stat_utime);
-                restriction = (double)self->get_restriction(restriction_load_ratio) / 10000;
+            double idle_limit = get_restriction(restriction_idle_time_limit) / 1000000.0;
+            int step = (int)(idle_limit * options.monitorInterval / 10 / load_ratios_max_size);
+            if (ticks_elapsed % step == 0 && last_tick != ticks_elapsed) {
+                // printf("consumed: %g (procfs value %lu) ", proc_consumed, proc.stat_utime);
+                restriction = (double)get_restriction(restriction_load_ratio) / 10000;
                 // printf("load_ratio: %g, restriction: %g\n", load_ratio, restriction);
-                bool can_use_load_ratios = self->load_ratios.size() == load_ratios_max_size;
+                bool can_use_load_ratios = load_ratios.size() == load_ratios_max_size;
                 if (can_use_load_ratios) {
-                    self->load_ratios.pop_back();
-                    if (self->max_load_ratio_index == load_ratios_max_size - 1) {
-                        self->max_load_ratio_index = 0;
+                    load_ratios.pop_back();
+                    if (max_load_ratio_index == load_ratios_max_size - 1) {
+                        max_load_ratio_index = 0;
                         for (int i = 1; i < load_ratios_max_size - 1; ++i) {
-                            if (self->load_ratios[self->max_load_ratio_index] < self->load_ratios[i]) {
-                                self->max_load_ratio_index = i;
+                            if (load_ratios[max_load_ratio_index] < load_ratios[i]) {
+                                max_load_ratio_index = i;
                             }
                         }
                     }
                 }
-                self->load_ratios.push_front(load_ratio);
-                ++self->max_load_ratio_index;
-                if (self->load_ratios[self->max_load_ratio_index] <= load_ratio) {
-                    self->max_load_ratio_index = 0;
+                load_ratios.push_front(load_ratio);
+                ++max_load_ratio_index;
+                if (load_ratios[max_load_ratio_index] <= load_ratio) {
+                    max_load_ratio_index = 0;
                 }
                 if (can_use_load_ratios &&
-                    self->load_ratios[self->max_load_ratio_index] < restriction
+                    load_ratios[max_load_ratio_index] < restriction
                 ) {
                     kill(proc_pid, SIGSTOP);
-                    self->proc.fill_all();
+                    proc.fill_all();
                     kill(proc_pid, SIGKILL);
-                    self->terminate_reason = terminate_reason_load_ratio_limit;
-                    self->process_status = process_finished_terminated;
+                    terminate_reason = terminate_reason_load_ratio_limit;
+                    process_status = process_finished_terminated;
                     break;
                 }
             }
-            self->last_tick = ticks_elapsed;
+            last_tick = ticks_elapsed;
         }
 
         // precise cpu usage judge
-        if (self->check_restriction(restriction_processor_time_limit) && tick_detected) {
-            double restriction = (double)self->get_restriction(restriction_processor_time_limit) / 1000000;
+        if (check_restriction(restriction_processor_time_limit) && tick_detected) {
+            double restriction = (double)get_restriction(restriction_processor_time_limit) / 1000000;
             // printf("time limit: %g, utime: %lu, consumed: %g\n",
-            //    (double)restriction, self->proc.stat_utime, proc_consumed);
-            if (self->proc_consumed >= restriction) {
+            //    (double)restriction, proc.stat_utime, proc_consumed);
+            if (proc_consumed >= restriction) {
                 // stopped process has no chance to handle SIGXCPU
                 //kill(proc_pid, SIGSTOP);
-                self->proc.fill_all();
+                proc.fill_all();
                 // SIGXCPU can be ignored
                 kill(proc_pid, SIGXCPU);
                 // wait some time for signal delivery
                 usleep((useconds_t)tick_to_micros);
                 kill(proc_pid, SIGKILL);
-                self->terminate_reason = terminate_reason_time_limit;
-                self->process_status = process_finished_terminated;
+                terminate_reason = terminate_reason_time_limit;
+                process_status = process_finished_terminated;
             }
         }
 
 #endif
-        if (self->check_restriction(restriction_user_time_limit) &&
-            (self->get_time_since_create() / 10) > self->get_restriction(restriction_user_time_limit)) {
+        if (check_restriction(restriction_user_time_limit) &&
+            (get_time_since_create() / 10) > get_restriction(restriction_user_time_limit)) {
 #if defined(__linux__)
-            self->proc.fill_all();
+            proc.fill_all();
 #endif
             kill(proc_pid, SIGXCPU);
 #if defined(__linux__)
@@ -348,12 +355,14 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
             usleep(100 * 1000);
 #endif
             kill(proc_pid, SIGKILL);
-            self->terminate_reason = terminate_reason_user_time_limit;
-            self->process_status = process_finished_terminated;
+            terminate_reason = terminate_reason_user_time_limit;
+            process_status = process_finished_terminated;
         }
 
         nanosleep(&req, nullptr);
     }
 
-    return nullptr;
+    if (on_terminate) {
+        on_terminate();
+    }
 }

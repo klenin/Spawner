@@ -7,6 +7,7 @@
 #include <fcntl.h>
 
 #include "inc/error.h"
+#include "logger.h"
 
 #include "runner.h"
 
@@ -162,68 +163,104 @@ void runner::init_process(const char *cmd_toexec, char **process_argv, char **pr
             exit(EXIT_FAILURE);
     }
     sem_wait(child_sync); //syncronize with parent
+    if (start_suspended) {
+        kill(getpid(), SIGSTOP);
+    }
     execve(cmd_toexec, process_argv, process_envp);
 }
 
 signal_t runner::get_signal() {
     if ((get_process_status() == process_finished_abnormally)
         || (get_process_status() == process_finished_terminated)) {
-        return (signal);
+        return (runner_signal);
     } else
         return signal_signal_no;
 }
 
-void *runner::waitpid_body(void *waitpid_param) {
+static bool wait_for_stopped(int pid) {
     int status;
-    runner *self = (runner *)waitpid_param;
+    struct timespec req;
+    req.tv_sec = 0;
+    req.tv_nsec = 1000000;
+    // Synchronize with SIGSTOP sent by init_process in child.
+    for (int i = 0; i < 1000; i++) {
+        pid_t w = waitpid(pid, &status, WUNTRACED | WCONTINUED | WNOHANG);
+        if (!WIFSTOPPED(status))
+            return true;
+        nanosleep(&req, nullptr);
+    }
+    return false;
+}
+
+void runner::waitpid_body() {
+    int status;
+
+    runner_signal = signal_signal_no;
+    exit_code = 0;
+    if (start_suspended) {
+        if (!wait_for_stopped(proc_pid)) {
+            PANIC(std::string("Failed to stop child process: ") + std::to_string(get_index()));
+        }
+        process_status = process_suspended;
+        runner_signal = signal_signal_no;
+    }
 
     // report back to main thread
     {
-      std::lock_guard<std::mutex> lock(self->waitpid_cond_mtx);
-      self->waitpid_ready = true;
+      std::lock_guard<std::mutex> lock(waitpid_cond_mtx);
+      waitpid_ready = true;
     }
-    self->waitpid_cond.notify_one();
+    waitpid_cond.notify_one();
 
-    self->signal = signal_signal_no;
-    self->exit_code = 0;
     do {
-        pid_t w = waitpid(self->proc_pid, &status,
+        status = 0;
+        pid_t w = waitpid(proc_pid, &status,
             WUNTRACED | WCONTINUED);
         if (WIFSIGNALED(status)) {
+            LOG("signaled", get_index());
             // "signalled" means abnormal/terminate
 #ifdef WCOREDUMP
-            self->process_status = process_finished_abnormally;
+            process_status = process_finished_abnormally;
 #else
-            self->process_status = process_finished_terminated;
+            process_status = process_finished_terminated;
 #endif
 
-            self->signal = (signal_t)WTERMSIG(status);
+            runner_signal = (signal_t)WTERMSIG(status);
         } else if (WIFEXITED(status)) {
-            self->process_status = process_finished_normal;
-            self->exit_code = WEXITSTATUS(status);
-        } else if (WIFSTOPPED(status))
-            self->process_status = process_suspended;
-        else if (WIFCONTINUED(status))
-            self->process_status = process_still_active;
+            LOG("exited", get_index());
+            process_status = process_finished_normal;
+            exit_code = WEXITSTATUS(status);
+        } else if (WIFSTOPPED(status)) {
+            LOG("stopped", get_index());
+            if (resume_requested) {
+                resume();
+            }
+            process_status = process_suspended;
+        } else if (WIFCONTINUED(status)) {
+            LOG("continued", get_index());
+            resume_requested = false;
+            process_status = process_still_active;
+        }
     } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-
     // get wall_clock time
-    self->report.user_time = self->get_time_since_create() / 10;
+    report.user_time = get_time_since_create() / 10;
 
-    if (getrusage(RUSAGE_CHILDREN, &self->ru) != -1) // TODO: not working with multiple runs
-        self->ru_success = true;
+    if (getrusage(RUSAGE_CHILDREN, &ru) != -1) // TODO: not working with multiple runs
+        ru_success = true;
 
 #ifdef __linux__
-    timeval t = self->get_user_time();
-    self->ru.ru_utime.tv_sec = t.tv_sec;
-    self->ru.ru_utime.tv_usec = t.tv_usec;
+    timeval t = get_user_time();
+    ru.ru_utime.tv_sec = t.tv_sec;
+    ru.ru_utime.tv_usec = t.tv_usec;
 #endif
+}
 
-    for (auto& stream : self->streams) {
-        stream.second->finalize();
+void runner::wait() {
+    LOG("wait", get_index());
+    if (waitpid_thread.joinable()) {
+        waitpid_thread.join();
     }
-
-    return nullptr;
+    running = false;
 }
 
 void runner::run_process_async() {
@@ -231,13 +268,40 @@ void runner::run_process_async() {
     create_process();
 }
 
-bool runner::wait_for()
-{
-    if (waitpid_thread.joinable()) {
-        waitpid_thread.join();
+bool runner::wait_for() {
+    LOG("wait_for", get_index());
+    wait();
+    for (auto& stream : streams) {
+        stream.second->finalize();
     }
-    running = false;
     return true;
+}
+
+bool runner::wait_for_init(const unsigned long& interval) {
+    return true;
+}
+
+void runner::suspend() {
+    suspend_mutex.lock();
+    if (get_process_status() == process_still_active) {
+        int err = kill(proc_pid, SIGSTOP);
+        LOG("suspend", get_index(), err);
+    }
+    suspend_mutex.unlock();
+}
+
+void runner::resume() {
+    suspend_mutex.lock();
+    if (get_process_status() == process_suspended) {
+        resume_requested = true;
+        int err = kill(proc_pid, SIGCONT);
+        LOG("resume", get_index(), err);
+    }
+    suspend_mutex.unlock();
+}
+
+bool runner::is_running() {
+    return running || ((get_process_status() & process_still_active) != 0);
 }
 
 void runner::requisites() {
@@ -245,7 +309,7 @@ void runner::requisites() {
     affinity.set(proc_pid);
 #endif
     // wait till waitpid body completely starts
-    waitpid_thread = std::thread(waitpid_body, (void *)this);
+    waitpid_thread = std::thread(&runner::waitpid_body, this);
     std::unique_lock<std::mutex> lock(waitpid_cond_mtx);
     while (!waitpid_ready)
         waitpid_cond.wait(lock);
@@ -358,8 +422,11 @@ void runner::create_process() {
     argv = create_argv_for_process();
     envp = create_envp_for_process();
 
-    std::string sem_name = "/spawner-sync-ch-" + std::to_string(proc_pid);
-    child_sync = sem_open(sem_name.c_str(), O_CREAT | O_EXCL, O_RDWR, 0);
+    std::string sem_name = "/spawner-sync-ch-" + std::to_string(getpid());
+    child_sync = sem_open(sem_name.c_str(), O_CREAT, O_RDWR, 0);
+    if (!child_sync) {
+        PANIC(strerror(errno));
+    }
 
     auto stdinput = streams[std_stream_input]->get_pipe();
     auto stdoutput = streams[std_stream_output]->get_pipe();
@@ -389,9 +456,6 @@ void runner::create_process() {
 
         init_process(cmd_toexec, argv, envp);
     } else if (proc_pid > 0) { // parent
-        process_status = process_suspended;
-        running = true;
-
         stdinput->close(read_mode);
         stdoutput->close(write_mode);
         stderror->close(write_mode);
@@ -410,6 +474,8 @@ void runner::create_process() {
     if (cwd != nullptr)
         free(cwd);
 
+    process_status = process_still_active;
+    running = true;
     requisites();
     sem_post(child_sync); //unlock child
     sem_close(child_sync);

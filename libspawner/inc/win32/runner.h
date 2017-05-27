@@ -41,6 +41,7 @@ protected:
     virtual void requisites();
     static thread_return_t async_body(thread_param_t param);
     void enumerate_threads_(std::function<void(handle_t)> on_thread);
+    void finalize_streams();
 public:
     runner(const std::string &program, const options_class &options);
     virtual ~runner();

@@ -6,7 +6,8 @@
 #include <WinBase.h>
 #include <ImageHlp.h>
 
-#include "inc/error.h"
+#include "error.h"
+#include "logger.h"
 
 // these aren't defined in Windows headers from mingw, so here it is
 
@@ -23,7 +24,7 @@ const size_t MAX_RATE_COUNT = 20;
 bool secure_runner::try_handle_createproc_error() {
     const DWORD error_code = GetLastError();
     bool segments_exceed_limit = false;
-    
+
     if (restrictions.check_restriction(restriction_memory_limit)) {
         LOADED_IMAGE exe_image;
         char* exe_path_rw = _strdup(program.c_str());
@@ -184,7 +185,7 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_USER_TIME_LIMIT, COMPLETION_KEY, nullptr);//freezed
             break;
         }
-        if ((dt=self->get_time_since_create() - idle_dt) > 100000) {//10ms
+        if ((dt = self->get_time_since_create() - idle_dt) > 100000) {//10ms
             idle_dt = self->get_time_since_create();
 
             double load_ratio = 10000.0*(double)(bai.BasicInfo.TotalUserTime.QuadPart - last_quad_part)/dt;
@@ -194,18 +195,18 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
             self->report.load_ratio = self->report.load_ratio*0.95 + 0.05*load_ratio;
 
             last_quad_part = bai.BasicInfo.TotalUserTime.QuadPart;
-            if (restrictions.check_restriction(restriction_load_ratio)) {
+            if (restrictions.check_restriction(restriction_load_ratio) && self->process_status != process_suspended) {
                 if (self->report.load_ratio < self->restrictions.get_restriction(restriction_load_ratio)) {
-                    if (!is_idle && restrictions.check_restriction(restriction_idle_time_limit)) {
-                        is_idle = true;
-                        idle_time = idle_dt;
+                    if (restrictions.check_restriction(restriction_idle_time_limit)) {
+                            idle_time += dt;
                     }
-                    if ((self->get_time_since_create() - idle_time) > 10*restrictions.get_restriction(restriction_idle_time_limit)) {
+                    if (idle_time > 10*restrictions.get_restriction(restriction_idle_time_limit)) {
+                        LOG("idleness limit found", idle_time / 10000000.0);
                         PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_PROCESS_LOAD_RATIO_LIMIT, COMPLETION_KEY, nullptr);//freezed
                         break;
                     }
                 } else {
-                    is_idle = false;
+                    idle_time = 0;
                 }
             }
         }

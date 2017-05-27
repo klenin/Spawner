@@ -35,11 +35,13 @@ class multipipe {
     int buffer_size;
     char *read_buffer, *read_tail_buffer;
     size_t read_tail_len, write_tail_len;
-    bool check_new_line, stop_flag;
+    bool check_new_line, custom_process_message, stop_flag;
 
     pipe_mode mode;
     volatile int parents_count;
     map<int, weak_ptr<multipipe>> sinks;
+
+    std::function<void(const char* buffer, size_t count)> process_message;
 
     multipipe(system_pipe_ptr pipe, int buffer_size, pipe_mode mode, bool autostart = true);
 
@@ -65,12 +67,14 @@ public:
 
     void connect(weak_ptr<multipipe> pipe);
     void disconnect(weak_ptr<multipipe> pipe);
+    void for_each_sink(std::function<void(multipipe_ptr& sink)> func);
 
     void write(const char* bytes, size_t count);
 
-    system_pipe_ptr get_pipe() const;
+    void set_custom_process_message(std::function<void(const char* buffer, size_t count)> func);
+    bool process_message_is_custom() const;
 
-    std::function<void(const char* buffer, size_t count)> process_message;
+    system_pipe_ptr get_pipe() const;
 };
 
 #endif // PIPE_H

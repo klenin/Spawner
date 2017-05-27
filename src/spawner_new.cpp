@@ -2,6 +2,9 @@
 
 #include <iostream>
 
+#include "inc/logger.h"
+
+
 spawner_new_c::spawner_new_c(settings_parser_c &parser)
     : parser(parser)
     , spawner_base_c()
@@ -94,7 +97,7 @@ void spawner_new_c::json_report(runner *runner_instance,
         { "Memory", runner_report.peak_memory_used, unit_memory_byte, degree_default },
         { "BytesWritten", runner_report.write_transfer_count, unit_memory_byte, degree_default },
         { "KernelTime", runner_report.kernel_time, unit_time_second, degree_micro },
-        { "ProcessorLoad", (uint64_t)(runner_report.load_ratio * 100), unit_no_unit, degree_centi },
+        { "ProcessorLoad", (uint64_t)(runner_report.load_ratio * 100), unit_no_unit, degree_micro },
         { nullptr, 0, unit_no_unit, degree_default },
     };
     for (int i = 0; result_items[i].field; ++i) {
@@ -165,18 +168,9 @@ int spawner_new_c::get_agent_index_(const std::string& message) {
 
     if (agent_index == 0) {
         return 0;
-    } else if (agent_index < 1 || agent_index > int(runners.size() - 1)) {
-        agent_index = -1;
     }
-
-    if (agent_index != -1) {
-        int agent_runner_index = agent_to_runner_index_(agent_index);
-        auto status = runners[agent_runner_index]->get_process_status();
-        if (status != process_still_active
-         && status != process_suspended
-         && status != process_not_started) {
-            agent_index = -1;
-        }
+    if (agent_index < 1 || agent_index > int(runners.size() - 1)) {
+        agent_index = -1;
     }
     return agent_index;
 }
@@ -200,19 +194,21 @@ void spawner_new_c::process_controller_message_(const std::string& message) {
         PANIC("missing header in controller message");
     }
     auto control_letter = message[hash_pos - 1];
-    auto send_to_agent = false;
 
     const auto agent_index = get_agent_index_(message);
-    auto runner_index = -1;
     if (agent_index == -1) {
-        const auto error_message = message.substr(0, hash_pos) + "I#\n";
-        controller_broadcaster_->write(error_message.c_str(), error_message.size());
-        send_to_agent = true;
+        PANIC(string("Agent index out of range: ") + message.substr(0, 100));
     } else if (agent_index == 0) {
         // this is a message to spawner
     }
     else {
-        runner_index = agent_to_runner_index_(agent_index);
+        auto runner_index = agent_to_runner_index_(agent_index);
+        auto status = runners[runner_index]->get_process_status();
+        if (status != process_still_active && status != process_suspended && status != process_not_started) {
+            std::string message = std::to_string(agent_index) + "T#\n";
+            // Send message to controller only.
+            controller_input_->write(message.c_str(), message.size());
+        }
         switch (control_letter) {
         case 'W': {
             wait_agent_mutex_.lock();
@@ -226,22 +222,25 @@ void spawner_new_c::process_controller_message_(const std::string& message) {
             break;
         }
         default:
-            send_to_agent = true;
+            auto pipe = runners[runner_index]->get_pipe(std_stream_input);
+            pipe->write(message.c_str() + hash_pos + 1, message.size() - hash_pos - 1);
             break;
         }
     }
 
-    //TODO: what if agent_index == -1?
-    if (runner_index != -1) {
-        auto pipe = runners[runner_index]->get_pipe(std_stream_input);
-        pipe->write(message.c_str() + hash_pos + 1, message.size() - hash_pos - 1);
-    }
+    // Write message to all file and console sinks
+    controller_output_->for_each_sink([&](multipipe_ptr& sink) {
+        auto pipe = sink->get_pipe();
+        if (pipe->is_file() || pipe->is_console()) {
+            sink->write(message.c_str(), message.size());
+        }
+    });
 }
 
 void spawner_new_c::process_agent_message_(const std::string& message, int agent_index) {
     std::string mod_message = std::to_string(agent_index) + "#" + message;
     auto runner = runners[agent_to_runner_index_(agent_index)];
-    runner->get_pipe(std_stream_input)->write(mod_message.c_str(), mod_message.size());
+    runner->get_pipe(std_stream_output)->write(mod_message.c_str(), mod_message.size());
     wait_agent_mutex_.lock();
     if (awaited_agents_[agent_index - 1]) {
         awaited_agents_[agent_index - 1] = false;
@@ -251,6 +250,28 @@ void spawner_new_c::process_agent_message_(const std::string& message, int agent
         // it hasn't been waited for, but sent a message. what do?
     }
     wait_agent_mutex_.unlock();
+}
+
+void spawner_new_c::setup_stream_in_control_mode_(runner* runner, multipipe_ptr pipe) {
+    if (pipe->process_message_is_custom()) {
+        return;
+    }
+    if (runner->get_options().controller) {
+        pipe->set_custom_process_message([=](const char* buffer, size_t count) {
+            string message(buffer, count);
+            process_controller_message_(message);
+        });
+    }
+    else {
+        auto index = runner->get_index();
+        if (index > controller_index_) {
+            index--;
+        }
+        pipe->set_custom_process_message([=](const char* buffer, size_t count) {
+            string message(buffer, count);
+            process_agent_message_(message, index + 1);
+        });
+    }
 }
 
 void spawner_new_c::setup_stream_(const options_class::redirect redirect, std_stream_type source_type, runner* this_runner) {
@@ -293,20 +314,12 @@ void spawner_new_c::setup_stream_(const options_class::redirect redirect, std_st
         PANIC("invalid stream name");
     }
 
-    if (control_mode_enabled && stream == "stdout" && target_pipe->process_message == nullptr) {
-        if (target_runner->get_options().controller) {
-            target_pipe->process_message = [=](const char* buffer, size_t count) {
-                string message(buffer, count);
-                process_controller_message_(message);
-            };
-        } else {
-            if (index > controller_index_) {
-                index--;
-            }
-            target_pipe->process_message = [=](const char* buffer, size_t count) {
-                string message(buffer, count);
-                process_agent_message_(message, index + 1);
-            };
+    if (control_mode_enabled) {
+        if (source_type == std_stream_output) {
+            setup_stream_in_control_mode_(this_runner, source_pipe);
+        }
+        else if (stream == "stdout") {
+            setup_stream_in_control_mode_(target_runner, target_pipe);
         }
     }
 }
@@ -321,28 +334,54 @@ bool spawner_new_c::init() {
             PANIC_IF(controller_index_ != -1);
             controller_index_ = i;
             control_mode_enabled = true;
-            controller_broadcaster_ = runners[i]->get_pipe(std_stream_input);
+            controller_input_lock = multipipe::create_pipe(write_mode, true, 0);
+            controller_input_lock->get_pipe()->close();
+            // Lock controller stdin
+            controller_input_lock->connect(runners[i]->get_pipe(std_stream_input));
+            controller_input_ = runners[i]->get_pipe(std_stream_input)->get_pipe();
+            controller_output_ = runners[i]->get_pipe(std_stream_output);
         }
     }
     if (controller_index_ != -1) {
         awaited_agents_.resize(runners.size() - 1);
         for (size_t i = 0; i < runners.size(); i++) {
             secure_runner* sr = static_cast<secure_runner*>(runners[i]);
+            sr->start_suspended = true;
             if (i != controller_index_) {
-                sr->start_suspended = true;
-            }
-            sr->on_terminate = [=]() {
-                on_terminate_mutex_.lock();
-                if (i > 0 && awaited_agents_[i - 1]) {
+                sr->on_terminate = [=]() {
+                    LOG("runner", i, "terminated");
+                    on_terminate_mutex_.lock();
                     wait_agent_mutex_.lock();
                     awaited_agents_[i - 1] = false;
-                    std::string message = std::to_string(i) + "I#\n";
-                    //TODO: broadcast?
-                    controller_broadcaster_->write(message.c_str(), message.size());
+                    std::string message = std::to_string(i) + "T#\n";
+                    // Send message to controller only.
+                    controller_input_->write(message.c_str(), message.size());
+                    bool have_running_agents = false;
+                    for (auto j = 0; j < runners.size(); j++) {
+                        if (j != controller_index_ && j != i && runners[j]->is_running()) {
+                            have_running_agents = true;
+                            break;
+                        }
+                    }
+                    if (!have_running_agents) {
+                        // Unlock controller stdin
+                        controller_input_lock->finalize();
+                    }
                     wait_agent_mutex_.unlock();
-                }
-                on_terminate_mutex_.unlock();
-            };
+                    on_terminate_mutex_.unlock();
+                };
+            } else {
+                sr->on_terminate = [=]() {
+                    LOG("controller terminated");
+                    on_terminate_mutex_.lock();
+                    for (size_t j = 0; j < runners.size(); j++) {
+                        if (j != controller_index_) {
+                            runners[j]->resume();
+                        }
+                    }
+                    on_terminate_mutex_.unlock();
+                };
+            }
         }
     }
 
@@ -410,14 +449,21 @@ bool spawner_new_c::init_runner() {
                 stderror->connect(get_or_create_file_pipe(error.name, write_mode, error.flags));
     }
 
+    secure_runner_instance->set_index(runners.size());
     runners.push_back(secure_runner_instance);
     return true;
 }
 
 void spawner_new_c::run() {
     begin_report();
+    LOG("initialize...");
     for (auto i : runners) {
         i->run_process_async();
+    }
+    for (auto i : runners) {
+        if (!i->wait_for_init(1000)) {
+            PANIC("Failed to init process");
+        }
     }
     for (const auto& file_pipe : file_pipes) {
         file_pipe.second->start_read();
@@ -425,8 +471,15 @@ void spawner_new_c::run() {
     for (auto i : runners) {
         i->get_pipe(std_stream_input)->check_parents();
     }
+    if (control_mode_enabled) {
+        runners[controller_index_]->resume();
+    }
+    LOG("initialized");
     for (auto i : runners) {
         i->wait_for();
+    }
+    for (auto i : runners) {
+        i->finalize();
     }
     for (const auto& file_pipe : file_pipes) {
         file_pipe.second->finalize();

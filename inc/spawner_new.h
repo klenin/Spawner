@@ -25,11 +25,14 @@ protected:
     std::vector<runner*> runners;
     size_t order;
     bool control_mode_enabled;
-    multipipe_ptr controller_broadcaster_;
+    system_pipe_ptr controller_input_;
+    multipipe_ptr controller_input_lock;
+    multipipe_ptr controller_output_;
     int controller_index_ = -1;
     mutex_c wait_agent_mutex_;
     mutex_c on_terminate_mutex_;
     std::vector<bool> awaited_agents_;
+    void setup_stream_in_control_mode_(runner* runner, multipipe_ptr pipe);
     void setup_stream_(const options_class::redirect redirect, std_stream_type source_type, runner* this_runner);
     void process_controller_message_(const std::string& message);
     void process_agent_message_(const std::string& message, int runner_index);

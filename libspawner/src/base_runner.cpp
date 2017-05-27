@@ -2,6 +2,10 @@
 
 #include "error.h"
 
+base_runner::~base_runner() {
+    finalize();
+}
+
 multipipe_ptr base_runner::get_pipe(const std_stream_type& stream_type, options_class::redirect_flags flags) {
     auto stream = streams.find(stream_type);
     if (stream == streams.end()) {
@@ -23,6 +27,24 @@ multipipe_ptr base_runner::get_pipe(const std_stream_type& stream_type, options_
 }
 
 base_runner::base_runner(const std::string& program, const options_class& options)
-    : program(program)
-    , options(options) {
+    : index(0)
+    , options(options)
+    , program(program)
+    , finalize_thread(nullptr) {
+}
+
+void base_runner::finalize() {
+    if (finalize_thread != nullptr && finalize_thread->joinable()) {
+        finalize_thread->join();
+        delete finalize_thread;
+        finalize_thread = nullptr;
+    }
+}
+
+void base_runner::set_index(int i) {
+    index = i;
+}
+
+int base_runner::get_index() const {
+    return index;
 }

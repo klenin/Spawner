@@ -71,6 +71,9 @@ bool spawner_old_c::init()
 void spawner_old_c::run() {
     begin_report();
     runner_instance->run_process_async();
+    if (!runner_instance->wait_for_init(1000)) {
+        PANIC("Failed to init process");
+    }
     for (const auto& file_pipe : file_pipes) {
         file_pipe.second->start_read();
     }

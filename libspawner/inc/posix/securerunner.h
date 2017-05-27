@@ -41,10 +41,12 @@ protected:
     virtual void init_process(const char *cmd_toexec, char **process_argv, char **process_envp);
     virtual void create_process();
 
-    static void *check_limits_proc(void *);
+    void check_limits_proc();
 
     virtual void runner_free();
     virtual void requisites();
+
+    virtual void wait() override;
 
     virtual timeval get_user_time() override;
 public:
@@ -61,6 +63,5 @@ public:
     void prolong_time_limits();
     bool force_stop = false;
     std::function<void()> on_terminate;
-    virtual bool wait_for();
 };
 #endif // _SECURE_RUNNER_H_
