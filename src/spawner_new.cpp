@@ -256,6 +256,28 @@ void spawner_new_c::process_agent_message_(const std::string& message, int agent
     wait_agent_mutex_.unlock();
 }
 
+void spawner_new_c::setup_stream_in_control_mode_(runner* runner, multipipe_ptr pipe) {
+    if (pipe->process_message_is_custom()) {
+        return;
+    }
+    if (runner->get_options().controller) {
+        pipe->set_custom_process_message([=](const char* buffer, size_t count) {
+            string message(buffer, count);
+            process_controller_message_(message);
+        });
+    }
+    else {
+        auto index = runner->get_index();
+        if (index > controller_index_) {
+            index--;
+        }
+        pipe->set_custom_process_message([=](const char* buffer, size_t count) {
+            string message(buffer, count);
+            process_agent_message_(message, index + 1);
+        });
+    }
+}
+
 void spawner_new_c::setup_stream_(const options_class::redirect redirect, std_stream_type source_type, runner* this_runner) {
     auto source_pipe = this_runner->get_pipe(source_type);
 
@@ -296,20 +318,12 @@ void spawner_new_c::setup_stream_(const options_class::redirect redirect, std_st
         PANIC("invalid stream name");
     }
 
-    if (control_mode_enabled && stream == "stdout" && target_pipe->process_message == nullptr) {
-        if (target_runner->get_options().controller) {
-            target_pipe->process_message = [=](const char* buffer, size_t count) {
-                string message(buffer, count);
-                process_controller_message_(message);
-            };
-        } else {
-            if (index > controller_index_) {
-                index--;
-            }
-            target_pipe->process_message = [=](const char* buffer, size_t count) {
-                string message(buffer, count);
-                process_agent_message_(message, index + 1);
-            };
+    if (control_mode_enabled) {
+        if (source_type == std_stream_output) {
+            setup_stream_in_control_mode_(this_runner, source_pipe);
+        }
+        else if (stream == "stdout") {
+            setup_stream_in_control_mode_(target_runner, target_pipe);
         }
     }
 }

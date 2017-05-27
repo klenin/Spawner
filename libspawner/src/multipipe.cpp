@@ -20,6 +20,7 @@ multipipe::multipipe(system_pipe_ptr pipe, int bsize, pipe_mode mode, bool autos
     , read_tail_len(0)
     , write_tail_len(0)
     , check_new_line(true)
+    , custom_process_message(false)
     , stop_flag(false)
     , mode(mode)
     , parents_count(0)
@@ -182,6 +183,15 @@ void multipipe::disconnect(weak_ptr<multipipe> pipe) {
 void multipipe::write(const char* bytes, size_t count) {
     auto src = set<int>();
     write(bytes, count, src);
+}
+
+void multipipe::set_custom_process_message(std::function<void(const char* buffer, size_t count)> func) {
+    process_message = func;
+    custom_process_message = true;
+}
+
+bool multipipe::process_message_is_custom() const {
+    return custom_process_message;
 }
 
 system_pipe_ptr multipipe::get_pipe() const {
