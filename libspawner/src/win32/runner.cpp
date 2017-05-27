@@ -8,7 +8,8 @@
 #include <WinBase.h>
 #include <UserEnv.h>
 
-#include "inc/error.h"
+#include "error.h"
+#include "logger.h"
 
 const size_t MAX_USER_NAME = 1024;
 
@@ -231,8 +232,12 @@ void runner::create_process() {
 
     si.lpDesktop = nullptr;
 
-    process_creation_flags = (CREATE_SUSPENDED | /*CREATE_PRESERVE_CODE_AUTHZ_LEVEL | */CREATE_SEPARATE_WOW_VDM |
+    process_creation_flags = (/*CREATE_PRESERVE_CODE_AUTHZ_LEVEL | */CREATE_SEPARATE_WOW_VDM |
         CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB);
+
+    if (start_suspended) {
+        process_creation_flags |= CREATE_SUSPENDED;
+    }
 
     if (options.hide_gui)
     {
@@ -280,8 +285,6 @@ void runner::create_process() {
         }
         running = init_process(command_line, wd);
     }
-
-    ReleaseSemaphore(init_semaphore, 10, nullptr);
 }
 
 void runner::free() {
@@ -306,10 +309,8 @@ void runner::debug() {
 }
 
 void runner::requisites() {
+    LOG("requisites", get_index());
     if (!start_suspended) {
-        if (ResumeThread(process_info.hThread) == (DWORD)-1) {
-            PANIC(get_win_last_error_string());
-        }
         process_status = process_still_active;
     } else {
         process_status = process_suspended;
@@ -457,12 +458,14 @@ void runner::run_process() {
     }
     create_process();
     if (!running || get_terminate_reason() != terminate_reason_not_terminated) {
+        ReleaseSemaphore(init_semaphore, 10, nullptr);
         finalize_streams();
         return;
     }
 
     if (!process_is_finished()) {
         requisites();
+        ReleaseSemaphore(init_semaphore, 10, nullptr);
         if (!process_is_finished()) {
             wait();
         }
@@ -544,6 +547,7 @@ void runner::suspend()
         suspend_mutex_.unlock();
         return;
     }
+    LOG("suspended", get_index());
     enumerate_threads_([](handle_t handle) {
         SuspendThread(handle);
     });
@@ -558,6 +562,7 @@ void runner::resume()
         suspend_mutex_.unlock();
         return;
     }
+    LOG("resumed", get_index());
     enumerate_threads_([](handle_t handle) {
         ResumeThread(handle);
     });
