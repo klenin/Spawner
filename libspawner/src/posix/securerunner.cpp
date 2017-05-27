@@ -361,4 +361,8 @@ void secure_runner::check_limits_proc() {
 
         nanosleep(&req, nullptr);
     }
+
+    if (on_terminate) {
+        on_terminate();
+    }
 }

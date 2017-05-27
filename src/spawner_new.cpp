@@ -172,16 +172,6 @@ int spawner_new_c::get_agent_index_(const std::string& message) {
     if (agent_index < 1 || agent_index > int(runners.size() - 1)) {
         agent_index = -1;
     }
-
-    if (agent_index != -1) {
-        int agent_runner_index = agent_to_runner_index_(agent_index);
-        auto status = runners[agent_runner_index]->get_process_status();
-        if (status != process_still_active
-         && status != process_suspended
-         && status != process_not_started) {
-            agent_index = -1;
-        }
-    }
     return agent_index;
 }
 
@@ -213,6 +203,12 @@ void spawner_new_c::process_controller_message_(const std::string& message) {
     }
     else {
         auto runner_index = agent_to_runner_index_(agent_index);
+        auto status = runners[runner_index]->get_process_status();
+        if (status != process_still_active && status != process_suspended && status != process_not_started) {
+            std::string message = std::to_string(agent_index) + "T#\n";
+            // Send message to controller only.
+            controller_input_->write(message.c_str(), message.size());
+        }
         switch (control_letter) {
         case 'W': {
             wait_agent_mutex_.lock();
@@ -349,24 +345,26 @@ bool spawner_new_c::init() {
             if (i != controller_index_) {
                 sr->start_suspended = true;
                 sr->on_terminate = [=]() {
+                    LOG("runner", i, "terminated");
                     on_terminate_mutex_.lock();
-                    if (i > 0) {
-                        wait_agent_mutex_.lock();
-                        awaited_agents_[i - 1] = false;
-                        std::string message = std::to_string(i) + "T#\n";
-                        // Send message to controller only.
-                        controller_input_->write(message.c_str(), message.size());
-                        wait_agent_mutex_.unlock();
-                    }
+                    wait_agent_mutex_.lock();
+                    awaited_agents_[i - 1] = false;
+                    std::string message = std::to_string(i) + "T#\n";
+                    // Send message to controller only.
+                    controller_input_->write(message.c_str(), message.size());
+                    wait_agent_mutex_.unlock();
                     on_terminate_mutex_.unlock();
                 };
             } else {
                 sr->on_terminate = [=]() {
+                    LOG("controller terminated");
+                    on_terminate_mutex_.lock();
                     for (size_t j = 0; j < runners.size(); j++) {
                         if (j != controller_index_ && runners[i]->get_process_status() == process_suspended) {
                             runners[i]->resume();
                         }
                     }
+                    on_terminate_mutex_.unlock();
                 };
             }
         }
