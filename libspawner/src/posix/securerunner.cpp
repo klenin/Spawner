@@ -130,7 +130,8 @@ terminate_reason_t secure_runner::get_terminate_reason() {
             || terminate_reason == terminate_reason_write_limit
             || terminate_reason == terminate_reason_load_ratio_limit
             || terminate_reason == terminate_reason_time_limit
-            || terminate_reason == terminate_reason_memory_limit)
+            || terminate_reason == terminate_reason_memory_limit
+            || terminate_reason == terminate_reason_by_controller)
             break;
         else { // manually killed by a human or hard rlimit
             terminate_reason = terminate_reason_abnormal_exit_process;
@@ -221,6 +222,15 @@ void *secure_runner::check_limits_proc(void *monitor_param) {
 #if defined(__linux__)
         if(!self->proc.fill_all())
             break;
+
+        if (self->force_stop) {
+            kill(proc_pid, SIGSTOP);
+            self->proc.fill_all();
+            kill(proc_pid, SIGKILL);
+            self->terminate_reason = terminate_reason_by_controller;
+            self->process_status = process_finished_terminated;
+            break;
+        }
 
         if (self->check_restriction(restriction_write_limit) &&
             (self->proc.write_bytes > self->get_restriction(restriction_write_limit))) {
