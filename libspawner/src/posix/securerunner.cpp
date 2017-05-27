@@ -286,8 +286,8 @@ void secure_runner::check_limits_proc() {
             check_restriction(restriction_idle_time_limit) &&
             ticks_elapsed >= TICK_THRESHOLD
         ) {
-            int idle_limit = get_restriction(restriction_idle_time_limit) / 1000000;
-            int step = idle_limit * options.monitorInterval / 10 / load_ratios_max_size;
+            double idle_limit = get_restriction(restriction_idle_time_limit) / 1000000.0;
+            int step = (int)(idle_limit * options.monitorInterval / 10 / load_ratios_max_size);
             if (ticks_elapsed % step == 0 && last_tick != ticks_elapsed) {
                 // printf("consumed: %g (procfs value %lu) ", proc_consumed, proc.stat_utime);
                 restriction = (double)get_restriction(restriction_load_ratio) / 10000;
