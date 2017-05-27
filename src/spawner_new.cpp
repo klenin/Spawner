@@ -232,6 +232,13 @@ void spawner_new_c::process_controller_message_(const std::string& message) {
         }
     }
 
+    // Write message to all file and console sinks
+    controller_output_->for_each_sink([&](multipipe_ptr& sink) {
+        auto pipe = sink->get_pipe();
+        if (pipe->is_file() || pipe->is_console()) {
+            sink->write(message.c_str(), message.size());
+        }
+    });
 }
 
 void spawner_new_c::process_agent_message_(const std::string& message, int agent_index) {

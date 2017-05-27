@@ -180,6 +180,14 @@ void multipipe::disconnect(weak_ptr<multipipe> pipe) {
     set_new_line_checking();
 }
 
+void multipipe::for_each_sink(std::function<void(multipipe_ptr& sink)> func) {
+    for (const auto& sink : sinks) {
+        if (auto p = sink.second.lock()) {
+            func(p);
+        }
+    }
+}
+
 void multipipe::write(const char* bytes, size_t count) {
     auto src = set<int>();
     write(bytes, count, src);

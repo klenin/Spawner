@@ -67,6 +67,7 @@ public:
 
     void connect(weak_ptr<multipipe> pipe);
     void disconnect(weak_ptr<multipipe> pipe);
+    void for_each_sink(std::function<void(multipipe_ptr& sink)> func);
 
     void write(const char* bytes, size_t count);
 
