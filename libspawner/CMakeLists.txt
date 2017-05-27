@@ -28,6 +28,7 @@ set(HEADERS
     inc/hexdump.h
     inc/multibyte.h
     inc/multipipe.h
+    inc/logger.h
     inc/options.h
     inc/report.h
     inc/restrictions.h
@@ -48,6 +49,7 @@ set(SOURCES
     src/hexdump.cpp
     src/multibyte.cpp
     src/multipipe.cpp
+    src/logger.cpp
     src/options.cpp
     src/report.cpp
     src/restrictions.cpp

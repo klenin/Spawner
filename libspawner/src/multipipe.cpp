@@ -3,6 +3,7 @@
 #include <chrono>
 
 #include "error.h"
+#include "logger.h"
 
 using std::chrono::milliseconds;
 using std::this_thread::sleep_for;
@@ -42,6 +43,7 @@ void multipipe::set_new_line_checking() {
 }
 
 void multipipe::listen() {
+    LOG("listen", id);
     if (mode != read_mode && core_pipe->is_readable())
         return;
 
@@ -102,6 +104,7 @@ void multipipe::write(const char* bytes, size_t count, set<int>& src) {
 }
 
 void multipipe::close_and_notify() {
+    LOG("close and notify", id);
     flush();
 
     auto childs = this->sinks;

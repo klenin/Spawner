@@ -2,6 +2,9 @@
 
 #include <iostream>
 
+#include "inc/logger.h"
+
+
 spawner_new_c::spawner_new_c(settings_parser_c &parser)
     : parser(parser)
     , spawner_base_c()
@@ -416,6 +419,7 @@ bool spawner_new_c::init_runner() {
 
 void spawner_new_c::run() {
     begin_report();
+    LOG("initialize...");
     for (auto i : runners) {
         i->run_process_async();
     }
@@ -430,6 +434,7 @@ void spawner_new_c::run() {
     for (auto i : runners) {
         i->get_pipe(std_stream_input)->check_parents();
     }
+    LOG("initialized");
     for (auto i : runners) {
         i->wait_for();
     }

@@ -1,4 +1,5 @@
 #include "error.h"
+#include "logger.h"
 #include "platform.h"
 
 #include <cstring>
@@ -10,6 +11,7 @@ bool do_we_panic_();
 void exec_on_panic_action_();
 
 void panic_(const std::string& error_message, const char* filename, int line_number) {
+    logger::print();
     std::stringstream error_text;
     const char *fn = filename + strlen(filename);
     while (fn > filename && fn[-1] != '\\' && fn[-1] != '/') --fn;

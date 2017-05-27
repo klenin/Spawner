@@ -7,6 +7,7 @@
 #include <fcntl.h>
 
 #include "inc/error.h"
+#include "logger.h"
 
 #include "runner.h"
 
@@ -216,6 +217,7 @@ void runner::waitpid_body() {
         pid_t w = waitpid(proc_pid, &status,
             WUNTRACED | WCONTINUED);
         if (WIFSIGNALED(status)) {
+            LOG("signaled", get_index());
             // "signalled" means abnormal/terminate
 #ifdef WCOREDUMP
             process_status = process_finished_abnormally;
@@ -225,14 +227,17 @@ void runner::waitpid_body() {
 
             runner_signal = (signal_t)WTERMSIG(status);
         } else if (WIFEXITED(status)) {
+            LOG("exited", get_index());
             process_status = process_finished_normal;
             exit_code = WEXITSTATUS(status);
         } else if (WIFSTOPPED(status)) {
+            LOG("stopped", get_index());
             if (resume_requested) {
                 resume();
             }
             process_status = process_suspended;
         } else if (WIFCONTINUED(status)) {
+            LOG("continued", get_index());
             resume_requested = false;
             process_status = process_still_active;
         }
@@ -280,6 +285,7 @@ void runner::suspend() {
     suspend_mutex.lock();
     if (get_process_status() == process_still_active) {
         int err = kill(proc_pid, SIGSTOP);
+        LOG("suspend", get_index(), err);
     }
     suspend_mutex.unlock();
 }
@@ -289,6 +295,7 @@ void runner::resume() {
     if (get_process_status() == process_suspended) {
         resume_requested = true;
         int err = kill(proc_pid, SIGCONT);
+        LOG("resume", get_index(), err);
     }
     suspend_mutex.unlock();
 }

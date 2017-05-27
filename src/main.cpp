@@ -5,6 +5,7 @@
 
 #include "sp.h"
 #include "inc/compatibility.h"
+#include "inc/logger.h"
 #include "spawner_base.h"
 #include "spawner_old.h"
 #include "spawner_new.h"
@@ -147,6 +148,7 @@ BOOL WINAPI CtrlHandlerRoutine(DWORD dwCtrlType) {
 #endif
 
 int main(int argc, char *argv[]) {
+    logger::start_time = logger::get_time();
     handler = new command_handler_c();
     // TODO: codestyle: replace \)\r\n\{ with \) \{\r\n
     // Suppress msg window on abort; TODO: check if it's ms spec
@@ -172,5 +174,6 @@ int main(int argc, char *argv[]) {
         delete handler;
         handler = nullptr;
     }
+    logger::print();
     return 0;
 }
