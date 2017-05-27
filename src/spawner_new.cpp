@@ -97,7 +97,7 @@ void spawner_new_c::json_report(runner *runner_instance,
         { "Memory", runner_report.peak_memory_used, unit_memory_byte, degree_default },
         { "BytesWritten", runner_report.write_transfer_count, unit_memory_byte, degree_default },
         { "KernelTime", runner_report.kernel_time, unit_time_second, degree_micro },
-        { "ProcessorLoad", (uint64_t)(runner_report.load_ratio * 100), unit_no_unit, degree_centi },
+        { "ProcessorLoad", (uint64_t)(runner_report.load_ratio * 100), unit_no_unit, degree_micro },
         { nullptr, 0, unit_no_unit, degree_default },
     };
     for (int i = 0; result_items[i].field; ++i) {
