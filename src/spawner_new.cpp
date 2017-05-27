@@ -207,9 +207,7 @@ void spawner_new_c::process_controller_message_(const std::string& message) {
 
     const auto agent_index = get_agent_index_(message);
     if (agent_index == -1) {
-        const auto error_message = message.substr(0, hash_pos) + "I#\n";
-        controller_broadcaster_->write(error_message.c_str(), error_message.size());
-        send_to_agent = true;
+        PANIC(string("Agent index out of range: ") + message.substr(0, 100));
     } else if (agent_index == 0) {
         // this is a message to spawner
     }
