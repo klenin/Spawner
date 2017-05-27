@@ -26,6 +26,7 @@ protected:
     size_t order;
     bool control_mode_enabled;
     system_pipe_ptr controller_input_;
+    multipipe_ptr controller_input_lock;
     multipipe_ptr controller_output_;
     int controller_index_ = -1;
     mutex_c wait_agent_mutex_;

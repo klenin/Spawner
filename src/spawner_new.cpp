@@ -334,6 +334,10 @@ bool spawner_new_c::init() {
             PANIC_IF(controller_index_ != -1);
             controller_index_ = i;
             control_mode_enabled = true;
+            controller_input_lock = multipipe::create_pipe(write_mode, true, 0);
+            controller_input_lock->get_pipe()->close();
+            // Lock controller stdin
+            controller_input_lock->connect(runners[i]->get_pipe(std_stream_input));
             controller_input_ = runners[i]->get_pipe(std_stream_input)->get_pipe();
             controller_output_ = runners[i]->get_pipe(std_stream_output);
         }
@@ -352,6 +356,17 @@ bool spawner_new_c::init() {
                     std::string message = std::to_string(i) + "T#\n";
                     // Send message to controller only.
                     controller_input_->write(message.c_str(), message.size());
+                    bool have_running_agents = false;
+                    for (auto j = 0; j < runners.size(); j++) {
+                        if (j != controller_index_ && j != i && runners[j]->is_running()) {
+                            have_running_agents = true;
+                            break;
+                        }
+                    }
+                    if (!have_running_agents) {
+                        // Unlock controller stdin
+                        controller_input_lock->finalize();
+                    }
                     wait_agent_mutex_.unlock();
                     on_terminate_mutex_.unlock();
                 };
