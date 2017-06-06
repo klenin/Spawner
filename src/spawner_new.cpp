@@ -373,13 +373,11 @@ bool spawner_new_c::init() {
             } else {
                 sr->on_terminate = [=]() {
                     LOG("controller terminated");
-                    on_terminate_mutex_.lock();
                     for (size_t j = 0; j < runners.size(); j++) {
                         if (j != controller_index_) {
                             runners[j]->resume();
                         }
                     }
-                    on_terminate_mutex_.unlock();
                 };
             }
         }

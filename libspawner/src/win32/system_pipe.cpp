@@ -16,13 +16,11 @@ void system_pipe::start_flush_thread() {
     flush_thread = new thread([&]() {
         do {
             flush_sem.wait();
-            write_mutex.lock();
             if (is_writable()) {
                 // If the child process exits before reading all data from  the pipe, FlushFileBuffers will hang.
                 // To work around this, we call CancelSynchronousIo from main thread.
                 FlushFileBuffers(output_handle);
             }
-            write_mutex.unlock();
         } while (!stop_flush);
     });
 }
@@ -145,7 +143,7 @@ size_t system_pipe::write(const char* bytes, size_t count) {
     if (is_writable() && !WriteFile(output_handle, (LPCVOID)bytes, (DWORD)count, (LPDWORD)&bytes_written, nullptr)) {
         auto error = GetLastError();
         // Pipe may be already closed by application.
-        if (error != ERROR_BROKEN_PIPE) {
+        if (error != ERROR_BROKEN_PIPE && error != ERROR_NO_DATA) {
             write_mutex.unlock();
             PANIC(get_win_last_error_string());
         }
