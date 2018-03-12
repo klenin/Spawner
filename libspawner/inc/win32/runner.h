@@ -64,7 +64,7 @@ public:
     void wait_for(const unsigned long &interval = INFINITE);
     bool wait_for_init(const unsigned long &interval);
     virtual void safe_release();
-    bool start_suspended = false;
+    bool start_suspended = true;
     void suspend();
     void resume();
     bool is_running();

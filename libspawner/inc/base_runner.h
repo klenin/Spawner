@@ -22,8 +22,8 @@ protected:
     bool running_async = false;
     report_class report;
     options_class options;
-    process_status_t process_status = process_not_started;
-    terminate_reason_t terminate_reason = terminate_reason_not_terminated;
+    volatile process_status_t process_status = process_not_started;
+    volatile terminate_reason_t terminate_reason = terminate_reason_not_terminated;
     unsigned long long int creation_time = 0;
     std::string program;
 
