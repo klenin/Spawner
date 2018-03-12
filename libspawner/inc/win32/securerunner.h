@@ -16,6 +16,7 @@ protected:
     restrictions_class start_restrictions;
     restrictions_class restrictions;
     thread_t check_thread;
+    thread_t wait_thread;
     std::atomic<bool> prolong_time_limits_{false};
     LONGLONG base_time_processor_ = 0;
     unsigned long long base_time_user_ = 0;
@@ -25,6 +26,7 @@ protected:
     virtual void create_process();
 
     static thread_return_t check_limits_proc(thread_param_t param);
+    static thread_return_t wait_exit_proc(thread_param_t param);
 
     virtual void free();
     virtual void wait();

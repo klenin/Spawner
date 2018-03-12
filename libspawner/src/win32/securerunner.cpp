@@ -143,13 +143,13 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
     unsigned long long idle_dt = self->get_time_since_create();
     unsigned long long dt = 0, idle_time = 0;
 
-    while (1) {
+    while (self->running) {
         restrictions_class restrictions = self->restrictions;
 
         if (!QueryInformationJobObject(self->hJob, JobObjectBasicAndIoAccountingInformation, &bai, sizeof(bai), nullptr))
             break;
 
-        if (bai.BasicInfo.ActiveProcesses == 0)
+        if (bai.BasicInfo.ActiveProcesses == 0)	//Why this code sometimes not work?
         {
             PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_ACTIVE_PROCESS_ZERO, COMPLETION_KEY, nullptr);
             break;
@@ -220,6 +220,21 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
         }
         Sleep(1);
     }
+
+    return 0;
+}
+
+thread_return_t secure_runner::wait_exit_proc(thread_param_t param)
+{
+    secure_runner *self = (secure_runner*)param;
+
+    if (WaitForSingleObject(self->process_info.hProcess, INFINITE) != WAIT_OBJECT_0) {
+        PANIC("WaitForSingleObject(self->process_info.hProcess) failed");
+    }
+    if (self->running) {
+        PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_ACTIVE_PROCESS_ZERO, COMPLETION_KEY, nullptr);
+    }
+
     return 0;
 }
 
@@ -312,8 +327,12 @@ void secure_runner::wait()
         GetQueuedCompletionStatus(hIOCP, &dwNumBytes, &dwKey, &completedOverlapped, INFINITE);
     }
     //WaitForSingleObject(process_info.hProcess, INFINITE);
+
     report.user_time = get_time_since_create() / 10;
     running = false;
+    WaitForSingleObject(check_thread, INFINITE);
+    WaitForSingleObject(wait_thread, INFINITE);
+
 }
 
 secure_runner::secure_runner(const std::string &program,
@@ -323,7 +342,8 @@ secure_runner::secure_runner(const std::string &program,
     , restrictions(restrictions)
     , hIOCP(INVALID_HANDLE_VALUE)
     , hJob(INVALID_HANDLE_VALUE)
-    , check_thread(INVALID_HANDLE_VALUE) {
+    , check_thread(INVALID_HANDLE_VALUE)
+    , wait_thread(INVALID_HANDLE_VALUE) {
 }
 
 secure_runner::~secure_runner()
@@ -341,6 +361,7 @@ void secure_runner::requisites()
     runner::requisites();
 
     check_thread = CreateThread(nullptr, 0, check_limits_proc, this, 0, nullptr);
+    wait_thread = CreateThread(nullptr, 0, wait_exit_proc, this, 0, nullptr);
 }
 
 report_class secure_runner::get_report() {
