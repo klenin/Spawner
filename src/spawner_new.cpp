@@ -472,6 +472,11 @@ void spawner_new_c::run() {
     if (control_mode_enabled) {
         runners[controller_index_]->resume();
     }
+    else {
+        for (auto i : runners) {
+            i->resume();
+        }
+    }
     LOG("initialized");
     for (auto i : runners) {
         i->wait_for();
