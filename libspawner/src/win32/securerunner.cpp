@@ -63,8 +63,6 @@ bool secure_runner::create_restrictions() {
     if (get_process_status() == process_spawner_crash)
         return false;
 
-    HANDLE jobHandle = nullptr;
-
     /* implement restriction value check */
     std::string job_name = "Local\\";
     job_name += options.session.hash();
@@ -153,7 +151,7 @@ thread_return_t secure_runner::check_limits_proc( thread_param_t param )
 
         if (bai.BasicInfo.ActiveProcesses == 0)
         {
-            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_EXIT_PROCESS, COMPLETION_KEY, nullptr);
+            PostQueuedCompletionStatus(self->hIOCP, JOB_OBJECT_MSG_ACTIVE_PROCESS_ZERO, COMPLETION_KEY, nullptr);
             break;
         }
 
@@ -263,7 +261,7 @@ void secure_runner::wait()
             terminate_reason = terminate_reason_write_limit;
             terminate = true;
             break;
-        case JOB_OBJECT_MSG_EXIT_PROCESS:
+        case JOB_OBJECT_MSG_ACTIVE_PROCESS_ZERO:
             postLoopWaiting = false;
             break;
         case JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS:
