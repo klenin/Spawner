@@ -93,7 +93,7 @@ report_class secure_runner::get_report() {
     // non linux OSes will get ru_maxrss from getrusage
 #if defined(__linux__)
     report.write_transfer_count = proc.discovered ? proc.write_bytes : 0;
-    report.peak_memory_used = proc.discovered ? proc.vss_max : 0;
+    report.peak_memory_used = proc.discovered ? proc.rss_max : 0;
 #endif
     return runner::get_report();
 }
@@ -258,7 +258,7 @@ void secure_runner::check_limits_proc() {
         }
 
         if (check_restriction(restriction_memory_limit) &&
-            proc.vss_max > get_restriction(restriction_memory_limit)
+            proc.rss_max > get_restriction(restriction_memory_limit)
         ) {
             terminate_reason = terminate_reason_memory_limit;
             process_status = process_finished_terminated;
