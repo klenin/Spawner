@@ -232,10 +232,10 @@ void runner::waitpid_body() {
             exit_code = WEXITSTATUS(status);
         } else if (WIFSTOPPED(status)) {
             LOG("stopped", get_index());
+            process_status = process_suspended;
             if (resume_requested) {
                 resume();
             }
-            process_status = process_suspended;
         } else if (WIFCONTINUED(status)) {
             LOG("continued", get_index());
             resume_requested = false;
@@ -283,6 +283,7 @@ bool runner::wait_for_init(const unsigned long& interval) {
 
 void runner::suspend() {
     suspend_mutex.lock();
+    resume_requested = false;
     if (get_process_status() == process_still_active) {
         int err = kill(proc_pid, SIGSTOP);
         LOG("suspend", get_index(), err);
@@ -292,8 +293,8 @@ void runner::suspend() {
 
 void runner::resume() {
     suspend_mutex.lock();
+    resume_requested = true;
     if (get_process_status() == process_suspended) {
-        resume_requested = true;
         int err = kill(proc_pid, SIGCONT);
         LOG("resume", get_index(), err);
     }
