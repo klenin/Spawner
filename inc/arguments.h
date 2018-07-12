@@ -180,6 +180,7 @@ public:
     const char *get_next_argument();
     std::string get_program();
     std::vector<std::string> get_program_arguments();
+    std::string get_spawner_program();
     void set_separator(const std::string &s);
 
     bool parse(int argc, char *argv[]);

@@ -422,7 +422,8 @@ bool spawner_new_c::init_runner() {
     options.add_arguments(parser.get_program_arguments());
     if (options.login.length())
     {
-        secure_runner_instance = new delegate_runner(parser.get_program(), options, restrictions);
+        secure_runner_instance = new delegate_runner(parser.get_program(), options, 
+            restrictions, parser.get_spawner_program().c_str());
     }
     else
     {

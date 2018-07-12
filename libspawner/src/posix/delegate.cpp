@@ -12,11 +12,11 @@
 #include "inc/delegate.h"
 #include "inc/error.h"
 
-const char *SPAWNER_PROGRAM = "/usr/local/bin/sp";
-
 delegate_runner::delegate_runner(const std::string &program,
-    const options_class &options, const restrictions_class &restrictions)
-    : runner(SPAWNER_PROGRAM, options)
+    const options_class &options, 
+    const restrictions_class &restrictions,
+    const std::string &spawner_program)
+    : runner(spawner_program, options)
     , restrictions(restrictions)
     , program_to_run(program)
 {

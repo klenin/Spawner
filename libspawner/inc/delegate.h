@@ -15,6 +15,6 @@ protected:
     virtual void create_process();
 public:
     delegate_runner(const std::string &program, const options_class &options,
-        const restrictions_class &restrictions);
+        const restrictions_class &restrictions, const std::string &spawner_program);
 };
 #endif // _DELEGATE_RUNNER_H

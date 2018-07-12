@@ -41,7 +41,8 @@ bool spawner_old_c::init()
     init_std_streams();
     options.add_arguments(parser.get_program_arguments());
     if (options.login.length() > 0) {
-        runner_instance = new delegate_runner(parser.get_program(), options, restrictions);
+        runner_instance = new delegate_runner(parser.get_program(), options, 
+            restrictions, parser.get_spawner_program().c_str());
     }
     else
     {
