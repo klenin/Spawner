@@ -1,6 +1,7 @@
 #include "arguments.h"
 
 #include <iostream>
+#include <cstring> 
 
 #include <stdarg.h>
 
@@ -115,6 +116,16 @@ void settings_parser_c::clear_program_parser() {
 
 settings_parser_c::~settings_parser_c() {
     clear_parsers();
+}
+
+std::string settings_parser_c::get_spawner_program() {
+    std::string spawner_program = arg_v[0];
+
+    char* global_path = realpath(spawner_program.c_str(), nullptr);
+    if (global_path == nullptr) {
+        PANIC(strerror(errno));
+    }
+    return global_path;
 }
 
 std::string settings_parser_c::get_program() {
