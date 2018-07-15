@@ -21,13 +21,22 @@ system_pipe_ptr system_pipe::open_std(std_stream_type type, bool flush) {
 
     switch (type) {
         case std_stream_input:
-            pipe->input_handle = STDIN_FILENO;
+            pipe->input_handle = dup(STDIN_FILENO);
+            if (pipe->input_handle == -1) {
+                PANIC(strerror(errno));
+            }
             break;
         case std_stream_output:
-            pipe->output_handle = STDOUT_FILENO;
+            pipe->output_handle = dup(STDOUT_FILENO);
+            if (pipe->output_handle == -1) {
+                PANIC(strerror(errno));
+            }
             break;
         case std_stream_error:
-            pipe->output_handle = STDOUT_FILENO;
+            pipe->output_handle = dup(STDOUT_FILENO);
+            if (pipe->output_handle == -1) {
+                PANIC(strerror(errno));
+            }
             break;
         default:
             PANIC("Unknown std stream type");
