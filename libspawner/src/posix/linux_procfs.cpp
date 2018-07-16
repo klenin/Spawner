@@ -116,13 +116,17 @@ bool procfs_class::fill_stat() {
         }
     } while ((strsep(&token, " ") != nullptr) || (index <= STAT_LAST));
 
+    static const int memory_page_size = sysconf(_SC_PAGESIZE);
+
     stat_utime = utime;
     stat_stime = stime;
     stat_vsize = vsize;
-    stat_rss   = rss;
+    stat_rss   = rss * memory_page_size;
 
     if (vsize > vss_max)
         vss_max = vsize;
+    if (rss > rss_max)
+        rss_max = rss;
     //printf("%lu %lu %lu %lu\n", utime, stime, vsize, rss);
 
     return true;
