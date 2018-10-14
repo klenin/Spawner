@@ -119,6 +119,9 @@ settings_parser_c::~settings_parser_c() {
 }
 
 std::string settings_parser_c::get_spawner_program() {
+#ifdef _MSC_VER
+    return "sp.exe";
+#else
     std::string spawner_program = arg_v[0];
 
     char* global_path = realpath(spawner_program.c_str(), nullptr);
@@ -126,6 +129,7 @@ std::string settings_parser_c::get_spawner_program() {
         PANIC(strerror(errno));
     }
     return global_path;
+#endif
 }
 
 std::string settings_parser_c::get_program() {
