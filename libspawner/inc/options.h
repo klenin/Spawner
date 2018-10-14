@@ -73,7 +73,7 @@ struct options_class
     bool use_cmd = false;
     bool delegated = false;
     bool controller = false;
-    unsigned long monitorInterval = 1000; // 0.001s
+    uint64_t monitorInterval = 1000; // 0.001s
 
     explicit options_class(const session_class &session_param)
         : session(session_param)

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <climits>
+#include <limits>
 
 #include <inc/session.h>
 
@@ -19,9 +20,9 @@ enum restriction_kind_t
     restriction_max                     = 0x8
 };
 
-typedef unsigned long restriction_t;
+typedef uint64_t restriction_t;
 
-const restriction_t restriction_no_limit = ULONG_MAX;
+const restriction_t restriction_no_limit = std::numeric_limits<uint64_t>::max();
 const restriction_t restriction_limited = 1;
 
 //TODO: move source to platform independent .cpp

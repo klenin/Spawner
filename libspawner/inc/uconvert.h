@@ -59,6 +59,6 @@ unsigned long convert(const value_t &from, const value_t &to, const unsigned lon
 long double convert(const value_t &from, const value_t &to, const long double &val);
 std::string convert(const value_t &from, const value_t &to, const long double &val, const char *format, const long double &inf_value = -1);
 
-unsigned long convert(const value_t &to, const std::string &val, const unsigned long &default_value = 0);
+uint64_t convert(const value_t &to, const std::string &val, const unsigned long &default_value = 0);
 
 #endif//_SPAWNER_UNIT_CONVERT_H_

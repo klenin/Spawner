@@ -168,7 +168,7 @@ std::string convert(const value_t &from, const value_t &to, const long double &v
 // Default from values for different types are
 // * memory - MB
 // * time - s
-unsigned long convert(const value_t &to, const std::string &val, const unsigned long &default_value)
+uint64_t convert(const value_t &to, const std::string &val, const unsigned long &default_value)
 {
     std::string v = val;
     value_t from(unit_no_unit);
@@ -240,8 +240,6 @@ unsigned long convert(const value_t &to, const std::string &val, const unsigned 
         }
     }
 
-    unsigned long result = labs((long)convert(from, to, value));
-
-    return result;
+    return convert(from, to, value);
 }
 
