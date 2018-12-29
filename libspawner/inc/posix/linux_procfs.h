@@ -14,15 +14,20 @@
 
 
 struct procfs_class {
-    bool discovered, disappeared;
-    size_t read_bytes, write_bytes; // io file: i/o from block-backed storages 
+    bool discovered_io;
+    bool discovered_stat;
+    bool disappeared_io;
+    bool disappeared_stat;
+
+    size_t read_bytes, write_bytes; // io file: i/o from block-backed storages
     size_t stat_utime, stat_stime;
     size_t stat_vsize, stat_rss;
     size_t vss_max = 0, rss_max = 0;
 
     std::string io_path, stat_path;
 
-    bool probe_pid(pid_t);
+    void probe_pid(pid_t);
+
     bool fill_stat();
     bool fill_io();
     bool fill_all();

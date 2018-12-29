@@ -92,8 +92,8 @@ report_class secure_runner::get_report() {
     report.terminate_reason = get_terminate_reason();
     // non linux OSes will get ru_maxrss from getrusage
 #if defined(__linux__)
-    report.write_transfer_count = proc.discovered ? proc.write_bytes : 0;
-    report.peak_memory_used = proc.discovered ? proc.rss_max : 0;
+    report.write_transfer_count = proc.discovered_io ? proc.write_bytes : 0;
+    report.peak_memory_used = proc.discovered_stat ? proc.rss_max : 0;
 #endif
     return runner::get_report();
 }
@@ -191,10 +191,8 @@ void secure_runner::check_limits_proc() {
     bool tick_detected = false;
     long tick_to_micros = 1000000 / tick_res;
 
-    if(!proc.probe_pid(proc_pid)) {
-        kill(proc_pid, SIGKILL);
-        PANIC("procfs entry not created");
-    }
+    proc.probe_pid(proc_pid);
+
     proc.fill_all();
 #endif
 

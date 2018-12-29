@@ -7,47 +7,48 @@
 #include <fcntl.h>
 
 #include <string.h>
+#include <signal.h>
+#include "inc/error.h"
 
-bool procfs_class::probe_pid(pid_t p)
+void procfs_class::probe_pid(pid_t p)
 {
-    using namespace std;
+    stat_path = "/proc/" + std::to_string(p) + "/stat";
+    io_path = "/proc/" + std::to_string(p) + "/io";
 
-    stat_path = "/proc/" + to_string(p) + "/stat";
-    io_path = "/proc/" + to_string(p) + "/io";
+    discovered_stat = access(stat_path.c_str(), R_OK) != -1;
 
-    if ((access(stat_path.c_str(), R_OK) != -1) &&
-        (access(io_path.c_str(), R_OK) != -1))
-        discovered = true;
-    else
-        discovered = false;
+    if (!discovered_stat) {
+        kill(p, SIGKILL);
+        PANIC(strerror(errno));
+    }
 
-    return discovered;
+    discovered_io = access(io_path.c_str(), R_OK) != -1;
 }
 
 bool procfs_class::fill_all()
 {
-    if (fill_io() && fill_stat())
-        return true;
-
-    disappeared = true;
-
-    return false;
+    return fill_io() && fill_stat();
 }
 
 bool procfs_class::fill_io() {
+    if (!discovered_io) {
+        write_bytes = 0;
+        return true;
+    }
+
     char buffer[4096], *needle;
     int fd, len;
     size_t io_read, io_write;
 
     fd = open(io_path.c_str(), O_RDONLY);
     if (fd < 0) {
-        disappeared = true;
+        disappeared_io = true;
         return false;
     }
     len = read(fd, buffer, sizeof(buffer) - 1);
     close(fd);
     if (len <= 0) {
-        disappeared = true;
+        disappeared_io = true;
         return false;
     }
     buffer[len] = '\0';
@@ -55,13 +56,13 @@ bool procfs_class::fill_io() {
 /*
     needle = strstr(buffer, IO_RD_STR);
     if (needle == nullptr) {
-        disappeared = true;
+        disappeared_io = true;
         return false;
     }
     errno = 0;
     io_read = strtoull(needle + strlen(IO_RD_STR), nullptr, 10);
     if (errno) {
-        disappeared = true;
+        disappeared_io = true;
         return false;
     }
     read_bytes = io_read;
@@ -69,13 +70,13 @@ bool procfs_class::fill_io() {
 
     needle = strstr(buffer, IO_WR_STR);
     if (needle == nullptr) {
-        disappeared = true;
+        disappeared_io = true;
         return false;
     }
     errno = 0;
     io_write = strtoull(needle + strlen(IO_WR_STR), nullptr, 10);
     if (errno) {
-        disappeared = true;
+        disappeared_io = true;
         return false;
     }
     write_bytes = io_write;
@@ -91,13 +92,13 @@ bool procfs_class::fill_stat() {
 
     fd = open(stat_path.c_str(), O_RDONLY);
     if (fd < 0) {
-        disappeared = true;
+        disappeared_stat = true;
         return false;
     }
     len = read(fd, buffer, sizeof(buffer) - 1);
     close(fd);
     if (len <= 0) {
-        disappeared = true;
+        disappeared_stat = true;
         return false;
     }
     buffer[len] = '\0';
@@ -111,7 +112,7 @@ bool procfs_class::fill_stat() {
         default: break;
         }
         if (errno) {
-            disappeared = true;
+            disappeared_stat = true;
             return false;
         }
     } while ((strsep(&token, " ") != nullptr) || (index <= STAT_LAST));
